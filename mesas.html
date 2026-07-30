@@ -30,7 +30,6 @@
         .action-icon:hover { color: #2d2d2d; }
         .trash-icon:hover { color: #dc3545; }
         
-        /* Ajuste visual para el buscador datalist */
         input::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
     </style>
 </head>
@@ -56,7 +55,7 @@
                     <div class="bg-white p-3 rounded shadow-sm">
                         <h5 class="mb-3">Por Asignar (<span id="count-sin-asignar">0</span>)</h5>
                         
-                        <!-- NUEVO BUSCADOR -->
+                        <!-- BUSCADOR CON FILTRO SIN TILDES -->
                         <input type="text" id="buscador-por-asignar" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar nombre..." autocomplete="off" oninput="filtrarPorAsignar()">
                         
                         <div id="lista-sin-asignar" class="drop-zone" style="max-height: 65vh; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, null, 999, 0)">
@@ -107,7 +106,7 @@
             if (e.key === 'Enter') verificarPIN();
         });
 
-        // Función para limpiar tildes en los buscadores
+        // Función infalible para quitar tildes
         function quitarTildes(str) {
             if (!str) return "";
             return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -124,7 +123,6 @@
             const dataConfirmados = await resConf.json();
             dataMesas = await resMesas.json();
             
-            // Transformar la data: Cada persona (titular o pareja) es un elemento separado
             listaComensales = [];
             dataConfirmados.forEach(c => {
                 // Titular
@@ -185,7 +183,6 @@
                     ? `<span class="badge bg-info text-dark">${sillasOcupadas} en mesa</span>`
                     : `<span class="badge ${llena ? 'bg-danger' : 'bg-success'}">${sillasOcupadas} / ${mesa.capacidad}</span>`;
 
-                // Construcción de la lista para el Datalist Inteligente
                 let opcionesSinAsignar = ``;
                 sinAsignar.forEach(c => {
                     opcionesSinAsignar += `<option value="${c.nombre_mostrar}"></option>`;
@@ -208,7 +205,6 @@
                             ${htmlOcupantes || '<div class="text-muted small mt-2">Arrastra un invitado aquí...</div>'}
                         </div>
                         
-                        <!-- NUEVO COMPONENTE: Datalist con buscador integrado -->
                         <input list="datalist-${mesa.numero}" class="form-control form-control-sm mt-2" placeholder="🔍 Escribe para buscar y agregar..." onfocus="this.value=''" onchange="intentarAsignarDatalist(this, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
                         <datalist id="datalist-${mesa.numero}">
                             ${opcionesSinAsignar}
@@ -217,12 +213,10 @@
                 </div>`;
             });
             document.getElementById('contenedor-mesas').innerHTML = htmlMesas;
-
-            // Reaplicamos el filtro del panel "Por Asignar" por si el usuario lo estaba usando
             filtrarPorAsignar();
         }
 
-        // --- LÓGICA DE LOS BUSCADORES ---
+        // --- BUSCADOR "POR ASIGNAR" (IGNORA TILDES) ---
         function filtrarPorAsignar() {
             const input = document.getElementById('buscador-por-asignar');
             if(!input) return;
@@ -235,22 +229,24 @@
             });
         }
 
+        // --- BUSCADOR DE LAS MESAS (IGNORA TILDES) ---
         function intentarAsignarDatalist(inputElem, mesaNum, capMax, capActual) {
-            const val = inputElem.value;
-            if(!val) return;
+            const valInput = quitarTildes(inputElem.value.toLowerCase().trim());
+            if(!valInput) return;
             
-            // Busca al comensal exacto por el nombre que seleccionó en la lista
-            const comensal = listaComensales.find(c => c.nombre_mostrar === val && (c.mesa === null || c.mesa === ""));
+            // Compara ignorando tildes y mayúsculas/minúsculas dentro de los no asignados
+            const comensal = listaComensales.find(c => {
+                if (c.mesa !== null && c.mesa !== "") return false;
+                return quitarTildes(c.nombre_mostrar.toLowerCase()) === valInput;
+            });
             
             if(!comensal) {
-                inputElem.value = ""; // Si escribió algo que no coincide o alguien ya asignado, se limpia.
+                inputElem.value = ""; 
                 return; 
             }
             
-            // Ejecutamos la asignación normal
             intentarAsignar(comensal.id_drag, mesaNum, capMax, capActual);
         }
-
 
         // --- DRAG & DROP ---
         function drag(ev, idDrag) { ev.dataTransfer.setData("text/plain", idDrag); }
