@@ -296,8 +296,9 @@
         let targetContador = null;
         let listaInvitadosGlobal = [];
 
-        // Función auxiliar para quitar tildes/acentos
+        // Función auxiliar para quitar tildes/acentos de forma segura
         function quitarTildes(str) {
+            if (!str) return "";
             return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         }
 
@@ -361,7 +362,7 @@
                 ${id > 1 ? `<div class="d-flex justify-content-between mb-3"><h5 class="serif m-0" style="color:var(--oro);">Familiar #${id}</h5><button type="button" class="btn-close" onclick="document.getElementById('invitado-${id}').remove()"></button></div>` : ''}
                 <div class="mb-3 position-relative">
                     <label class="form-label small fw-bold" style="color:var(--oro);">NOMBRE COMPLETO</label>
-                    <input type="text" class="form-control bg-transparent nombre-buscar" name="nombre" autocomplete=\"off\" placeholder="Escribe al menos 2 letras para buscar tu nombre..." required style="border:1px solid var(--oro);">
+                    <input type="text" class="form-control bg-transparent nombre-buscar" name="nombre" autocomplete="off" placeholder="Escribe tu nombre..." required style="border:1px solid var(--oro);">
                     <div class="sugerencias-container"></div>
                 </div>
                 <div class="datos-extra" style="display:none;">
@@ -421,19 +422,31 @@
             </div>`;
         }
 
-        // LÓGICA DINÁMICA DE EVENTOS (Actualizada)
+        // LÓGICA DINÁMICA DE EVENTOS (Actualizada y blindada)
         document.addEventListener('input', e => {
             if(e.target.classList.contains('nombre-buscar')) {
-                const b = e.target.closest('.bloque-invitado'), box = b.querySelector('.sugerencias-container');
+                const b = e.target.closest('.bloque-invitado');
+                const box = b.querySelector('.sugerencias-container');
+                
+                if (!e.target.value) {
+                    box.style.display = 'none';
+                    return;
+                }
                 
                 // Normalizamos el input del usuario para quitar tildes
                 const val = quitarTildes(e.target.value.toLowerCase().trim());
                 
                 // Requisito 2: Esperar al menos 2 letras
-                if(val.length < 2) { box.style.display = 'none'; return; }
+                if(val.length < 2) { 
+                    box.style.display = 'none'; 
+                    return; 
+                }
                 
-                // Requisito 1: Filtrar ignorando las tildes de la base de datos también
-                const filtrados = listaInvitadosGlobal.filter(n => quitarTildes(n.nombre.toLowerCase()).includes(val));
+                // Requisito 1: Filtrar ignorando las tildes de la base de datos también (y previniendo fallos si un nombre viene nulo)
+                const filtrados = listaInvitadosGlobal.filter(n => {
+                    if (!n.nombre) return false;
+                    return quitarTildes(n.nombre.toLowerCase()).includes(val);
+                });
                 
                 box.innerHTML = filtrados.map(n => `<div class="sugerencia-item" data-nombre="${n.nombre}" data-pareja="${n.pareja}">${n.nombre}</div>`).join('');
                 box.style.display = filtrados.length ? 'block' : 'none';
@@ -517,7 +530,10 @@
                 const nombre = b.querySelector('.nombre-buscar').value;
                 
                 // La validación final mantiene el nombre exacto como está en la BD para evitar problemas al guardar
-                const invitadoEnBD = listaInvitadosGlobal.find(inv => quitarTildes(inv.nombre.toLowerCase()) === quitarTildes(nombre.toLowerCase()));
+                const invitadoEnBD = listaInvitadosGlobal.find(inv => {
+                    if (!inv.nombre) return false;
+                    return quitarTildes(inv.nombre.toLowerCase()) === quitarTildes(nombre.toLowerCase());
+                });
                 
                 if (!invitadoEnBD) {
                     alert(`El nombre "${nombre}" no se encuentra en nuestra lista. Por favor, selecciónalo del listado desplegable al escribir.`);
