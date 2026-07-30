@@ -11,7 +11,6 @@
         .stat-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; border-top: 4px solid #b59a7a; height: 100%; display: flex; flex-direction: column; justify-content: center; transition: 0.3s;}
         .stat-card.static { border-top-color: #2d2d2d; cursor: default; }
         
-        /* Efectos para tarjetas filtrables */
         .stat-card.filtrable { cursor: pointer; }
         .stat-card.filtrable:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .stat-card.active-filter { background: #b59a7a; color: white; border-top: 4px solid #2d2d2d; }
@@ -37,20 +36,14 @@
             <button class="btn btn-outline-dark btn-sm fw-bold px-4" onclick="renderTabla('Todas')">Ver a Todos los Invitados</button>
         </div>
         
-        <!-- CONTADORES GLOBALES -->
         <div class="row g-2 g-md-3 mb-4">
-            <!-- Adultos sigue siendo estático -->
             <div class="col-6 col-md-3"><div class="stat-card static"><h6>Total Adultos</h6><div class="stat-val" id="adult-val">0</div></div></div>
-            <!-- Niños ahora es un filtro interactivo -->
             <div class="col-6 col-md-3"><div class="stat-card filtrable" id="card-ninos" onclick="renderTabla('Niños')"><h6>Total Niños</h6><div class="stat-val" id="nino-val">0</div></div></div>
         </div>
 
         <h5 class="mb-3" style="font-family: 'Playfair Display', serif;">Resumen de Platos Especiales <small class="text-muted fs-6 font-monospace">(Haz clic para filtrar)</small></h5>
         
-        <!-- CONTENEDOR DINÁMICO DE RESTRICCIONES -->
-        <div class="row g-2 g-md-3 mb-4" id="contenedor-dietas">
-            <!-- Las tarjetas se generan aquí con JavaScript -->
-        </div>
+        <div class="row g-2 g-md-3 mb-4" id="contenedor-dietas"></div>
 
         <div class="table-container">
             <h4 class="mb-3" id="titulo-tabla" style="font-family: 'Playfair Display', serif;">Todos los Comensales</h4>
@@ -89,10 +82,10 @@
                 let adultos = 0;
                 let ninos = 0;
                 let dietasDinamicas = {};
+                todosLosComensales = [];
 
-                // Procesar datos
                 confirmados.forEach(p => {
-                    // Procesar Principal
+                    // Lógica del Titular Principal
                     const infoMaestra = maestra.find(m => m.nombre === p.nombre_invitado);
                     const esNino = infoMaestra ? (infoMaestra.nino === 1) : false;
                     const mesaStr = p.mesa_numero ? `Mesa ${p.mesa_numero}` : `<span class="text-danger small">Sin mesa</span>`;
@@ -104,20 +97,26 @@
 
                     todosLosComensales.push({ nombre: p.nombre_invitado, mesa: mesaStr, dieta: dietaPrin, esNino: esNino });
 
-                    // Procesar Pareja
-                    if (p.lleva_pareja === "Sí" && p.nombre_pareja && p.nombre_pareja !== "-" && p.nombre_pareja.toLowerCase() !== "pendiente") {
-                        adultos++;
+                    // Lógica de la Pareja (Tratada como invitado independiente)
+                    if (p.lleva_pareja === "Sí") {
+                        adultos++; 
+                        
+                        let nombreP = (p.nombre_pareja && p.nombre_pareja !== "-" && p.nombre_pareja.toLowerCase() !== "pendiente") 
+                            ? `${p.nombre_pareja} (Pareja)` 
+                            : `Pareja de ${p.nombre_invitado}`;
+
+                        const mesaParejaStr = p.mesa_pareja ? `Mesa ${p.mesa_pareja}` : `<span class="text-danger small">Sin mesa</span>`;
+                        
                         let dietaPar = (p.dieta_pareja && p.dieta_pareja !== "-") ? p.dieta_pareja : "Ninguna";
                         if (dietaPar !== "Ninguna") dietasDinamicas[dietaPar] = (dietasDinamicas[dietaPar] || 0) + 1;
                         
-                        todosLosComensales.push({ nombre: p.nombre_pareja, mesa: mesaStr, dieta: dietaPar, esNino: false });
+                        todosLosComensales.push({ nombre: nombreP, mesa: mesaParejaStr, dieta: dietaPar, esNino: false });
                     }
                 });
 
                 document.getElementById('adult-val').innerText = adultos;
                 document.getElementById('nino-val').innerText = ninos;
                 
-                // Generar tarjetas dinámicas de dietas de forma segura
                 const contenedorDietas = document.getElementById('contenedor-dietas');
                 contenedorDietas.innerHTML = "";
                 tarjetasDietas = [];
@@ -151,17 +150,14 @@
                     contenedorDietas.appendChild(col);
                 }
 
-                // Mostrar todo al iniciar
                 renderTabla('Todas');
 
             } catch(e) { 
-                console.error(e);
                 document.getElementById('lista-tabla').innerHTML = `<tr><td colspan="4" class="text-center text-danger">Error de conexión. Recarga la página.</td></tr>`;
             }
         }
 
         function renderTabla(filtro) {
-            // Actualizar diseño de las tarjetas de restricciones
             tarjetasDietas.forEach(t => {
                 if(filtro !== 'Todas' && filtro !== 'Niños' && t.nombreDieta === filtro) {
                     t.elemento.classList.add('active-filter');
@@ -170,32 +166,18 @@
                 }
             });
 
-            // Actualizar diseño de la tarjeta de Niños
             const cardNinos = document.getElementById('card-ninos');
-            if (filtro === 'Niños') {
-                cardNinos.classList.add('active-filter');
-            } else {
-                cardNinos.classList.remove('active-filter');
-            }
+            if (filtro === 'Niños') cardNinos.classList.add('active-filter');
+            else cardNinos.classList.remove('active-filter');
             
-            // Actualizar título de la tabla
-            if (filtro === 'Todas') {
-                document.getElementById('titulo-tabla').innerText = 'Todos los Comensales';
-            } else if (filtro === 'Niños') {
-                document.getElementById('titulo-tabla').innerText = 'Filtrando por: Menú Infantil (Niños)';
-            } else {
-                document.getElementById('titulo-tabla').innerText = `Filtrando por: ${filtro}`;
-            }
+            if (filtro === 'Todas') document.getElementById('titulo-tabla').innerText = 'Todos los Comensales';
+            else if (filtro === 'Niños') document.getElementById('titulo-tabla').innerText = 'Filtrando por: Menú Infantil (Niños)';
+            else document.getElementById('titulo-tabla').innerText = `Filtrando por: ${filtro}`;
 
-            // Filtrar listado de comensales
             let filtrados = todosLosComensales;
-            if (filtro === 'Niños') {
-                filtrados = todosLosComensales.filter(c => c.esNino);
-            } else if (filtro !== 'Todas') {
-                filtrados = todosLosComensales.filter(c => c.dieta === filtro);
-            }
+            if (filtro === 'Niños') filtrados = todosLosComensales.filter(c => c.esNino);
+            else if (filtro !== 'Todas') filtrados = todosLosComensales.filter(c => c.dieta === filtro);
 
-            // Dibujar tabla (Protegido contra XSS)
             let html = "";
             filtrados.forEach(c => {
                 html += `<tr>
@@ -209,7 +191,6 @@
             document.getElementById('lista-tabla').innerHTML = html || `<tr><td colspan="4" class="text-center text-muted">No hay comensales en esta categoría.</td></tr>`;
         }
 
-        // Función de seguridad por si algún invitado escribe código HTML en "Otro"
         function escapeHTML(str) {
             return str.replace(/[&<>'"]/g, tag => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
