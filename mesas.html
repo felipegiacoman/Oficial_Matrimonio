@@ -9,19 +9,18 @@
     <style>
         body { background: #f4f1ea; font-family: 'Montserrat', sans-serif; overflow-x: hidden; }
         
-        /* PANTALLA DE BLOQUEO */
         #pantalla-bloqueo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #f4f1ea; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
         .login-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; max-width: 90%; width: 400px; border-top: 4px solid #b59a7a; }
         
         .mesa-card { background: white; border-radius: 8px; border-top: 4px solid #b59a7a; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; transition: 0.2s;}
         .mesa-novios { border-top: 4px solid #d4af37; background: #fffcf5; }
+        
         .guest-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; background: white;}
         .guest-item:last-child { border-bottom: none; }
-        
-        /* ESTILOS PARA ARRASTRAR Y SOLTAR */
         .draggable-guest { cursor: grab; transition: background 0.2s; border-radius: 4px; }
         .draggable-guest:hover { background: #fdfbf7; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .draggable-guest:active { cursor: grabbing; }
+        
         .drop-zone { min-height: 100px; padding: 10px; margin: -10px; border-radius: 8px; border: 2px dashed transparent; transition: 0.2s; }
         .drop-zone.dragover { border-color: #b59a7a; background: rgba(181, 154, 122, 0.05); }
 
@@ -37,7 +36,7 @@
     <div id="pantalla-bloqueo">
         <div class="login-box">
             <h3 class="mb-2" style="font-family: 'Playfair Display', serif;">Gestor de Mesas</h3>
-            <p class="text-muted small mb-4">Ingresa el código de acceso exclusivo para los novios.</p>
+            <p class="text-muted small mb-4">Ingresa el código de acceso exclusivo.</p>
             <input type="password" id="input-pin" class="form-control text-center mb-3 fw-bold" placeholder="PIN" style="letter-spacing: 5px; font-size: 1.2rem;">
             <button class="btn btn-gold w-100 py-2 fw-bold" onclick="verificarPIN()">Desbloquear</button>
             <p id="error-pin" class="text-danger small mt-3 mb-0" style="display: none;">PIN incorrecto, intenta nuevamente.</p>
@@ -46,21 +45,18 @@
 
     <div id="contenido-principal" class="p-3 p-md-4" style="display: none;">
         <div class="container-fluid">
-            <h2 class="mb-4 text-center text-md-start" style="font-family: 'Playfair Display', serif;">Gestor de Mesas (Novios)</h2>
+            <h2 class="mb-4 text-center text-md-start" style="font-family: 'Playfair Display', serif;">Gestor de Mesas</h2>
             
             <div class="row">
-                <!-- PANEL: COMENSALES SIN ASIGNAR -->
                 <div class="col-12 col-lg-3 mb-4">
                     <div class="bg-white p-3 rounded shadow-sm">
                         <h5 class="mb-3">Por Asignar (<span id="count-sin-asignar">0</span>)</h5>
-                        <!-- ZONA DE SOLTADO: Para devolver invitados a la lista -->
                         <div id="lista-sin-asignar" class="drop-zone" style="max-height: 70vh; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, null, 999, 0)">
                             Cargando...
                         </div>
                     </div>
                 </div>
 
-                <!-- PANEL: MESAS -->
                 <div class="col-12 col-lg-9">
                     <div class="d-flex flex-column flex-md-row gap-2 gap-md-3 mb-4 bg-white p-3 rounded shadow-sm align-items-md-end">
                         <div class="w-100" style="max-width: 200px;">
@@ -76,7 +72,6 @@
                             <button class="btn btn-outline-dark btn-sm w-100 py-2" onclick="crearMesaNovios()"><i class="bi bi-star-fill text-warning me-1"></i>Mesa Novios</button>
                         </div>
                     </div>
-                    
                     <div class="row" id="contenedor-mesas"></div>
                 </div>
             </div>
@@ -85,13 +80,11 @@
 
     <script>
         let SCRIPT_URL = "";
-        let dataConfirmados = [];
+        let listaComensales = [];
         let dataMesas = [];
 
-        // LÓGICA DEL PIN
         function verificarPIN() {
-            const pin = document.getElementById('input-pin').value;
-            if (pin === "336336336") {
+            if (document.getElementById('input-pin').value === "336336336") {
                 document.getElementById('pantalla-bloqueo').style.display = "none";
                 document.getElementById('contenido-principal').style.display = "block";
                 init(); 
@@ -105,7 +98,6 @@
             if (e.key === 'Enter') verificarPIN();
         });
 
-        // INICIALIZACIÓN
         async function init() {
             const cfg = await (await fetch('config.json')).json();
             SCRIPT_URL = cfg.worker_url;
@@ -114,44 +106,60 @@
 
         async function recargarDatos() {
             const [resConf, resMesas] = await Promise.all([fetch(SCRIPT_URL + "?action=confirmados"), fetch(SCRIPT_URL + "?action=mesas")]);
-            dataConfirmados = await resConf.json();
+            const dataConfirmados = await resConf.json();
             dataMesas = await resMesas.json();
+            
+            // Transformar la data: Cada persona (titular o pareja) es un elemento separado
+            listaComensales = [];
+            dataConfirmados.forEach(c => {
+                // Titular
+                listaComensales.push({
+                    id_drag: `prin_${c.nombre_invitado}`,
+                    nombre_mostrar: c.nombre_invitado,
+                    nombre_principal: c.nombre_invitado,
+                    es_pareja: false,
+                    mesa: c.mesa_numero
+                });
+                // Pareja
+                if (c.lleva_pareja === "Sí") {
+                    let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") 
+                        ? `${c.nombre_pareja} (Pareja de ${c.nombre_invitado})` 
+                        : `Pareja de ${c.nombre_invitado}`;
+                        
+                    listaComensales.push({
+                        id_drag: `par_${c.nombre_invitado}`,
+                        nombre_mostrar: nombreP,
+                        nombre_principal: c.nombre_invitado,
+                        es_pareja: true,
+                        mesa: c.mesa_pareja
+                    });
+                }
+            });
             dibujarInterfaz();
         }
 
-        function calcularSillasOcupadas(invitado) {
-            return (invitado.lleva_pareja === "Sí" && invitado.nombre_pareja && invitado.nombre_pareja !== "-" && invitado.nombre_pareja.toLowerCase() !== "pendiente") ? 2 : 1;
-        }
-
         function dibujarInterfaz() {
-            const sinAsignar = dataConfirmados.filter(c => c.mesa_numero === null || c.mesa_numero === "");
-            let totalSinAsignarSillas = 0;
+            const sinAsignar = listaComensales.filter(c => c.mesa === null || c.mesa === "");
             let htmlSinAsignar = "";
             
             sinAsignar.forEach(c => {
-                const sillas = calcularSillasOcupadas(c);
-                totalSinAsignarSillas += sillas;
-                // Agregados atributos drag&drop
-                htmlSinAsignar += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.nombre_invitado}')">
-                    <div><i class="bi bi-grip-vertical text-muted me-1"></i><strong>${c.nombre_invitado}</strong> ${sillas === 2 ? '<span class="badge bg-secondary">+ Pareja</span>' : ''}</div>
+                htmlSinAsignar += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
+                    <div><i class="bi bi-grip-vertical text-muted me-1"></i><strong style="font-size:0.8rem">${c.nombre_mostrar}</strong></div>
                 </div>`;
             });
-            document.getElementById('count-sin-asignar').innerText = totalSinAsignarSillas;
+            document.getElementById('count-sin-asignar').innerText = sinAsignar.length;
             document.getElementById('lista-sin-asignar').innerHTML = htmlSinAsignar || "<p class='text-muted small mt-2'>Todos tienen mesa asignada.</p>";
 
             let htmlMesas = "";
             dataMesas.forEach(mesa => {
-                const ocupantes = dataConfirmados.filter(c => c.mesa_numero !== null && c.mesa_numero !== "" && parseInt(c.mesa_numero) === parseInt(mesa.numero));
-                let sillasOcupadas = 0;
+                const ocupantes = listaComensales.filter(c => c.mesa !== null && c.mesa !== "" && parseInt(c.mesa) === parseInt(mesa.numero));
+                let sillasOcupadas = ocupantes.length; // Cada persona es 1 silla
                 let htmlOcupantes = "";
                 
                 ocupantes.forEach(c => {
-                    const sillas = calcularSillasOcupadas(c);
-                    sillasOcupadas += sillas;
-                    // Agregados atributos drag&drop
-                    htmlOcupantes += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.nombre_invitado}')">
-                        <span><i class="bi bi-grip-vertical text-muted me-1"></i>${c.nombre_invitado} ${sillas === 2 ? '<span class="badge bg-light text-dark shadow-sm border" style="font-size:0.7rem;">+1</span>' : ''}</span>
-                        <button class="btn btn-sm text-danger p-0 m-0" onclick="asignarMesa('${c.nombre_invitado}', null)"><i class="bi bi-x-circle"></i></button>
+                    htmlOcupantes += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
+                        <span style="font-size:0.75rem"><i class="bi bi-grip-vertical text-muted me-1"></i>${c.nombre_mostrar}</span>
+                        <button class="btn btn-sm text-danger p-0 m-0" onclick="asignarMesa('${c.id_drag}', null)"><i class="bi bi-x-circle"></i></button>
                     </div>`;
                 });
 
@@ -164,7 +172,7 @@
 
                 let opcionesSinAsignar = `<option value="">+ Agregar a mesa...</option>`;
                 sinAsignar.forEach(c => {
-                    opcionesSinAsignar += `<option value="${c.nombre_invitado}">${c.nombre_invitado} (${calcularSillasOcupadas(c)} sillas)</option>`;
+                    opcionesSinAsignar += `<option value="${c.id_drag}">${c.nombre_mostrar}</option>`;
                 });
 
                 htmlMesas += `
@@ -180,9 +188,8 @@
                             ${badgeHtml}
                         </div>
                         
-                        <!-- ZONA DE SOLTADO: Para meter invitados a la mesa -->
                         <div class="mb-3 drop-zone" style="max-height: 250px; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
-                            ${htmlOcupantes || '<div class="text-muted small mt-2">Arrastra un invitado aquí o usa la lista de abajo...</div>'}
+                            ${htmlOcupantes || '<div class="text-muted small mt-2">Arrastra un invitado aquí...</div>'}
                         </div>
                         
                         <select class="form-select form-select-sm mt-2" onchange="intentarAsignar(this.value, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
@@ -194,54 +201,31 @@
             document.getElementById('contenedor-mesas').innerHTML = htmlMesas;
         }
 
-        // --- LÓGICA DE DRAG & DROP ---
-        function drag(ev, nombreInvitado) {
-            ev.dataTransfer.setData("text/plain", nombreInvitado);
-        }
-
-        function allowDrop(ev) {
-            ev.preventDefault();
-            const dropZone = ev.target.closest('.drop-zone');
-            if(dropZone) dropZone.classList.add('dragover');
-        }
-
-        function leaveDrop(ev) {
-            const dropZone = ev.target.closest('.drop-zone');
-            if(dropZone) dropZone.classList.remove('dragover');
-        }
-
+        // --- DRAG & DROP ---
+        function drag(ev, idDrag) { ev.dataTransfer.setData("text/plain", idDrag); }
+        function allowDrop(ev) { ev.preventDefault(); const d = ev.target.closest('.drop-zone'); if(d) d.classList.add('dragover'); }
+        function leaveDrop(ev) { const d = ev.target.closest('.drop-zone'); if(d) d.classList.remove('dragover'); }
         function drop(ev, mesaNum, capMax, capActual) {
             ev.preventDefault();
-            const dropZone = ev.target.closest('.drop-zone');
-            if(dropZone) dropZone.classList.remove('dragover');
-
-            const nombreInvitado = ev.dataTransfer.getData("text/plain");
-            if (!nombreInvitado) return;
-
-            // Si lo soltaron en la lista de "Por Asignar", quitamos su mesa
-            if (mesaNum === null) {
-                asignarMesa(nombreInvitado, null);
-                return;
-            }
-
-            intentarAsignar(nombreInvitado, mesaNum, capMax, capActual);
+            const d = ev.target.closest('.drop-zone');
+            if(d) d.classList.remove('dragover');
+            const idDrag = ev.dataTransfer.getData("text/plain");
+            if (!idDrag) return;
+            if (mesaNum === null) { asignarMesa(idDrag, null); return; }
+            intentarAsignar(idDrag, mesaNum, capMax, capActual);
         }
 
-        // --- LÓGICA DE GESTIÓN DE MESAS ---
+        // --- GESTIÓN DE MESAS ---
         function obtenerSiguienteNumero() {
             const numeros = dataMesas.map(m => parseInt(m.numero)).filter(n => n > 0).sort((a,b) => a-b);
             let proximo = 1;
-            for (let i = 0; i < numeros.length; i++) {
-                if (numeros[i] === proximo) proximo++;
-                else break; 
-            }
+            for (let i = 0; i < numeros.length; i++) { if (numeros[i] === proximo) proximo++; else break; }
             return proximo;
         }
 
         async function crearMesaNormal() {
             const cap = document.getElementById('nueva-mesa-cap').value;
-            const num = obtenerSiguienteNumero();
-            await crearMesa(num, cap);
+            await crearMesa(obtenerSiguienteNumero(), cap);
         }
 
         async function crearMesaNovios() {
@@ -257,9 +241,9 @@
         }
 
         async function eliminarMesa(num) {
-            if(!confirm(`¿Estás seguro de eliminar la Mesa ${num}? Los invitados volverán a "Por Asignar".`)) return;
+            if(!confirm(`¿Estás seguro de eliminar la Mesa ${num}?`)) return;
             dataMesas = dataMesas.filter(m => parseInt(m.numero) !== parseInt(num));
-            dataConfirmados.forEach(c => { if(parseInt(c.mesa_numero) === parseInt(num)) c.mesa_numero = null; });
+            listaComensales.forEach(c => { if(parseInt(c.mesa) === parseInt(num)) c.mesa = null; });
             dibujarInterfaz();
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "eliminar_mesa", numero: num }) });
         }
@@ -267,12 +251,11 @@
         async function cambiarNumero(viejoNum) {
             const nuevoNum = prompt(`Cambiar Mesa ${viejoNum} al número:`);
             if(!nuevoNum || isNaN(nuevoNum) || parseInt(nuevoNum) === parseInt(viejoNum)) return;
-            
             if(dataMesas.some(m => parseInt(m.numero) === parseInt(nuevoNum))) return alert("Ese número de mesa ya está ocupado.");
-
+            
             const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(viejoNum));
             if(mesa) mesa.numero = nuevoNum;
-            dataConfirmados.forEach(c => { if(parseInt(c.mesa_numero) === parseInt(viejoNum)) c.mesa_numero = nuevoNum; });
+            listaComensales.forEach(c => { if(parseInt(c.mesa) === parseInt(viejoNum)) c.mesa = nuevoNum; });
             dibujarInterfaz();
 
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "cambiar_numero_mesa", viejo_numero: viejoNum, nuevo_numero: nuevoNum }) });
@@ -281,40 +264,36 @@
         }
 
         async function cambiarCapacidad(numero, capActual) {
-            const nuevaCap = prompt(`Mesa ${numero} (Capacidad actual: ${capActual})\nIngresa la nueva cantidad de sillas para esta mesa:`, capActual);
+            const nuevaCap = prompt(`Ingresa la nueva cantidad de sillas:`, capActual);
             if(!nuevaCap || isNaN(nuevaCap) || parseInt(nuevaCap) <= 0 || parseInt(nuevaCap) === parseInt(capActual)) return;
-
             const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(numero));
             if(mesa) mesa.capacidad = parseInt(nuevaCap);
             dibujarInterfaz();
-
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap) }) });
             recargarDatos();
         }
 
-        function intentarAsignar(nombreInvitado, mesaNum, capMax, capActual) {
-            if(!nombreInvitado) return;
-            const invitado = dataConfirmados.find(c => c.nombre_invitado === nombreInvitado);
-            if (!invitado) return;
-
-            // Si el invitado ya está en esa misma mesa, no hacemos nada (evita errores al arrastrar sobre su propia mesa)
-            if (invitado.mesa_numero !== null && parseInt(invitado.mesa_numero) === parseInt(mesaNum)) return;
-
-            const sillas = calcularSillasOcupadas(invitado);
-            
-            if(parseInt(capMax) !== 999 && (capActual + sillas > capMax)) {
-                alert(`¡Faltan sillas! Esta persona ocupa ${sillas} lugares y solo quedan ${capMax - capActual} disponibles en la Mesa ${mesaNum}.`);
-                dibujarInterfaz(); 
+        function intentarAsignar(idDrag, mesaNum, capMax, capActual) {
+            if(!idDrag) return;
+            const comensal = listaComensales.find(c => c.id_drag === idDrag);
+            if (!comensal || (comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum))) return;
+            if(parseInt(capMax) !== 999 && (capActual + 1 > capMax)) {
+                alert(`¡Faltan sillas! Solo quedan ${capMax - capActual} disponibles en la Mesa ${mesaNum}.`);
                 return;
             }
-            asignarMesa(nombreInvitado, mesaNum);
+            asignarMesa(idDrag, mesaNum);
         }
 
-        async function asignarMesa(nombre, mesaNum) {
-            const invitado = dataConfirmados.find(c => c.nombre_invitado === nombre);
-            if(invitado) invitado.mesa_numero = mesaNum;
+        async function asignarMesa(idDrag, mesaNum) {
+            const comensal = listaComensales.find(c => c.id_drag === idDrag);
+            if(comensal) comensal.mesa = mesaNum;
             dibujarInterfaz();
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "asignar_mesa", nombre_invitado: nombre, mesa_numero: mesaNum }) });
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ 
+                tipo: "asignar_mesa", 
+                nombre_principal: comensal.nombre_principal, 
+                es_pareja: comensal.es_pareja,
+                mesa_numero: mesaNum 
+            })});
         }
     </script>
 </body>

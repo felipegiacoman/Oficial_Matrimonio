@@ -9,7 +9,6 @@
     <style>
         body { background: #f4f1ea; font-family: 'Montserrat', sans-serif; overflow-x: hidden; }
         
-        /* PANTALLA DE BLOQUEO */
         #pantalla-bloqueo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #f4f1ea; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
         .login-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; max-width: 90%; width: 400px; border-top: 4px solid #b59a7a; }
         
@@ -20,7 +19,6 @@
         .btn-gold { background: #b59a7a; color: white; border: none; }
         .btn-gold:hover { background: #2d2d2d; color: white; }
         
-        /* AUTOCOMPLETADO */
         .sugerencias-container { position: absolute; z-index: 1050; background: white; width: 100%; max-height: 200px; overflow-y: auto; border: 1px solid #b59a7a; border-top: none; border-radius: 0 0 4px 4px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .sugerencia-item { cursor: pointer; padding: 10px 15px; border-bottom: 1px solid #f2ece4; font-size: 0.9rem; }
         .sugerencia-item:last-child { border-bottom: none; }
@@ -45,7 +43,6 @@
     <div id="contenido-principal" class="container-fluid container-xl" style="display: none;">
         <h2 class="mb-4 text-center text-md-start" style="font-family: 'Playfair Display', serif; color: #2d2d2d;">Estado de Confirmaciones</h2>
         
-        <!-- Contadores -->
         <div class="row g-3 mb-4">
             <div class="col-6 col-md-4">
                 <div class="stat-card">
@@ -67,48 +64,40 @@
             </div>
         </div>
 
-        <!-- Pestañas -->
         <div class="table-container">
             <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="confirmados-tab" data-bs-toggle="tab" data-bs-target="#tab-confirmados" type="button" role="tab">Lista de Confirmados</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="cancelados-tab" data-bs-toggle="tab" data-bs-target="#tab-cancelados" type="button" role="tab">Lista de Cancelados</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link text-danger" id="gestionar-tab" data-bs-toggle="tab" data-bs-target="#tab-gestionar" type="button" role="tab"><i class="bi bi-x-circle me-1"></i>Cancelar Invitado</button>
-                </li>
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-confirmados" type="button">Lista de Confirmados</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-cancelados" type="button">Lista de Cancelados</button></li>
+                <li class="nav-item"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#tab-gestionar" type="button"><i class="bi bi-x-circle me-1"></i>Cancelar Invitado</button></li>
             </ul>
 
-            <div class="tab-content" id="myTabContent">
-                <!-- PESTAÑA: CONFIRMADOS -->
-                <div class="tab-pane fade show active" id="tab-confirmados" role="tabpanel">
+            <div class="tab-content">
+                <!-- PESTAÑA CONFIRMADOS -->
+                <div class="tab-pane fade show active" id="tab-confirmados">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle text-nowrap">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Invitado Principal</th>
+                                    <th>Nombre del Comensal</th>
+                                    <th>Tipo de Invitado</th>
                                     <th>Teléfono</th>
-                                    <th>Restricción (Principal)</th>
-                                    <th>Pareja Confirmada</th>
-                                    <th>Restricción (Pareja)</th>
+                                    <th>Restricción Alimentaria</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-confirmados">
-                                <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
+                                <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- PESTAÑA: CANCELADOS -->
-                <div class="tab-pane fade" id="tab-cancelados" role="tabpanel">
+                <!-- PESTAÑA CANCELADOS -->
+                <div class="tab-pane fade" id="tab-cancelados">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle text-nowrap">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Nombre del Invitado</th>
+                                    <th>Nombre del Comensal</th>
                                     <th>Mensaje / Motivo</th>
                                 </tr>
                             </thead>
@@ -119,12 +108,12 @@
                     </div>
                 </div>
 
-                <!-- PESTAÑA: GESTIONAR CANCELACIONES -->
-                <div class="tab-pane fade" id="tab-gestionar" role="tabpanel">
+                <!-- PESTAÑA CANCELAR MANUALMENTE -->
+                <div class="tab-pane fade" id="tab-gestionar">
                     <div class="row justify-content-center py-4">
                         <div class="col-md-8 col-lg-6 bg-light p-4 rounded border">
-                            <h5 class="mb-3 text-center" style="font-family: 'Playfair Display', serif;">Bajar a un invitado</h5>
-                            <p class="text-muted small text-center mb-4">Busca al invitado en la lista maestra y cancélalo manualmente. Si estaba confirmado, se borrará de la tabla de asistencia automáticamente.</p>
+                            <h5 class="mb-3 text-center" style="font-family: 'Playfair Display', serif;">Dar de baja a un invitado</h5>
+                            <p class="text-muted small text-center mb-4">Busca a la persona (titular o pareja). Si cancelas al titular, su pareja se bajará automáticamente.</p>
                             
                             <div class="mb-3 position-relative">
                                 <label class="form-label fw-bold small">Nombre del Comensal</label>
@@ -146,6 +135,7 @@
         let dataMaestra = [];
         let dataConfirmados = [];
         let dataCancelados = [];
+        let listaCancelables = []; // Lista unificada para el buscador
         let invitadoSeleccionadoParaCancelar = null;
 
         function verificarPIN() {
@@ -169,11 +159,9 @@
         }
 
         async function init() {
-            try {
-                const cfg = await (await fetch('config.json')).json();
-                SCRIPT_URL = cfg.worker_url;
-                await cargarDatos();
-            } catch(e) { alert("Error cargando configuración."); }
+            const cfg = await (await fetch('config.json')).json();
+            SCRIPT_URL = cfg.worker_url;
+            await cargarDatos();
         }
 
         async function cargarDatos() {
@@ -191,29 +179,45 @@
         }
 
         function dibujarPaneles() {
-            // Contadores
             let totalConfirmadosPersonas = 0;
             let htmlConf = "";
+            listaCancelables = []; 
             
-            dataConfirmados.forEach(c => {
-                totalConfirmadosPersonas++; // Suma al principal
-                let textoPareja = '<span class="text-muted small">Sin pareja</span>';
-                if (c.lleva_pareja === "Sí") {
-                    totalConfirmadosPersonas++; // Suma a la pareja
-                    textoPareja = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja !== "Pendiente") ? `<strong>${c.nombre_pareja}</strong>` : `<span class="text-warning small"><i class="bi bi-clock-history"></i> Pendiente confirmar nombre</span>`;
-                }
+            // Llenar datos de los cancelables con la lista maestra base
+            dataMaestra.forEach(m => {
+                listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false });
+            });
 
+            // Dibujar tabla y extraer parejas como entidades separadas
+            dataConfirmados.forEach(c => {
+                totalConfirmadosPersonas++; // Suma al titular
                 htmlConf += `<tr>
                     <td><strong>${escapeHTML(c.nombre_invitado)}</strong></td>
+                    <td><span class="badge bg-primary">Titular</span></td>
                     <td>${escapeHTML(c.telefono || '-')}</td>
                     <td>${escapeHTML(c.dieta || 'Ninguna')}</td>
-                    <td>${textoPareja}</td>
-                    <td>${c.lleva_pareja === "Sí" ? escapeHTML(c.dieta_pareja || 'Ninguna') : '-'}</td>
                 </tr>`;
+
+                if (c.lleva_pareja === "Sí") {
+                    totalConfirmadosPersonas++; // Suma a la pareja
+                    let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") 
+                        ? `${c.nombre_pareja} (Pareja de ${c.nombre_invitado})` 
+                        : `Pareja de ${c.nombre_invitado}`;
+                        
+                    htmlConf += `<tr style="background-color: #fdfbf7;">
+                        <td class="ps-4">↳ <strong>${escapeHTML(nombreP)}</strong></td>
+                        <td><span class="badge bg-secondary">Pareja</span></td>
+                        <td>-</td>
+                        <td>${escapeHTML(c.dieta_pareja || 'Ninguna')}</td>
+                    </tr>`;
+                    
+                    // Agregar pareja a la lista de personas que se pueden cancelar
+                    listaCancelables.push({ nombre_mostrar: nombreP, nombre_principal: c.nombre_invitado, es_pareja: true });
+                }
             });
 
             document.getElementById('val-confirmados').innerText = totalConfirmadosPersonas;
-            document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="5" class="text-center text-muted">Aún no hay confirmaciones.</td></tr>`;
+            document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="4" class="text-center text-muted">Aún no hay confirmaciones.</td></tr>`;
 
             // Tabla Cancelados
             let htmlCanc = "";
@@ -226,7 +230,7 @@
             document.getElementById('val-cancelados').innerText = dataCancelados.length;
             document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay cancelaciones registradas.</td></tr>`;
 
-            // Pendientes (Total maestra * 1 o 2 dependiendo si tienen pareja, menos los que ya respondieron)
+            // Pendientes (Sillas totales maestras - los que ya confirmaron/cancelaron)
             let potencialTotal = 0;
             dataMaestra.forEach(m => { potencialTotal += (parseInt(m.pareja) === 1 ? 2 : 1); });
             let pendientes = potencialTotal - (totalConfirmadosPersonas + dataCancelados.length);
@@ -245,27 +249,32 @@
             const val = quitarTildes(this.value.toLowerCase().trim());
             if (val.length < 2) { boxSugerencias.style.display = 'none'; return; }
 
-            // Filtramos a los de la lista maestra que NO estén ya en la tabla de cancelados
-            const filtrados = dataMaestra.filter(n => {
-                if (!n.nombre) return false;
-                const yaCancelado = dataCancelados.some(c => quitarTildes(c.nombre.toLowerCase()) === quitarTildes(n.nombre.toLowerCase()));
-                return !yaCancelado && quitarTildes(n.nombre.toLowerCase()).includes(val);
+            // Buscamos en la lista maestra unificada (titulares y parejas extraídas)
+            const filtrados = listaCancelables.filter(n => {
+                if (!n.nombre_mostrar) return false;
+                const yaCancelado = dataCancelados.some(c => quitarTildes(c.nombre.toLowerCase()) === quitarTildes(n.nombre_mostrar.toLowerCase()));
+                return !yaCancelado && quitarTildes(n.nombre_mostrar.toLowerCase()).includes(val);
             });
 
-            boxSugerencias.innerHTML = filtrados.map(n => `<div class="sugerencia-item" onclick="seleccionarParaCancelar('${n.nombre}')">${n.nombre}</div>`).join('');
+            boxSugerencias.innerHTML = filtrados.map(n => `<div class="sugerencia-item" onclick="seleccionarParaCancelar('${n.nombre_principal}', ${n.es_pareja}, '${n.nombre_mostrar}')">${n.nombre_mostrar}</div>`).join('');
             boxSugerencias.style.display = filtrados.length ? 'block' : 'none';
         });
 
-        function seleccionarParaCancelar(nombre) {
-            inputBusqueda.value = nombre;
-            invitadoSeleccionadoParaCancelar = nombre;
+        function seleccionarParaCancelar(nombre_principal, es_pareja, nombre_mostrar) {
+            inputBusqueda.value = nombre_mostrar;
+            invitadoSeleccionadoParaCancelar = { nombre_principal, es_pareja, nombre_mostrar };
             boxSugerencias.style.display = 'none';
             btnEjecutar.disabled = false;
         }
 
         async function ejecutarCancelacion() {
             if (!invitadoSeleccionadoParaCancelar) return;
-            if (!confirm(`¿Estás seguro de cancelar la asistencia de ${invitadoSeleccionadoParaCancelar}?\nEsto lo sacará de la lista de confirmados (y a su pareja, si la tiene).`)) return;
+            
+            let mensajeConfirm = invitadoSeleccionadoParaCancelar.es_pareja 
+                ? `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?\nEl titular principal seguirá confirmado.`
+                : `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?\nSe dará de baja a esta persona y a su pareja automáticamente.`;
+
+            if (!confirm(mensajeConfirm)) return;
 
             btnEjecutar.innerText = "Procesando...";
             btnEjecutar.disabled = true;
@@ -274,13 +283,17 @@
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tipo: "admin_cancelar", nombre: invitadoSeleccionadoParaCancelar })
+                    body: JSON.stringify({ 
+                        tipo: "admin_cancelar", 
+                        nombre_principal: invitadoSeleccionadoParaCancelar.nombre_principal,
+                        es_pareja: invitadoSeleccionadoParaCancelar.es_pareja
+                    })
                 });
                 
                 inputBusqueda.value = "";
                 btnEjecutar.innerText = "Mover a Cancelados";
-                await cargarDatos(); // Recargar tablas y contadores al instante
-                alert("Invitado cancelado exitosamente.");
+                await cargarDatos(); 
+                alert("Cancelación procesada exitosamente.");
             } catch(e) {
                 alert("Hubo un error al cancelar.");
                 btnEjecutar.innerText = "Mover a Cancelados";
