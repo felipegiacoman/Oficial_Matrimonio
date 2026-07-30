@@ -68,7 +68,7 @@
 
     <!-- CONTENIDO PRINCIPAL -->
     <div id="contenido-principal" class="container-fluid container-xl" style="display: none;">
-        <h2 class="mb-4 text-center text-md-start" style="font-family: 'Playfair Display', serif; color: #2d2d2d;">Gestión del Matrimonio</h2>
+        <h2 id="titulo-principal" class="mb-4 text-center text-md-start" style="font-family: 'Playfair Display', serif; color: #2d2d2d;">Gestión del Matrimonio</h2>
         
         <!-- NAVEGACIÓN SUPERIOR UNIFICADA -->
         <ul class="nav nav-pills mb-4 flex-column flex-md-row gap-2" id="pills-tab" role="tablist">
@@ -252,11 +252,19 @@
         let tarjetasDietas = []; // Botones de filtro
         let invitadoSeleccionadoParaCancelar = null;
 
-        // --- SISTEMA DE INGRESO ---
+        // --- SISTEMA DE INGRESO INTELIGENTE ---
         function verificarPIN() {
-            if (document.getElementById('input-pin').value === "336336336") {
+            const pin = document.getElementById('input-pin').value.toLowerCase().trim();
+            if (pin === "336336336" || pin === "banquetera") {
                 document.getElementById('pantalla-bloqueo').style.display = "none";
                 document.getElementById('contenido-principal').style.display = "block";
+                
+                // Si entra la banquetera, escondemos las pestañas y adaptamos el título
+                if (pin === "banquetera") {
+                    document.getElementById('pills-tab').style.display = "none";
+                    document.getElementById('titulo-principal').innerText = "Panel de Banquetería";
+                }
+                
                 init(); 
             } else {
                 document.getElementById('error-pin').style.display = "block";
@@ -304,7 +312,6 @@
             listaComensalesGenerales = [];
             listaCancelables = [];
             
-            // Poblar cancelables con lista maestra (por si no han confirmado pero quiero cancelarlos)
             dataMaestra.forEach(m => {
                 listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false });
             });
@@ -338,7 +345,7 @@
                         es_pareja: true,
                         mesa: c.mesa_pareja,
                         dieta: c.dieta_pareja || 'Ninguna',
-                        esNino: false, // Las parejas son adultos
+                        esNino: false, 
                         telefono: "-"
                     });
                     
@@ -390,7 +397,6 @@
         }
 
         function renderTablaBanqueteria(filtro) {
-            // Actualizar diseño botones
             tarjetasDietas.forEach(t => {
                 if(filtro !== 'Todas' && filtro !== 'Niños' && t.nombreDieta === filtro) t.elemento.classList.add('active-filter');
                 else t.elemento.classList.remove('active-filter');
@@ -399,7 +405,6 @@
             if (filtro === 'Niños') cardNinos.classList.add('active-filter');
             else cardNinos.classList.remove('active-filter');
             
-            // Actualizar Título
             if (filtro === 'Todas') document.getElementById('titulo-tabla-banqueteria').innerText = 'Todos los Comensales';
             else if (filtro === 'Niños') document.getElementById('titulo-tabla-banqueteria').innerText = 'Filtrando por: Menú Infantil (Niños)';
             else document.getElementById('titulo-tabla-banqueteria').innerText = `Filtrando por: ${filtro}`;
@@ -407,7 +412,6 @@
             let html = "";
             
             if (filtro === 'Todas') {
-                // Iterar sobre dataConfirmados para mantener el emparejamiento visual Titular -> Pareja
                 dataConfirmados.forEach(c => {
                     const infoMaestra = dataMaestra.find(m => m.nombre === c.nombre_invitado);
                     const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
@@ -435,7 +439,6 @@
                     }
                 });
             } else {
-                // Si filtra, mostrar lista plana de los que coincidan
                 listaComensalesGenerales.forEach(c => {
                     let match = false;
                     if (filtro === 'Niños' && c.esNino) match = true;
