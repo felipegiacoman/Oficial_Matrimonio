@@ -29,6 +29,9 @@
         .action-icon { cursor: pointer; color: #888; transition: 0.2s; font-size: 1.1rem;}
         .action-icon:hover { color: #2d2d2d; }
         .trash-icon:hover { color: #dc3545; }
+        
+        /* Ajuste visual para el buscador datalist */
+        input::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -48,15 +51,21 @@
             <h2 class="mb-4 text-center text-md-start" style="font-family: 'Playfair Display', serif;">Gestor de Mesas</h2>
             
             <div class="row">
+                <!-- PANEL: POR ASIGNAR -->
                 <div class="col-12 col-lg-3 mb-4">
                     <div class="bg-white p-3 rounded shadow-sm">
                         <h5 class="mb-3">Por Asignar (<span id="count-sin-asignar">0</span>)</h5>
-                        <div id="lista-sin-asignar" class="drop-zone" style="max-height: 70vh; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, null, 999, 0)">
+                        
+                        <!-- NUEVO BUSCADOR -->
+                        <input type="text" id="buscador-por-asignar" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar nombre..." autocomplete="off" oninput="filtrarPorAsignar()">
+                        
+                        <div id="lista-sin-asignar" class="drop-zone" style="max-height: 65vh; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, null, 999, 0)">
                             Cargando...
                         </div>
                     </div>
                 </div>
 
+                <!-- PANEL: MESAS -->
                 <div class="col-12 col-lg-9">
                     <div class="d-flex flex-column flex-md-row gap-2 gap-md-3 mb-4 bg-white p-3 rounded shadow-sm align-items-md-end">
                         <div class="w-100" style="max-width: 200px;">
@@ -97,6 +106,12 @@
         document.getElementById('input-pin').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') verificarPIN();
         });
+
+        // Función para limpiar tildes en los buscadores
+        function quitarTildes(str) {
+            if (!str) return "";
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
 
         async function init() {
             const cfg = await (await fetch('config.json')).json();
@@ -153,7 +168,7 @@
             let htmlMesas = "";
             dataMesas.forEach(mesa => {
                 const ocupantes = listaComensales.filter(c => c.mesa !== null && c.mesa !== "" && parseInt(c.mesa) === parseInt(mesa.numero));
-                let sillasOcupadas = ocupantes.length; // Cada persona es 1 silla
+                let sillasOcupadas = ocupantes.length; 
                 let htmlOcupantes = "";
                 
                 ocupantes.forEach(c => {
@@ -170,9 +185,10 @@
                     ? `<span class="badge bg-info text-dark">${sillasOcupadas} en mesa</span>`
                     : `<span class="badge ${llena ? 'bg-danger' : 'bg-success'}">${sillasOcupadas} / ${mesa.capacidad}</span>`;
 
-                let opcionesSinAsignar = `<option value="">+ Agregar a mesa...</option>`;
+                // Construcción de la lista para el Datalist Inteligente
+                let opcionesSinAsignar = ``;
                 sinAsignar.forEach(c => {
-                    opcionesSinAsignar += `<option value="${c.id_drag}">${c.nombre_mostrar}</option>`;
+                    opcionesSinAsignar += `<option value="${c.nombre_mostrar}"></option>`;
                 });
 
                 htmlMesas += `
@@ -192,14 +208,49 @@
                             ${htmlOcupantes || '<div class="text-muted small mt-2">Arrastra un invitado aquí...</div>'}
                         </div>
                         
-                        <select class="form-select form-select-sm mt-2" onchange="intentarAsignar(this.value, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
+                        <!-- NUEVO COMPONENTE: Datalist con buscador integrado -->
+                        <input list="datalist-${mesa.numero}" class="form-control form-control-sm mt-2" placeholder="🔍 Escribe para buscar y agregar..." onfocus="this.value=''" onchange="intentarAsignarDatalist(this, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
+                        <datalist id="datalist-${mesa.numero}">
                             ${opcionesSinAsignar}
-                        </select>
+                        </datalist>
                     </div>
                 </div>`;
             });
             document.getElementById('contenedor-mesas').innerHTML = htmlMesas;
+
+            // Reaplicamos el filtro del panel "Por Asignar" por si el usuario lo estaba usando
+            filtrarPorAsignar();
         }
+
+        // --- LÓGICA DE LOS BUSCADORES ---
+        function filtrarPorAsignar() {
+            const input = document.getElementById('buscador-por-asignar');
+            if(!input) return;
+            const term = quitarTildes(input.value.toLowerCase().trim());
+            const items = document.querySelectorAll('#lista-sin-asignar .guest-item');
+            
+            items.forEach(item => {
+                const nombre = quitarTildes(item.innerText.toLowerCase());
+                item.style.display = nombre.includes(term) ? 'flex' : 'none';
+            });
+        }
+
+        function intentarAsignarDatalist(inputElem, mesaNum, capMax, capActual) {
+            const val = inputElem.value;
+            if(!val) return;
+            
+            // Busca al comensal exacto por el nombre que seleccionó en la lista
+            const comensal = listaComensales.find(c => c.nombre_mostrar === val && (c.mesa === null || c.mesa === ""));
+            
+            if(!comensal) {
+                inputElem.value = ""; // Si escribió algo que no coincide o alguien ya asignado, se limpia.
+                return; 
+            }
+            
+            // Ejecutamos la asignación normal
+            intentarAsignar(comensal.id_drag, mesaNum, capMax, capActual);
+        }
+
 
         // --- DRAG & DROP ---
         function drag(ev, idDrag) { ev.dataTransfer.setData("text/plain", idDrag); }
