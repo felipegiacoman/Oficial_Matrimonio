@@ -6,6 +6,8 @@
     <title>Panel de Gestión - Matrimonio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Polyfill mágico para permitir Drag & Drop en pantallas táctiles (Celulares) -->
+    <script src="https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js"></script>
     <style>
         body { background: #f4f1ea; font-family: 'Montserrat', sans-serif; overflow-x: hidden; padding-bottom: 50px; }
         
@@ -36,6 +38,13 @@
         .sugerencia-item:last-child { border-bottom: none; }
         .sugerencia-item:hover { background-color: #fdfbf7; color: #b59a7a; font-weight: bold; }
 
+        /* PANEL STICKY Y MÓVIL */
+        .sticky-panel { position: sticky; top: 20px; z-index: 100; transition: 0.3s; }
+        @media (max-width: 991px) {
+            .sticky-panel { top: 10px; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.15); border-bottom: 3px solid #b59a7a; }
+            #lista-sin-asignar { max-height: 25vh !important; } /* En móvil ocupa menos para dejar ver las mesas */
+        }
+
         /* GESTIÓN DE MESAS */
         .mesa-card { background: white; border-radius: 8px; border-top: 4px solid #b59a7a; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; transition: 0.2s;}
         .mesa-novios { border-top: 4px solid #d4af37; background: #fffcf5; }
@@ -49,6 +58,8 @@
         .action-icon { cursor: pointer; color: #888; transition: 0.2s; font-size: 1.1rem;}
         .action-icon:hover { color: #2d2d2d; }
         .trash-icon:hover { color: #dc3545; }
+        .cursor-move { cursor: grab; font-size: 1.2rem; }
+        .cursor-move:active { cursor: grabbing; }
         
         .badge-nino { background-color: #8c775e; color: white; }
     </style>
@@ -202,17 +213,20 @@
             <!-- PESTAÑA 3: MESAS -->
             <!-- ============================================== -->
             <div class="tab-pane fade" id="panel-mesas">
-                <div class="row">
+                <div class="row position-relative">
+                    
+                    <!-- PANEL IZQUIERDO: STICKY -->
                     <div class="col-12 col-lg-3 mb-4">
-                        <div class="bg-white p-3 rounded shadow-sm">
+                        <div class="bg-white p-3 rounded shadow-sm sticky-panel">
                             <h5 class="mb-3">Por Asignar (<span id="count-sin-asignar">0</span>)</h5>
                             <input type="text" id="buscador-por-asignar" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar nombre..." autocomplete="off" oninput="filtrarPorAsignar()">
-                            <div id="lista-sin-asignar" class="drop-zone" style="max-height: 65vh; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, null, 999, 0)">
+                            <div id="lista-sin-asignar" class="drop-zone" style="max-height: 60vh; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, null, 999, 0)">
                                 Cargando...
                             </div>
                         </div>
                     </div>
 
+                    <!-- PANEL DERECHO: MESAS -->
                     <div class="col-12 col-lg-9">
                         <div class="d-flex flex-column flex-md-row gap-2 gap-md-3 mb-4 bg-white p-3 rounded shadow-sm align-items-md-end">
                             <div class="w-100" style="max-width: 200px;">
@@ -239,32 +253,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let SCRIPT_URL = "";
-        
-        // Data cruda de la BBDD
-        let dataMaestra = [];
-        let dataConfirmados = [];
-        let dataCancelados = [];
-        let dataMesas = [];
-
-        // Data procesada
-        let listaComensalesGenerales = []; // Para Mesas y Banqueteria
-        let listaCancelables = []; // Para el buscador de cancelación
-        let tarjetasDietas = []; // Botones de filtro
+        let dataMaestra = []; let dataConfirmados = []; let dataCancelados = []; let dataMesas = [];
+        let listaComensalesGenerales = []; let listaCancelables = []; let tarjetasDietas = [];
         let invitadoSeleccionadoParaCancelar = null;
 
-        // --- SISTEMA DE INGRESO INTELIGENTE ---
         function verificarPIN() {
             const pin = document.getElementById('input-pin').value.toLowerCase().trim();
             if (pin === "336336336" || pin === "banquetera") {
                 document.getElementById('pantalla-bloqueo').style.display = "none";
                 document.getElementById('contenido-principal').style.display = "block";
                 
-                // Si entra la banquetera, escondemos las pestañas y adaptamos el título
                 if (pin === "banquetera") {
                     document.getElementById('pills-tab').style.display = "none";
                     document.getElementById('titulo-principal').innerText = "Panel de Banquetería";
                 }
-                
                 init(); 
             } else {
                 document.getElementById('error-pin').style.display = "block";
@@ -273,16 +275,9 @@
         }
         document.getElementById('input-pin').addEventListener('keypress', function (e) { if (e.key === 'Enter') verificarPIN(); });
 
-        // --- UTILIDADES ---
-        function quitarTildes(str) {
-            if (!str) return "";
-            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        }
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
-        }
+        function quitarTildes(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""; }
+        function escapeHTML(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])); }
 
-        // --- INICIALIZACIÓN Y CARGA DE DATOS ---
         async function init() {
             const cfg = await (await fetch('config.json')).json();
             SCRIPT_URL = cfg.worker_url;
@@ -291,226 +286,134 @@
 
         async function cargarDatos() {
             const [resM, resConf, resCanc, resMesas] = await Promise.all([
-                fetch(SCRIPT_URL + "?action=lista"),
-                fetch(SCRIPT_URL + "?action=confirmados"),
-                fetch(SCRIPT_URL + "?action=cancelados"),
-                fetch(SCRIPT_URL + "?action=mesas")
+                fetch(SCRIPT_URL + "?action=lista"), fetch(SCRIPT_URL + "?action=confirmados"),
+                fetch(SCRIPT_URL + "?action=cancelados"), fetch(SCRIPT_URL + "?action=mesas")
             ]);
             
-            dataMaestra = await resM.json();
-            dataConfirmados = await resConf.json();
-            dataCancelados = await resCanc.json();
-            dataMesas = await resMesas.json();
+            dataMaestra = await resM.json(); dataConfirmados = await resConf.json();
+            dataCancelados = await resCanc.json(); dataMesas = await resMesas.json();
             
+            // Lógica de Ordenamiento Visual (LocalStorage)
+            const ordenGuardado = JSON.parse(localStorage.getItem('ordenMesas') || "[]");
+            dataMesas.sort((a, b) => {
+                let idxA = ordenGuardado.indexOf(parseInt(a.numero));
+                let idxB = ordenGuardado.indexOf(parseInt(b.numero));
+                if (idxA === -1) idxA = 999;
+                if (idxB === -1) idxB = 999;
+                if(idxA === 999 && idxB === 999) return parseInt(a.numero) - parseInt(b.numero);
+                return idxA - idxB;
+            });
+
             procesarDatosGenerales();
-            dibujarPanelBanqueteria();
-            dibujarPanelConfirmaciones();
-            dibujarPanelMesas();
+            dibujarPanelBanqueteria(); dibujarPanelConfirmaciones(); dibujarPanelMesas();
         }
 
         function procesarDatosGenerales() {
-            listaComensalesGenerales = [];
-            listaCancelables = [];
-            
-            dataMaestra.forEach(m => {
-                listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false });
-            });
+            listaComensalesGenerales = []; listaCancelables = [];
+            dataMaestra.forEach(m => listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false }));
 
             dataConfirmados.forEach(c => {
                 const infoMaestra = dataMaestra.find(m => m.nombre === c.nombre_invitado);
                 const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
                 
-                // Titular
                 listaComensalesGenerales.push({
-                    id_drag: `prin_${c.nombre_invitado}`,
-                    nombre_mostrar: c.nombre_invitado,
-                    nombre_principal: c.nombre_invitado,
-                    es_pareja: false,
-                    mesa: c.mesa_numero,
-                    dieta: c.dieta || 'Ninguna',
-                    esNino: esNinoTitular,
-                    telefono: c.telefono
+                    id_drag: `prin_${c.nombre_invitado}`, nombre_mostrar: c.nombre_invitado, nombre_principal: c.nombre_invitado,
+                    es_pareja: false, mesa: c.mesa_numero, dieta: c.dieta || 'Ninguna', esNino: esNinoTitular, telefono: c.telefono
                 });
 
-                // Pareja
                 if (c.lleva_pareja === "Sí") {
-                    let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") 
-                        ? `${c.nombre_pareja}` 
-                        : `Pareja de ${c.nombre_invitado}`;
-                        
+                    let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") ? `${c.nombre_pareja}` : `Pareja de ${c.nombre_invitado}`;
                     listaComensalesGenerales.push({
-                        id_drag: `par_${c.nombre_invitado}`,
-                        nombre_mostrar: nombreP,
-                        nombre_principal: c.nombre_invitado,
-                        es_pareja: true,
-                        mesa: c.mesa_pareja,
-                        dieta: c.dieta_pareja || 'Ninguna',
-                        esNino: false, 
-                        telefono: "-"
+                        id_drag: `par_${c.nombre_invitado}`, nombre_mostrar: nombreP, nombre_principal: c.nombre_invitado,
+                        es_pareja: true, mesa: c.mesa_pareja, dieta: c.dieta_pareja || 'Ninguna', esNino: false, telefono: "-"
                     });
-                    
                     listaCancelables.push({ nombre_mostrar: nombreP, nombre_principal: c.nombre_invitado, es_pareja: true });
                 }
             });
         }
 
-
-        // ==============================================
-        // MÓDULO 1: BANQUETERÍA
-        // ==============================================
+        // ======================= BANQUETERÍA =======================
         function dibujarPanelBanqueteria() {
-            let adultos = 0;
-            let ninos = 0;
-            let dietasDinamicas = {};
-
+            let adultos = 0; let ninos = 0; let dietasDinamicas = {};
             listaComensalesGenerales.forEach(c => {
                 if (c.esNino) ninos++; else adultos++;
-                if (c.dieta !== "Ninguna" && c.dieta !== "-") {
-                    dietasDinamicas[c.dieta] = (dietasDinamicas[c.dieta] || 0) + 1;
-                }
+                if (c.dieta !== "Ninguna" && c.dieta !== "-") dietasDinamicas[c.dieta] = (dietasDinamicas[c.dieta] || 0) + 1;
             });
 
-            document.getElementById('adult-val').innerText = adultos;
-            document.getElementById('nino-val').innerText = ninos;
-
-            const contenedorDietas = document.getElementById('contenedor-dietas');
-            contenedorDietas.innerHTML = "";
-            tarjetasDietas = [];
-
-            if (Object.keys(dietasDinamicas).length === 0) {
-                contenedorDietas.innerHTML = `<div class="col-12"><p class="text-muted small">No hay invitados con restricciones alimentarias especiales.</p></div>`;
-            }
+            document.getElementById('adult-val').innerText = adultos; document.getElementById('nino-val').innerText = ninos;
+            const contenedorDietas = document.getElementById('contenedor-dietas'); contenedorDietas.innerHTML = ""; tarjetasDietas = [];
+            if (Object.keys(dietasDinamicas).length === 0) contenedorDietas.innerHTML = `<div class="col-12"><p class="text-muted small">No hay invitados con restricciones alimentarias especiales.</p></div>`;
 
             for (const [dieta, cantidad] of Object.entries(dietasDinamicas)) {
-                const col = document.createElement('div');
-                col.className = 'col-6 col-md-3 col-lg-2';
-                const card = document.createElement('div');
-                card.className = 'stat-card filtrable';
+                const col = document.createElement('div'); col.className = 'col-6 col-md-3 col-lg-2';
+                const card = document.createElement('div'); card.className = 'stat-card filtrable';
                 card.onclick = () => renderTablaBanqueteria(dieta);
                 tarjetasDietas.push({ elemento: card, nombreDieta: dieta });
-
                 card.innerHTML = `<h6 class="small fw-bold text-truncate m-0 mb-2" title="${dieta}">${dieta}</h6><div class="stat-val">${cantidad}</div>`;
-                col.appendChild(card);
-                contenedorDietas.appendChild(col);
+                col.appendChild(card); contenedorDietas.appendChild(col);
             }
             renderTablaBanqueteria('Todas');
         }
 
         function renderTablaBanqueteria(filtro) {
-            tarjetasDietas.forEach(t => {
-                if(filtro !== 'Todas' && filtro !== 'Niños' && t.nombreDieta === filtro) t.elemento.classList.add('active-filter');
-                else t.elemento.classList.remove('active-filter');
-            });
-            const cardNinos = document.getElementById('card-ninos');
-            if (filtro === 'Niños') cardNinos.classList.add('active-filter');
-            else cardNinos.classList.remove('active-filter');
-            
-            if (filtro === 'Todas') document.getElementById('titulo-tabla-banqueteria').innerText = 'Todos los Comensales';
-            else if (filtro === 'Niños') document.getElementById('titulo-tabla-banqueteria').innerText = 'Filtrando por: Menú Infantil (Niños)';
-            else document.getElementById('titulo-tabla-banqueteria').innerText = `Filtrando por: ${filtro}`;
+            tarjetasDietas.forEach(t => { t.elemento.classList.toggle('active-filter', filtro !== 'Todas' && filtro !== 'Niños' && t.nombreDieta === filtro); });
+            document.getElementById('card-ninos').classList.toggle('active-filter', filtro === 'Niños');
+            document.getElementById('titulo-tabla-banqueteria').innerText = filtro === 'Todas' ? 'Todos los Comensales' : (filtro === 'Niños' ? 'Filtrando por: Menú Infantil (Niños)' : `Filtrando por: ${filtro}`);
 
             let html = "";
-            
             if (filtro === 'Todas') {
                 dataConfirmados.forEach(c => {
                     const infoMaestra = dataMaestra.find(m => m.nombre === c.nombre_invitado);
                     const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
                     const mesaStrT = c.mesa_numero ? `Mesa ${c.mesa_numero}` : `<span class="text-danger small">Sin mesa</span>`;
-                    
-                    html += `<tr>
-                        <td><strong>${escapeHTML(c.nombre_invitado)}</strong></td>
-                        <td><span class="badge bg-primary">Titular</span></td>
-                        <td>${mesaStrT}</td>
-                        <td>${escapeHTML(c.dieta || 'Ninguna')}</td>
-                        <td><span class="badge ${esNinoTitular ? 'badge-nino' : 'bg-success'}">${esNinoTitular ? 'Niño' : 'Adulto'}</span></td>
-                    </tr>`;
+                    html += `<tr><td><strong>${escapeHTML(c.nombre_invitado)}</strong></td><td><span class="badge bg-primary">Titular</span></td><td>${mesaStrT}</td><td>${escapeHTML(c.dieta || 'Ninguna')}</td><td><span class="badge ${esNinoTitular ? 'badge-nino' : 'bg-success'}">${esNinoTitular ? 'Niño' : 'Adulto'}</span></td></tr>`;
 
                     if (c.lleva_pareja === "Sí") {
                         let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") ? c.nombre_pareja : `Pareja de ${c.nombre_invitado}`;
                         const mesaStrP = c.mesa_pareja ? `Mesa ${c.mesa_pareja}` : `<span class="text-danger small">Sin mesa</span>`;
-                        
-                        html += `<tr style="background-color: #fdfbf7;">
-                            <td class="ps-4">↳ <strong>${escapeHTML(nombreP)}</strong></td>
-                            <td><span class="badge bg-secondary">Pareja</span></td>
-                            <td>${mesaStrP}</td>
-                            <td>${escapeHTML(c.dieta_pareja || 'Ninguna')}</td>
-                            <td><span class="badge bg-success">Adulto</span></td>
-                        </tr>`;
+                        html += `<tr style="background-color: #fdfbf7;"><td class="ps-4">↳ <strong>${escapeHTML(nombreP)}</strong></td><td><span class="badge bg-secondary">Pareja</span></td><td>${mesaStrP}</td><td>${escapeHTML(c.dieta_pareja || 'Ninguna')}</td><td><span class="badge bg-success">Adulto</span></td></tr>`;
                     }
                 });
             } else {
                 listaComensalesGenerales.forEach(c => {
-                    let match = false;
-                    if (filtro === 'Niños' && c.esNino) match = true;
-                    if (filtro !== 'Niños' && c.dieta === filtro) match = true;
-
-                    if (match) {
+                    if ((filtro === 'Niños' && c.esNino) || (filtro !== 'Niños' && c.dieta === filtro)) {
                         const mesaStr = c.mesa ? `Mesa ${c.mesa}` : `<span class="text-danger small">Sin mesa</span>`;
-                        html += `<tr ${c.es_pareja ? 'style="background-color: #fdfbf7;"' : ''}>
-                            <td class="${c.es_pareja ? 'ps-4' : ''}">${c.es_pareja ? '↳ ' : ''}<strong>${escapeHTML(c.nombre_mostrar)}</strong></td>
-                            <td><span class="badge ${c.es_pareja ? 'bg-secondary' : 'bg-primary'}">${c.es_pareja ? 'Pareja' : 'Titular'}</span></td>
-                            <td>${mesaStr}</td>
-                            <td>${escapeHTML(c.dieta)}</td>
-                            <td><span class="badge ${c.esNino ? 'badge-nino' : 'bg-success'}">${c.esNino ? 'Niño' : 'Adulto'}</span></td>
-                        </tr>`;
+                        html += `<tr ${c.es_pareja ? 'style="background-color: #fdfbf7;"' : ''}><td class="${c.es_pareja ? 'ps-4' : ''}">${c.es_pareja ? '↳ ' : ''}<strong>${escapeHTML(c.nombre_mostrar)}</strong></td><td><span class="badge ${c.es_pareja ? 'bg-secondary' : 'bg-primary'}">${c.es_pareja ? 'Pareja' : 'Titular'}</span></td><td>${mesaStr}</td><td>${escapeHTML(c.dieta)}</td><td><span class="badge ${c.esNino ? 'badge-nino' : 'bg-success'}">${c.esNino ? 'Niño' : 'Adulto'}</span></td></tr>`;
                     }
                 });
             }
             document.getElementById('lista-tabla-banqueteria').innerHTML = html || `<tr><td colspan="5" class="text-center text-muted">No hay comensales.</td></tr>`;
         }
 
-        // ==============================================
-        // MÓDULO 2: CONFIRMACIONES
-        // ==============================================
+        // ======================= CONFIRMACIONES =======================
         function dibujarPanelConfirmaciones() {
-            let totalConfirmadosPersonas = listaComensalesGenerales.length;
-            document.getElementById('val-confirmados').innerText = totalConfirmadosPersonas;
-            
+            document.getElementById('val-confirmados').innerText = listaComensalesGenerales.length;
             let htmlConf = "";
             dataConfirmados.forEach(c => {
-                htmlConf += `<tr>
-                    <td><strong>${escapeHTML(c.nombre_invitado)}</strong></td>
-                    <td><span class="badge bg-primary">Titular</span></td>
-                    <td>${escapeHTML(c.telefono || '-')}</td>
-                    <td>${escapeHTML(c.dieta || 'Ninguna')}</td>
-                </tr>`;
-
+                htmlConf += `<tr><td><strong>${escapeHTML(c.nombre_invitado)}</strong></td><td><span class="badge bg-primary">Titular</span></td><td>${escapeHTML(c.telefono || '-')}</td><td>${escapeHTML(c.dieta || 'Ninguna')}</td></tr>`;
                 if (c.lleva_pareja === "Sí") {
                     let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") ? `${c.nombre_pareja} (Pareja de ${c.nombre_invitado})` : `Pareja de ${c.nombre_invitado}`;
-                    htmlConf += `<tr style="background-color: #fdfbf7;">
-                        <td class="ps-4">↳ <strong>${escapeHTML(nombreP)}</strong></td>
-                        <td><span class="badge bg-secondary">Pareja</span></td>
-                        <td>-</td>
-                        <td>${escapeHTML(c.dieta_pareja || 'Ninguna')}</td>
-                    </tr>`;
+                    htmlConf += `<tr style="background-color: #fdfbf7;"><td class="ps-4">↳ <strong>${escapeHTML(nombreP)}</strong></td><td><span class="badge bg-secondary">Pareja</span></td><td>-</td><td>${escapeHTML(c.dieta_pareja || 'Ninguna')}</td></tr>`;
                 }
             });
             document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="4" class="text-center text-muted">Aún no hay confirmaciones.</td></tr>`;
 
             let htmlCanc = "";
-            dataCancelados.forEach(c => {
-                htmlCanc += `<tr>
-                    <td><strong>${escapeHTML(c.nombre)}</strong></td>
-                    <td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td>
-                </tr>`;
-            });
+            dataCancelados.forEach(c => { htmlCanc += `<tr><td><strong>${escapeHTML(c.nombre)}</strong></td><td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td></tr>`; });
             document.getElementById('val-cancelados').innerText = dataCancelados.length;
-            document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay cancelaciones registradas.</td></tr>`;
+            document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay cancelaciones.</td></tr>`;
 
-            let potencialTotal = 0;
-            dataMaestra.forEach(m => { potencialTotal += (parseInt(m.pareja) === 1 ? 2 : 1); });
-            let pendientes = potencialTotal - (totalConfirmadosPersonas + dataCancelados.length);
+            let potencialTotal = 0; dataMaestra.forEach(m => { potencialTotal += (parseInt(m.pareja) === 1 ? 2 : 1); });
+            let pendientes = potencialTotal - (listaComensalesGenerales.length + dataCancelados.length);
             document.getElementById('val-pendientes').innerText = pendientes > 0 ? pendientes : 0;
         }
 
-        // Buscador Cancelación
         const inputBusquedaCancelar = document.getElementById('input-busqueda-cancelar');
         const boxSugerenciasCancelar = document.getElementById('sugerencias-box-cancelar');
         const btnEjecutarCancelar = document.getElementById('btn-ejecutar-cancelacion');
 
         inputBusquedaCancelar.addEventListener('input', function() {
-            invitadoSeleccionadoParaCancelar = null;
-            btnEjecutarCancelar.disabled = true;
+            invitadoSeleccionadoParaCancelar = null; btnEjecutarCancelar.disabled = true;
             const val = quitarTildes(this.value.toLowerCase().trim());
             if (val.length < 2) { boxSugerenciasCancelar.style.display = 'none'; return; }
 
@@ -525,39 +428,24 @@
         });
 
         function seleccionarParaCancelar(nombre_principal, es_pareja, nombre_mostrar) {
-            inputBusquedaCancelar.value = nombre_mostrar;
-            invitadoSeleccionadoParaCancelar = { nombre_principal, es_pareja, nombre_mostrar };
-            boxSugerenciasCancelar.style.display = 'none';
-            btnEjecutarCancelar.disabled = false;
+            inputBusquedaCancelar.value = nombre_mostrar; invitadoSeleccionadoParaCancelar = { nombre_principal, es_pareja, nombre_mostrar };
+            boxSugerenciasCancelar.style.display = 'none'; btnEjecutarCancelar.disabled = false;
         }
 
         async function ejecutarCancelacion() {
             if (!invitadoSeleccionadoParaCancelar) return;
-            let mensajeConfirm = invitadoSeleccionadoParaCancelar.es_pareja 
-                ? `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?\nEl titular principal seguirá confirmado.`
-                : `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?\nSe dará de baja a esta persona y a su pareja automáticamente.`;
-            if (!confirm(mensajeConfirm)) return;
+            let msg = invitadoSeleccionadoParaCancelar.es_pareja ? `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?\nEl titular principal seguirá confirmado.` : `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?\nSe dará de baja a esta persona y a su pareja automáticamente.`;
+            if (!confirm(msg)) return;
 
-            btnEjecutarCancelar.innerText = "Procesando...";
-            btnEjecutarCancelar.disabled = true;
-
+            btnEjecutarCancelar.innerText = "Procesando..."; btnEjecutarCancelar.disabled = true;
             try {
                 await fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: "admin_cancelar", nombre_principal: invitadoSeleccionadoParaCancelar.nombre_principal, es_pareja: invitadoSeleccionadoParaCancelar.es_pareja }) });
-                inputBusquedaCancelar.value = "";
-                btnEjecutarCancelar.innerText = "Mover a Cancelados";
-                await cargarDatos(); 
-                alert("Cancelación procesada exitosamente.");
-            } catch(e) {
-                alert("Hubo un error al cancelar.");
-                btnEjecutarCancelar.innerText = "Mover a Cancelados";
-                btnEjecutarCancelar.disabled = false;
-            }
+                inputBusquedaCancelar.value = ""; btnEjecutarCancelar.innerText = "Mover a Cancelados";
+                await cargarDatos(); alert("Cancelación procesada exitosamente.");
+            } catch(e) { alert("Hubo un error al cancelar."); btnEjecutarCancelar.innerText = "Mover a Cancelados"; btnEjecutarCancelar.disabled = false; }
         }
 
-
-        // ==============================================
-        // MÓDULO 3: MESAS
-        // ==============================================
+        // ======================= MESAS (DRAG & DROP Y ORDEN) =======================
         function dibujarPanelMesas() {
             const sinAsignar = listaComensalesGenerales.filter(c => c.mesa === null || c.mesa === "");
             let htmlSinAsignar = "";
@@ -573,8 +461,7 @@
             let htmlMesas = "";
             dataMesas.forEach(mesa => {
                 const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && c.mesa !== "" && parseInt(c.mesa) === parseInt(mesa.numero));
-                let sillasOcupadas = ocupantes.length; 
-                let htmlOcupantes = "";
+                let sillasOcupadas = ocupantes.length; let htmlOcupantes = "";
                 
                 ocupantes.forEach(c => {
                     htmlOcupantes += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
@@ -585,18 +472,18 @@
 
                 const esMesaNovios = parseInt(mesa.capacidad) === 999;
                 const llena = !esMesaNovios && (sillasOcupadas >= mesa.capacidad);
-                
                 let badgeHtml = esMesaNovios ? `<span class="badge bg-info text-dark">${sillasOcupadas} en mesa</span>` : `<span class="badge ${llena ? 'bg-danger' : 'bg-success'}">${sillasOcupadas} / ${mesa.capacidad}</span>`;
 
                 htmlMesas += `
-                <div class="col-12 col-md-6 col-xl-4">
+                <div class="col-12 col-md-6 col-xl-4" draggable="true" ondragstart="dragMesa(event, ${mesa.numero})" ondragover="allowDropMesa(event)" ondrop="dropMesa(event, ${mesa.numero})">
                     <div class="mesa-card ${esMesaNovios ? 'mesa-novios' : ''}">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-arrows-move cursor-move text-muted" title="Mover Mesa de lugar"></i>
                                 <h6 class="m-0 fw-bold">${esMesaNovios ? 'Mesa Novios (0)' : `Mesa ${mesa.numero}`}</h6>
-                                ${!esMesaNovios ? `<i class="bi bi-people action-icon" title="Cambiar Capacidad" onclick="cambiarCapacidad(${mesa.numero}, ${mesa.capacidad})"></i>` : ''}
+                                ${!esMesaNovios ? `<i class="bi bi-people action-icon ms-1" title="Cambiar Capacidad" onclick="cambiarCapacidad(${mesa.numero}, ${mesa.capacidad})"></i>` : ''}
                                 ${!esMesaNovios ? `<i class="bi bi-pencil-square action-icon" title="Cambiar Número" onclick="cambiarNumero(${mesa.numero})"></i>` : ''}
-                                <i class="bi bi-trash action-icon trash-icon" title="Eliminar Mesa" onclick="eliminarMesa(${mesa.numero})"></i>
+                                <i class="bi bi-trash action-icon trash-icon ms-1" title="Eliminar Mesa" onclick="eliminarMesa(${mesa.numero})"></i>
                             </div>
                             ${badgeHtml}
                         </div>
@@ -606,7 +493,7 @@
                         </div>
                         
                         <div class="position-relative mt-2">
-                            <input type="text" class="form-control form-control-sm" placeholder="🔍 Escribe para buscar y agregar..." autocomplete="off" oninput="filtrarDropdownMesa(this, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
+                            <input type="text" class="form-control form-control-sm" placeholder="🔍 Buscar para agregar..." autocomplete="off" oninput="filtrarDropdownMesa(this, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
                             <div class="sugerencias-container shadow-sm"></div>
                         </div>
                     </div>
@@ -616,122 +503,103 @@
             filtrarPorAsignar();
         }
 
-        // Buscador Por Asignar
+        // Buscadores
         function filtrarPorAsignar() {
-            const input = document.getElementById('buscador-por-asignar');
-            if(!input) return;
+            const input = document.getElementById('buscador-por-asignar'); if(!input) return;
             const term = quitarTildes(input.value.toLowerCase().trim());
-            const items = document.querySelectorAll('#lista-sin-asignar .guest-item');
-            
-            items.forEach(item => {
-                const nombre = quitarTildes(item.innerText.toLowerCase());
-                item.style.display = nombre.includes(term) ? 'flex' : 'none';
+            document.querySelectorAll('#lista-sin-asignar .guest-item').forEach(item => {
+                item.style.display = quitarTildes(item.innerText.toLowerCase()).includes(term) ? 'flex' : 'none';
             });
         }
 
-        // Buscador Cajas Mesas
         function filtrarDropdownMesa(inputElem, mesaNum, capMax, capActual) {
-            const val = quitarTildes(inputElem.value.toLowerCase().trim());
-            const box = inputElem.nextElementSibling;
+            const val = quitarTildes(inputElem.value.toLowerCase().trim()); const box = inputElem.nextElementSibling;
             if(val.length < 2) { box.style.display = 'none'; return; }
-            
-            const filtrados = listaComensalesGenerales.filter(c => {
-                if (c.mesa !== null && c.mesa !== "") return false; 
-                return quitarTildes(c.nombre_mostrar.toLowerCase()).includes(val);
-            });
-            
+            const filtrados = listaComensalesGenerales.filter(c => (c.mesa === null || c.mesa === "") && quitarTildes(c.nombre_mostrar.toLowerCase()).includes(val));
             box.innerHTML = filtrados.map(c => `<div class="sugerencia-item" onclick="ejecutarAsignacionDropdown('${c.id_drag}', ${mesaNum}, ${capMax}, ${capActual}, this)">${c.nombre_mostrar}</div>`).join('');
             box.style.display = filtrados.length ? 'block' : 'none';
         }
 
         function ejecutarAsignacionDropdown(idDrag, mesaNum, capMax, capActual, elemClic) {
-            const inputElem = elemClic.parentElement.previousElementSibling;
-            inputElem.value = ""; 
-            elemClic.parentElement.style.display = 'none'; 
+            elemClic.parentElement.previousElementSibling.value = ""; elemClic.parentElement.style.display = 'none'; 
             intentarAsignar(idDrag, mesaNum, capMax, capActual);
         }
 
-        // Drag & Drop
-        function drag(ev, idDrag) { ev.dataTransfer.setData("text/plain", idDrag); }
+        // LÓGICA DRAG & DROP INVITADOS
+        function drag(ev, idDrag) { 
+            ev.stopPropagation(); 
+            ev.dataTransfer.setData("type", "guest"); 
+            ev.dataTransfer.setData("text/plain", idDrag); 
+        }
         function allowDrop(ev) { ev.preventDefault(); const d = ev.target.closest('.drop-zone'); if(d) d.classList.add('dragover'); }
         function leaveDrop(ev) { const d = ev.target.closest('.drop-zone'); if(d) d.classList.remove('dragover'); }
         function drop(ev, mesaNum, capMax, capActual) {
-            ev.preventDefault();
-            const d = ev.target.closest('.drop-zone');
-            if(d) d.classList.remove('dragover');
-            const idDrag = ev.dataTransfer.getData("text/plain");
-            if (!idDrag) return;
+            ev.preventDefault(); ev.stopPropagation();
+            const d = ev.target.closest('.drop-zone'); if(d) d.classList.remove('dragover');
+            if(ev.dataTransfer.getData("type") !== "guest") return; // Evita soltar mesas aquí
+            const idDrag = ev.dataTransfer.getData("text/plain"); if (!idDrag) return;
             if (mesaNum === null) { asignarMesa(idDrag, null); return; }
             intentarAsignar(idDrag, mesaNum, capMax, capActual);
         }
 
-        // Acciones Mesas
+        // LÓGICA DRAG & DROP MESAS (NUEVO)
+        function dragMesa(ev, mesaNum) {
+            ev.stopPropagation();
+            ev.dataTransfer.setData("type", "mesa");
+            ev.dataTransfer.setData("text/plain", mesaNum);
+        }
+        function allowDropMesa(ev) { ev.preventDefault(); }
+        function dropMesa(ev, targetMesaNum) {
+            ev.preventDefault(); ev.stopPropagation();
+            if(ev.dataTransfer.getData("type") !== "mesa") return;
+            const draggedNum = ev.dataTransfer.getData("text/plain");
+            if (draggedNum == targetMesaNum) return;
+            
+            const fromIdx = dataMesas.findIndex(m => parseInt(m.numero) === parseInt(draggedNum));
+            const toIdx = dataMesas.findIndex(m => parseInt(m.numero) === parseInt(targetMesaNum));
+            const [moved] = dataMesas.splice(fromIdx, 1);
+            dataMesas.splice(toIdx, 0, moved);
+            
+            // Guardar en el navegador
+            localStorage.setItem('ordenMesas', JSON.stringify(dataMesas.map(m => parseInt(m.numero))));
+            dibujarPanelMesas();
+        }
+
+        // Acciones Mesas BBDD
         function obtenerSiguienteNumero() {
             const numeros = dataMesas.map(m => parseInt(m.numero)).filter(n => n > 0).sort((a,b) => a-b);
-            let proximo = 1;
-            for (let i = 0; i < numeros.length; i++) { if (numeros[i] === proximo) proximo++; else break; }
-            return proximo;
+            let proximo = 1; for (let i = 0; i < numeros.length; i++) { if (numeros[i] === proximo) proximo++; else break; } return proximo;
         }
 
         async function crearMesaNormal() { await crearMesa(obtenerSiguienteNumero(), document.getElementById('nueva-mesa-cap').value); }
-        async function crearMesaNovios() {
-            if(dataMesas.some(m => parseInt(m.numero) === 0)) return alert("La Mesa de Novios ya existe.");
-            await crearMesa(0, 999);
-        }
-
-        async function crearMesa(num, cap) {
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "guardar_mesa", numero: num, capacidad: cap }) });
-            await cargarDatos();
-        }
-
-        async function eliminarMesa(num) {
-            if(!confirm(`¿Estás seguro de eliminar la Mesa ${num}?`)) return;
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "eliminar_mesa", numero: num }) });
-            await cargarDatos();
-        }
-
+        async function crearMesaNovios() { if(dataMesas.some(m => parseInt(m.numero) === 0)) return alert("La Mesa de Novios ya existe."); await crearMesa(0, 999); }
+        async function crearMesa(num, cap) { await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "guardar_mesa", numero: num, capacidad: cap }) }); await cargarDatos(); }
+        async function eliminarMesa(num) { if(!confirm(`¿Estás seguro de eliminar la Mesa ${num}?`)) return; await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "eliminar_mesa", numero: num }) }); await cargarDatos(); }
         async function cambiarNumero(viejoNum) {
-            const nuevoNum = prompt(`Cambiar Mesa ${viejoNum} al número:`);
-            if(!nuevoNum || isNaN(nuevoNum) || parseInt(nuevoNum) === parseInt(viejoNum)) return;
+            const nuevoNum = prompt(`Cambiar Mesa ${viejoNum} al número:`); if(!nuevoNum || isNaN(nuevoNum) || parseInt(nuevoNum) === parseInt(viejoNum)) return;
             if(dataMesas.some(m => parseInt(m.numero) === parseInt(nuevoNum))) return alert("Ese número de mesa ya está ocupado.");
-            
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "cambiar_numero_mesa", viejo_numero: viejoNum, nuevo_numero: nuevoNum }) });
-            const data = await res.json();
-            if(data.error) alert(data.error); 
-            await cargarDatos();
+            const data = await res.json(); if(data.error) alert(data.error); await cargarDatos();
         }
-
         async function cambiarCapacidad(numero, capActual) {
-            const nuevaCap = prompt(`Ingresa la nueva cantidad de sillas:`, capActual);
-            if(!nuevaCap || isNaN(nuevaCap) || parseInt(nuevaCap) <= 0 || parseInt(nuevaCap) === parseInt(capActual)) return;
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap) }) });
-            await cargarDatos();
+            const nuevaCap = prompt(`Ingresa la nueva cantidad de sillas:`, capActual); if(!nuevaCap || isNaN(nuevaCap) || parseInt(nuevaCap) <= 0 || parseInt(nuevaCap) === parseInt(capActual)) return;
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap) }) }); await cargarDatos();
         }
 
         function intentarAsignar(idDrag, mesaNum, capMax, capActual) {
-            if(!idDrag) return;
             const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
             if (!comensal || (comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum))) return;
-            if(parseInt(capMax) !== 999 && (capActual + 1 > capMax)) {
-                alert(`¡Faltan sillas! Solo quedan ${capMax - capActual} disponibles en la Mesa ${mesaNum}.`);
-                return;
-            }
+            if(parseInt(capMax) !== 999 && (capActual + 1 > capMax)) { alert(`¡Faltan sillas! Solo quedan ${capMax - capActual} disponibles en la Mesa ${mesaNum}.`); return; }
             asignarMesa(idDrag, mesaNum);
         }
 
         async function asignarMesa(idDrag, mesaNum) {
-            const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
-            if(!comensal) return;
+            const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag); if(!comensal) return;
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "asignar_mesa", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, mesa_numero: mesaNum }) });
             await cargarDatos();
         }
 
-        // Cierra los desplegables de búsqueda al hacer clic afuera
-        document.addEventListener('click', function(e) {
-            if(!e.target.closest('.position-relative')) {
-                document.querySelectorAll('.sugerencias-container').forEach(box => box.style.display = 'none');
-            }
-        });
+        document.addEventListener('click', function(e) { if(!e.target.closest('.position-relative')) { document.querySelectorAll('.sugerencias-container').forEach(box => box.style.display = 'none'); } });
     </script>
 </body>
 </html>
