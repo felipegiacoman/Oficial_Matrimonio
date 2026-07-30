@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Asistencia - Novios</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { background: #f4f1ea; font-family: 'Montserrat', sans-serif; overflow-x: hidden; }
+        
+        /* PANTALLA DE BLOQUEO */
+        #pantalla-bloqueo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #f4f1ea; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .login-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; max-width: 90%; width: 400px; border-top: 4px solid #b59a7a; }
+        
+        .stat-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; border-top: 4px solid #b59a7a; }
+        .stat-val { font-size: 2rem; font-weight: bold; color: #2d2d2d; }
+        
+        .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .btn-gold { background: #b59a7a; color: white; border: none; }
+        .btn-gold:hover { background: #2d2d2d; color: white; }
+        
+        /* AUTOCOMPLETADO */
+        .sugerencias-container { position: absolute; z-index: 1050; background: white; width: 100%; max-height: 200px; overflow-y: auto; border: 1px solid #b59a7a; border-top: none; border-radius: 0 0 4px 4px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .sugerencia-item { cursor: pointer; padding: 10px 15px; border-bottom: 1px solid #f2ece4; font-size: 0.9rem; }
+        .sugerencia-item:last-child { border-bottom: none; }
+        .sugerencia-item:hover { background-color: #fdfbf7; color: #b59a7a; font-weight: bold; }
+        
+        .nav-tabs .nav-link { color: #888; font-weight: 500; }
+        .nav-tabs .nav-link.active { color: #2d2d2d; font-weight: bold; border-top: 3px solid #b59a7a; }
+    </style>
+</head>
+<body class="p-3 p-md-5">
+
+    <div id="pantalla-bloqueo">
+        <div class="login-box">
+            <h3 class="mb-2" style="font-family: 'Playfair Display', serif;">Gestión RSVP</h3>
+            <p class="text-muted small mb-4">Ingresa el código de acceso exclusivo.</p>
+            <input type="password" id="input-pin" class="form-control text-center mb-3 fw-bold" placeholder="PIN" style="letter-spacing: 5px; font-size: 1.2rem;">
+            <button class="btn btn-gold w-100 py-2 fw-bold" onclick="verificarPIN()">Desbloquear</button>
+            <p id="error-pin" class="text-danger small mt-3 mb-0" style="display: none;">PIN incorrecto.</p>
+        </div>
+    </div>
+
+    <div id="contenido-principal" class="container-fluid container-xl" style="display: none;">
+        <h2 class="mb-4 text-center text-md-start" style="font-family: 'Playfair Display', serif; color: #2d2d2d;">Estado de Confirmaciones</h2>
+        
+        <!-- Contadores -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-4">
+                <div class="stat-card">
+                    <h6 class="text-muted m-0">Total Confirmados</h6>
+                    <div class="stat-val text-success" id="val-confirmados">0</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="stat-card">
+                    <h6 class="text-muted m-0">Total Cancelados</h6>
+                    <div class="stat-val text-danger" id="val-cancelados">0</div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="stat-card" style="border-top-color: #2d2d2d;">
+                    <h6 class="text-muted m-0">Pendientes (Sin responder)</h6>
+                    <div class="stat-val" id="val-pendientes">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestañas -->
+        <div class="table-container">
+            <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="confirmados-tab" data-bs-toggle="tab" data-bs-target="#tab-confirmados" type="button" role="tab">Lista de Confirmados</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="cancelados-tab" data-bs-toggle="tab" data-bs-target="#tab-cancelados" type="button" role="tab">Lista de Cancelados</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-danger" id="gestionar-tab" data-bs-toggle="tab" data-bs-target="#tab-gestionar" type="button" role="tab"><i class="bi bi-x-circle me-1"></i>Cancelar Invitado</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="myTabContent">
+                <!-- PESTAÑA: CONFIRMADOS -->
+                <div class="tab-pane fade show active" id="tab-confirmados" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle text-nowrap">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Invitado Principal</th>
+                                    <th>Teléfono</th>
+                                    <th>Restricción (Principal)</th>
+                                    <th>Pareja Confirmada</th>
+                                    <th>Restricción (Pareja)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-confirmados">
+                                <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA: CANCELADOS -->
+                <div class="tab-pane fade" id="tab-cancelados" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle text-nowrap">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre del Invitado</th>
+                                    <th>Mensaje / Motivo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-cancelados">
+                                <tr><td colspan="2" class="text-center text-muted">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA: GESTIONAR CANCELACIONES -->
+                <div class="tab-pane fade" id="tab-gestionar" role="tabpanel">
+                    <div class="row justify-content-center py-4">
+                        <div class="col-md-8 col-lg-6 bg-light p-4 rounded border">
+                            <h5 class="mb-3 text-center" style="font-family: 'Playfair Display', serif;">Bajar a un invitado</h5>
+                            <p class="text-muted small text-center mb-4">Busca al invitado en la lista maestra y cancélalo manualmente. Si estaba confirmado, se borrará de la tabla de asistencia automáticamente.</p>
+                            
+                            <div class="mb-3 position-relative">
+                                <label class="form-label fw-bold small">Nombre del Comensal</label>
+                                <input type="text" class="form-control" id="input-busqueda" autocomplete="off" placeholder="Escribe al menos 2 letras...">
+                                <div class="sugerencias-container" id="sugerencias-box"></div>
+                            </div>
+                            
+                            <button class="btn btn-danger w-100 mt-2" id="btn-ejecutar-cancelacion" disabled onclick="ejecutarCancelacion()">Mover a Cancelados</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let SCRIPT_URL = "";
+        let dataMaestra = [];
+        let dataConfirmados = [];
+        let dataCancelados = [];
+        let invitadoSeleccionadoParaCancelar = null;
+
+        function verificarPIN() {
+            if (document.getElementById('input-pin').value === "336336336") {
+                document.getElementById('pantalla-bloqueo').style.display = "none";
+                document.getElementById('contenido-principal').style.display = "block";
+                init(); 
+            } else {
+                document.getElementById('error-pin').style.display = "block";
+                document.getElementById('input-pin').value = "";
+            }
+        }
+
+        document.getElementById('input-pin').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') verificarPIN();
+        });
+
+        function quitarTildes(str) {
+            if (!str) return "";
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+
+        async function init() {
+            try {
+                const cfg = await (await fetch('config.json')).json();
+                SCRIPT_URL = cfg.worker_url;
+                await cargarDatos();
+            } catch(e) { alert("Error cargando configuración."); }
+        }
+
+        async function cargarDatos() {
+            const [resM, resConf, resCanc] = await Promise.all([
+                fetch(SCRIPT_URL + "?action=lista"),
+                fetch(SCRIPT_URL + "?action=confirmados"),
+                fetch(SCRIPT_URL + "?action=cancelados")
+            ]);
+            
+            dataMaestra = await resM.json();
+            dataConfirmados = await resConf.json();
+            dataCancelados = await resCanc.json();
+            
+            dibujarPaneles();
+        }
+
+        function dibujarPaneles() {
+            // Contadores
+            let totalConfirmadosPersonas = 0;
+            let htmlConf = "";
+            
+            dataConfirmados.forEach(c => {
+                totalConfirmadosPersonas++; // Suma al principal
+                let textoPareja = '<span class="text-muted small">Sin pareja</span>';
+                if (c.lleva_pareja === "Sí") {
+                    totalConfirmadosPersonas++; // Suma a la pareja
+                    textoPareja = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja !== "Pendiente") ? `<strong>${c.nombre_pareja}</strong>` : `<span class="text-warning small"><i class="bi bi-clock-history"></i> Pendiente confirmar nombre</span>`;
+                }
+
+                htmlConf += `<tr>
+                    <td><strong>${escapeHTML(c.nombre_invitado)}</strong></td>
+                    <td>${escapeHTML(c.telefono || '-')}</td>
+                    <td>${escapeHTML(c.dieta || 'Ninguna')}</td>
+                    <td>${textoPareja}</td>
+                    <td>${c.lleva_pareja === "Sí" ? escapeHTML(c.dieta_pareja || 'Ninguna') : '-'}</td>
+                </tr>`;
+            });
+
+            document.getElementById('val-confirmados').innerText = totalConfirmadosPersonas;
+            document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="5" class="text-center text-muted">Aún no hay confirmaciones.</td></tr>`;
+
+            // Tabla Cancelados
+            let htmlCanc = "";
+            dataCancelados.forEach(c => {
+                htmlCanc += `<tr>
+                    <td><strong>${escapeHTML(c.nombre)}</strong></td>
+                    <td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td>
+                </tr>`;
+            });
+            document.getElementById('val-cancelados').innerText = dataCancelados.length;
+            document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay cancelaciones registradas.</td></tr>`;
+
+            // Pendientes (Total maestra * 1 o 2 dependiendo si tienen pareja, menos los que ya respondieron)
+            let potencialTotal = 0;
+            dataMaestra.forEach(m => { potencialTotal += (parseInt(m.pareja) === 1 ? 2 : 1); });
+            let pendientes = potencialTotal - (totalConfirmadosPersonas + dataCancelados.length);
+            document.getElementById('val-pendientes').innerText = pendientes > 0 ? pendientes : 0;
+        }
+
+        // LÓGICA DE BÚSQUEDA PARA CANCELAR
+        const inputBusqueda = document.getElementById('input-busqueda');
+        const boxSugerencias = document.getElementById('sugerencias-box');
+        const btnEjecutar = document.getElementById('btn-ejecutar-cancelacion');
+
+        inputBusqueda.addEventListener('input', function() {
+            invitadoSeleccionadoParaCancelar = null;
+            btnEjecutar.disabled = true;
+            
+            const val = quitarTildes(this.value.toLowerCase().trim());
+            if (val.length < 2) { boxSugerencias.style.display = 'none'; return; }
+
+            // Filtramos a los de la lista maestra que NO estén ya en la tabla de cancelados
+            const filtrados = dataMaestra.filter(n => {
+                if (!n.nombre) return false;
+                const yaCancelado = dataCancelados.some(c => quitarTildes(c.nombre.toLowerCase()) === quitarTildes(n.nombre.toLowerCase()));
+                return !yaCancelado && quitarTildes(n.nombre.toLowerCase()).includes(val);
+            });
+
+            boxSugerencias.innerHTML = filtrados.map(n => `<div class="sugerencia-item" onclick="seleccionarParaCancelar('${n.nombre}')">${n.nombre}</div>`).join('');
+            boxSugerencias.style.display = filtrados.length ? 'block' : 'none';
+        });
+
+        function seleccionarParaCancelar(nombre) {
+            inputBusqueda.value = nombre;
+            invitadoSeleccionadoParaCancelar = nombre;
+            boxSugerencias.style.display = 'none';
+            btnEjecutar.disabled = false;
+        }
+
+        async function ejecutarCancelacion() {
+            if (!invitadoSeleccionadoParaCancelar) return;
+            if (!confirm(`¿Estás seguro de cancelar la asistencia de ${invitadoSeleccionadoParaCancelar}?\nEsto lo sacará de la lista de confirmados (y a su pareja, si la tiene).`)) return;
+
+            btnEjecutar.innerText = "Procesando...";
+            btnEjecutar.disabled = true;
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipo: "admin_cancelar", nombre: invitadoSeleccionadoParaCancelar })
+                });
+                
+                inputBusqueda.value = "";
+                btnEjecutar.innerText = "Mover a Cancelados";
+                await cargarDatos(); // Recargar tablas y contadores al instante
+                alert("Invitado cancelado exitosamente.");
+            } catch(e) {
+                alert("Hubo un error al cancelar.");
+                btnEjecutar.innerText = "Mover a Cancelados";
+                btnEjecutar.disabled = false;
+            }
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        }
+    </script>
+</body>
+</html>
