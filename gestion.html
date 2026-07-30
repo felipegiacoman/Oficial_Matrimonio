@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Gestión - Matrimonio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { background: #f4f1ea; font-family: 'Montserrat', sans-serif; overflow-x: hidden; padding-bottom: 50px; }
+        
+        /* PANTALLA DE BLOQUEO */
+        #pantalla-bloqueo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #f4f1ea; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .login-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; max-width: 90%; width: 400px; border-top: 4px solid #b59a7a; }
+        
+        /* BOTONES Y NAVEGACIÓN */
+        .btn-gold { background: #b59a7a; color: white; border: none; }
+        .btn-gold:hover { background: #2d2d2d; color: white; }
+        .nav-pills .nav-link { color: #888; font-weight: 500; border-radius: 4px; margin: 0 5px; transition: 0.3s;}
+        .nav-pills .nav-link:hover { background-color: rgba(181, 154, 122, 0.1); color: #b59a7a; }
+        .nav-pills .nav-link.active { background-color: #b59a7a; color: white; box-shadow: 0 4px 10px rgba(181, 154, 122, 0.3); }
+
+        /* TARJETAS ESTADÍSTICAS */
+        .stat-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; border-top: 4px solid #b59a7a; height: 100%; display: flex; flex-direction: column; justify-content: center; transition: 0.3s;}
+        .stat-card.static { border-top-color: #2d2d2d; cursor: default; }
+        .stat-card.filtrable { cursor: pointer; }
+        .stat-card.filtrable:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .stat-card.active-filter { background: #b59a7a; color: white; border-top: 4px solid #2d2d2d; }
+        .stat-card.active-filter h6, .stat-card.active-filter .stat-val { color: white !important; }
+        .stat-val { font-size: 1.8rem; font-weight: bold; color: #2d2d2d; }
+        
+        /* TABLAS Y CONTENEDORES */
+        .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .sugerencias-container { position: absolute; z-index: 1050; background: white; width: 100%; max-height: 200px; overflow-y: auto; border: 1px solid #b59a7a; border-radius: 4px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: left; }
+        .sugerencia-item { cursor: pointer; padding: 10px 15px; border-bottom: 1px solid #f2ece4; font-size: 0.9rem; }
+        .sugerencia-item:last-child { border-bottom: none; }
+        .sugerencia-item:hover { background-color: #fdfbf7; color: #b59a7a; font-weight: bold; }
+
+        /* GESTIÓN DE MESAS */
+        .mesa-card { background: white; border-radius: 8px; border-top: 4px solid #b59a7a; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; transition: 0.2s;}
+        .mesa-novios { border-top: 4px solid #d4af37; background: #fffcf5; }
+        .guest-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; background: white;}
+        .guest-item:last-child { border-bottom: none; }
+        .draggable-guest { cursor: grab; transition: background 0.2s; border-radius: 4px; }
+        .draggable-guest:hover { background: #fdfbf7; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .draggable-guest:active { cursor: grabbing; }
+        .drop-zone { min-height: 100px; padding: 10px; margin: -10px; border-radius: 8px; border: 2px dashed transparent; transition: 0.2s; }
+        .drop-zone.dragover { border-color: #b59a7a; background: rgba(181, 154, 122, 0.05); }
+        .action-icon { cursor: pointer; color: #888; transition: 0.2s; font-size: 1.1rem;}
+        .action-icon:hover { color: #2d2d2d; }
+        .trash-icon:hover { color: #dc3545; }
+        
+        .badge-nino { background-color: #8c775e; color: white; }
+    </style>
+</head>
+<body class="p-3 p-md-5">
+
+    <!-- PANTALLA DE BLOQUEO -->
+    <div id="pantalla-bloqueo">
+        <div class="login-box">
+            <h3 class="mb-2" style="font-family: 'Playfair Display', serif;">Panel de Gestión</h3>
+            <p class="text-muted small mb-4">Ingresa el código de acceso exclusivo.</p>
+            <input type="password" id="input-pin" class="form-control text-center mb-3 fw-bold" placeholder="PIN" style="letter-spacing: 5px; font-size: 1.2rem;">
+            <button class="btn btn-gold w-100 py-2 fw-bold" onclick="verificarPIN()">Desbloquear</button>
+            <p id="error-pin" class="text-danger small mt-3 mb-0" style="display: none;">PIN incorrecto.</p>
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div id="contenido-principal" class="container-fluid container-xl" style="display: none;">
+        <h2 class="mb-4 text-center text-md-start" style="font-family: 'Playfair Display', serif; color: #2d2d2d;">Gestión del Matrimonio</h2>
+        
+        <!-- NAVEGACIÓN SUPERIOR UNIFICADA -->
+        <ul class="nav nav-pills mb-4 flex-column flex-md-row gap-2" id="pills-tab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link w-100 text-center active" data-bs-toggle="pill" data-bs-target="#panel-banquetera" type="button"><i class="bi bi-egg-fried me-2"></i>Banquetería</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link w-100 text-center" data-bs-toggle="pill" data-bs-target="#panel-confirmaciones" type="button"><i class="bi bi-check-circle me-2"></i>Confirmaciones</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link w-100 text-center" data-bs-toggle="pill" data-bs-target="#panel-mesas" type="button"><i class="bi bi-grid-3x3-gap me-2"></i>Gestión de Mesas</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="pills-tabContent">
+            
+            <!-- ============================================== -->
+            <!-- PESTAÑA 1: BANQUETERÍA -->
+            <!-- ============================================== -->
+            <div class="tab-pane fade show active" id="panel-banquetera">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 style="font-family: 'Playfair Display', serif;">Resumen de Platos</h4>
+                    <button class="btn btn-outline-dark btn-sm fw-bold px-3" onclick="renderTablaBanqueteria('Todas')">Ver a Todos</button>
+                </div>
+                
+                <div class="row g-2 g-md-3 mb-4">
+                    <div class="col-6 col-md-3"><div class="stat-card static"><h6>Total Adultos</h6><div class="stat-val" id="adult-val">0</div></div></div>
+                    <div class="col-6 col-md-3"><div class="stat-card filtrable" id="card-ninos" onclick="renderTablaBanqueteria('Niños')"><h6>Total Niños</h6><div class="stat-val" id="nino-val">0</div></div></div>
+                </div>
+
+                <h5 class="mb-3" style="font-family: 'Playfair Display', serif;">Restricciones Alimentarias <small class="text-muted fs-6 font-monospace">(Haz clic para filtrar)</small></h5>
+                <div class="row g-2 g-md-3 mb-4" id="contenedor-dietas"></div>
+
+                <div class="table-container">
+                    <h5 class="mb-3" id="titulo-tabla-banqueteria" style="font-family: 'Playfair Display', serif;">Todos los Comensales</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle border text-nowrap">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre del Comensal</th>
+                                    <th>Tipo</th>
+                                    <th>Mesa</th>
+                                    <th>Restricción</th>
+                                    <th>Menú</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-tabla-banqueteria">
+                                <tr><td colspan="5" class="text-center text-muted">Cargando datos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- PESTAÑA 2: CONFIRMACIONES -->
+            <!-- ============================================== -->
+            <div class="tab-pane fade" id="panel-confirmaciones">
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Total Confirmados</h6><div class="stat-val text-success" id="val-confirmados">0</div></div></div>
+                    <div class="col-6 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Total Cancelados</h6><div class="stat-val text-danger" id="val-cancelados">0</div></div></div>
+                    <div class="col-12 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Pendientes</h6><div class="stat-val" id="val-pendientes">0</div></div></div>
+                </div>
+
+                <div class="table-container">
+                    <ul class="nav nav-tabs mb-4">
+                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#subtab-confirmados" type="button">Lista de Confirmados</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#subtab-cancelados" type="button">Lista de Cancelados</button></li>
+                        <li class="nav-item"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#subtab-gestionar" type="button"><i class="bi bi-x-circle me-1"></i>Cancelar Invitado</button></li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- Sub-Pestaña Confirmados -->
+                        <div class="tab-pane fade show active" id="subtab-confirmados">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle border text-nowrap">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Nombre del Comensal</th>
+                                            <th>Tipo</th>
+                                            <th>Teléfono</th>
+                                            <th>Restricción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-confirmados">
+                                        <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Sub-Pestaña Cancelados -->
+                        <div class="tab-pane fade" id="subtab-cancelados">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle border text-nowrap">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Nombre del Comensal</th>
+                                            <th>Mensaje / Motivo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-cancelados">
+                                        <tr><td colspan="2" class="text-center text-muted">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Sub-Pestaña Cancelar Manual -->
+                        <div class="tab-pane fade" id="subtab-gestionar">
+                            <div class="row justify-content-center py-4">
+                                <div class="col-md-8 col-lg-6 bg-light p-4 rounded border">
+                                    <h5 class="mb-3 text-center" style="font-family: 'Playfair Display', serif;">Dar de baja a un invitado</h5>
+                                    <p class="text-muted small text-center mb-4">Busca a la persona (titular o pareja). Si cancelas al titular, su pareja se bajará automáticamente.</p>
+                                    
+                                    <div class="mb-3 position-relative">
+                                        <label class="form-label fw-bold small">Nombre del Comensal</label>
+                                        <input type="text" class="form-control" id="input-busqueda-cancelar" autocomplete="off" placeholder="🔍 Escribe al menos 2 letras...">
+                                        <div class="sugerencias-container" id="sugerencias-box-cancelar"></div>
+                                    </div>
+                                    
+                                    <button class="btn btn-danger w-100 mt-2" id="btn-ejecutar-cancelacion" disabled onclick="ejecutarCancelacion()">Mover a Cancelados</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- PESTAÑA 3: MESAS -->
+            <!-- ============================================== -->
+            <div class="tab-pane fade" id="panel-mesas">
+                <div class="row">
+                    <div class="col-12 col-lg-3 mb-4">
+                        <div class="bg-white p-3 rounded shadow-sm">
+                            <h5 class="mb-3">Por Asignar (<span id="count-sin-asignar">0</span>)</h5>
+                            <input type="text" id="buscador-por-asignar" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar nombre..." autocomplete="off" oninput="filtrarPorAsignar()">
+                            <div id="lista-sin-asignar" class="drop-zone" style="max-height: 65vh; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, null, 999, 0)">
+                                Cargando...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-9">
+                        <div class="d-flex flex-column flex-md-row gap-2 gap-md-3 mb-4 bg-white p-3 rounded shadow-sm align-items-md-end">
+                            <div class="w-100" style="max-width: 200px;">
+                                <label class="small fw-bold">Capacidad nueva mesa</label>
+                                <select id="nueva-mesa-cap" class="form-select form-select-sm">
+                                    <option value="10">10 personas</option>
+                                    <option value="8">8 personas</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-gold btn-sm py-2 px-3 w-100" style="max-width: 200px;" onclick="crearMesaNormal()">+ Agregar Mesa</button>
+                            
+                            <div class="ms-md-auto mt-2 mt-md-0 pt-2 pt-md-0 border-top border-md-top-0 border-md-start ps-md-3 w-100" style="max-width: 200px;">
+                                <button class="btn btn-outline-dark btn-sm w-100 py-2" onclick="crearMesaNovios()"><i class="bi bi-star-fill text-warning me-1"></i>Mesa Novios</button>
+                            </div>
+                        </div>
+                        <div class="row" id="contenedor-mesas"></div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let SCRIPT_URL = "";
+        
+        // Data cruda de la BBDD
+        let dataMaestra = [];
+        let dataConfirmados = [];
+        let dataCancelados = [];
+        let dataMesas = [];
+
+        // Data procesada
+        let listaComensalesGenerales = []; // Para Mesas y Banqueteria
+        let listaCancelables = []; // Para el buscador de cancelación
+        let tarjetasDietas = []; // Botones de filtro
+        let invitadoSeleccionadoParaCancelar = null;
+
+        // --- SISTEMA DE INGRESO ---
+        function verificarPIN() {
+            if (document.getElementById('input-pin').value === "336336336") {
+                document.getElementById('pantalla-bloqueo').style.display = "none";
+                document.getElementById('contenido-principal').style.display = "block";
+                init(); 
+            } else {
+                document.getElementById('error-pin').style.display = "block";
+                document.getElementById('input-pin').value = "";
+            }
+        }
+        document.getElementById('input-pin').addEventListener('keypress', function (e) { if (e.key === 'Enter') verificarPIN(); });
+
+        // --- UTILIDADES ---
+        function quitarTildes(str) {
+            if (!str) return "";
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
+        }
+
+        // --- INICIALIZACIÓN Y CARGA DE DATOS ---
+        async function init() {
+            const cfg = await (await fetch('config.json')).json();
+            SCRIPT_URL = cfg.worker_url;
+            await cargarDatos();
+        }
+
+        async function cargarDatos() {
+            const [resM, resConf, resCanc, resMesas] = await Promise.all([
+                fetch(SCRIPT_URL + "?action=lista"),
+                fetch(SCRIPT_URL + "?action=confirmados"),
+                fetch(SCRIPT_URL + "?action=cancelados"),
+                fetch(SCRIPT_URL + "?action=mesas")
+            ]);
+            
+            dataMaestra = await resM.json();
+            dataConfirmados = await resConf.json();
+            dataCancelados = await resCanc.json();
+            dataMesas = await resMesas.json();
+            
+            procesarDatosGenerales();
+            dibujarPanelBanqueteria();
+            dibujarPanelConfirmaciones();
+            dibujarPanelMesas();
+        }
+
+        function procesarDatosGenerales() {
+            listaComensalesGenerales = [];
+            listaCancelables = [];
+            
+            // Poblar cancelables con lista maestra (por si no han confirmado pero quiero cancelarlos)
+            dataMaestra.forEach(m => {
+                listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false });
+            });
+
+            dataConfirmados.forEach(c => {
+                const infoMaestra = dataMaestra.find(m => m.nombre === c.nombre_invitado);
+                const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
+                
+                // Titular
+                listaComensalesGenerales.push({
+                    id_drag: `prin_${c.nombre_invitado}`,
+                    nombre_mostrar: c.nombre_invitado,
+                    nombre_principal: c.nombre_invitado,
+                    es_pareja: false,
+                    mesa: c.mesa_numero,
+                    dieta: c.dieta || 'Ninguna',
+                    esNino: esNinoTitular,
+                    telefono: c.telefono
+                });
+
+                // Pareja
+                if (c.lleva_pareja === "Sí") {
+                    let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") 
+                        ? `${c.nombre_pareja}` 
+                        : `Pareja de ${c.nombre_invitado}`;
+                        
+                    listaComensalesGenerales.push({
+                        id_drag: `par_${c.nombre_invitado}`,
+                        nombre_mostrar: nombreP,
+                        nombre_principal: c.nombre_invitado,
+                        es_pareja: true,
+                        mesa: c.mesa_pareja,
+                        dieta: c.dieta_pareja || 'Ninguna',
+                        esNino: false, // Las parejas son adultos
+                        telefono: "-"
+                    });
+                    
+                    listaCancelables.push({ nombre_mostrar: nombreP, nombre_principal: c.nombre_invitado, es_pareja: true });
+                }
+            });
+        }
+
+
+        // ==============================================
+        // MÓDULO 1: BANQUETERÍA
+        // ==============================================
+        function dibujarPanelBanqueteria() {
+            let adultos = 0;
+            let ninos = 0;
+            let dietasDinamicas = {};
+
+            listaComensalesGenerales.forEach(c => {
+                if (c.esNino) ninos++; else adultos++;
+                if (c.dieta !== "Ninguna" && c.dieta !== "-") {
+                    dietasDinamicas[c.dieta] = (dietasDinamicas[c.dieta] || 0) + 1;
+                }
+            });
+
+            document.getElementById('adult-val').innerText = adultos;
+            document.getElementById('nino-val').innerText = ninos;
+
+            const contenedorDietas = document.getElementById('contenedor-dietas');
+            contenedorDietas.innerHTML = "";
+            tarjetasDietas = [];
+
+            if (Object.keys(dietasDinamicas).length === 0) {
+                contenedorDietas.innerHTML = `<div class="col-12"><p class="text-muted small">No hay invitados con restricciones alimentarias especiales.</p></div>`;
+            }
+
+            for (const [dieta, cantidad] of Object.entries(dietasDinamicas)) {
+                const col = document.createElement('div');
+                col.className = 'col-6 col-md-3 col-lg-2';
+                const card = document.createElement('div');
+                card.className = 'stat-card filtrable';
+                card.onclick = () => renderTablaBanqueteria(dieta);
+                tarjetasDietas.push({ elemento: card, nombreDieta: dieta });
+
+                card.innerHTML = `<h6 class="small fw-bold text-truncate m-0 mb-2" title="${dieta}">${dieta}</h6><div class="stat-val">${cantidad}</div>`;
+                col.appendChild(card);
+                contenedorDietas.appendChild(col);
+            }
+            renderTablaBanqueteria('Todas');
+        }
+
+        function renderTablaBanqueteria(filtro) {
+            // Actualizar diseño botones
+            tarjetasDietas.forEach(t => {
+                if(filtro !== 'Todas' && filtro !== 'Niños' && t.nombreDieta === filtro) t.elemento.classList.add('active-filter');
+                else t.elemento.classList.remove('active-filter');
+            });
+            const cardNinos = document.getElementById('card-ninos');
+            if (filtro === 'Niños') cardNinos.classList.add('active-filter');
+            else cardNinos.classList.remove('active-filter');
+            
+            // Actualizar Título
+            if (filtro === 'Todas') document.getElementById('titulo-tabla-banqueteria').innerText = 'Todos los Comensales';
+            else if (filtro === 'Niños') document.getElementById('titulo-tabla-banqueteria').innerText = 'Filtrando por: Menú Infantil (Niños)';
+            else document.getElementById('titulo-tabla-banqueteria').innerText = `Filtrando por: ${filtro}`;
+
+            let html = "";
+            
+            if (filtro === 'Todas') {
+                // Iterar sobre dataConfirmados para mantener el emparejamiento visual Titular -> Pareja
+                dataConfirmados.forEach(c => {
+                    const infoMaestra = dataMaestra.find(m => m.nombre === c.nombre_invitado);
+                    const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
+                    const mesaStrT = c.mesa_numero ? `Mesa ${c.mesa_numero}` : `<span class="text-danger small">Sin mesa</span>`;
+                    
+                    html += `<tr>
+                        <td><strong>${escapeHTML(c.nombre_invitado)}</strong></td>
+                        <td><span class="badge bg-primary">Titular</span></td>
+                        <td>${mesaStrT}</td>
+                        <td>${escapeHTML(c.dieta || 'Ninguna')}</td>
+                        <td><span class="badge ${esNinoTitular ? 'badge-nino' : 'bg-success'}">${esNinoTitular ? 'Niño' : 'Adulto'}</span></td>
+                    </tr>`;
+
+                    if (c.lleva_pareja === "Sí") {
+                        let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") ? c.nombre_pareja : `Pareja de ${c.nombre_invitado}`;
+                        const mesaStrP = c.mesa_pareja ? `Mesa ${c.mesa_pareja}` : `<span class="text-danger small">Sin mesa</span>`;
+                        
+                        html += `<tr style="background-color: #fdfbf7;">
+                            <td class="ps-4">↳ <strong>${escapeHTML(nombreP)}</strong></td>
+                            <td><span class="badge bg-secondary">Pareja</span></td>
+                            <td>${mesaStrP}</td>
+                            <td>${escapeHTML(c.dieta_pareja || 'Ninguna')}</td>
+                            <td><span class="badge bg-success">Adulto</span></td>
+                        </tr>`;
+                    }
+                });
+            } else {
+                // Si filtra, mostrar lista plana de los que coincidan
+                listaComensalesGenerales.forEach(c => {
+                    let match = false;
+                    if (filtro === 'Niños' && c.esNino) match = true;
+                    if (filtro !== 'Niños' && c.dieta === filtro) match = true;
+
+                    if (match) {
+                        const mesaStr = c.mesa ? `Mesa ${c.mesa}` : `<span class="text-danger small">Sin mesa</span>`;
+                        html += `<tr ${c.es_pareja ? 'style="background-color: #fdfbf7;"' : ''}>
+                            <td class="${c.es_pareja ? 'ps-4' : ''}">${c.es_pareja ? '↳ ' : ''}<strong>${escapeHTML(c.nombre_mostrar)}</strong></td>
+                            <td><span class="badge ${c.es_pareja ? 'bg-secondary' : 'bg-primary'}">${c.es_pareja ? 'Pareja' : 'Titular'}</span></td>
+                            <td>${mesaStr}</td>
+                            <td>${escapeHTML(c.dieta)}</td>
+                            <td><span class="badge ${c.esNino ? 'badge-nino' : 'bg-success'}">${c.esNino ? 'Niño' : 'Adulto'}</span></td>
+                        </tr>`;
+                    }
+                });
+            }
+            document.getElementById('lista-tabla-banqueteria').innerHTML = html || `<tr><td colspan="5" class="text-center text-muted">No hay comensales.</td></tr>`;
+        }
+
+        // ==============================================
+        // MÓDULO 2: CONFIRMACIONES
+        // ==============================================
+        function dibujarPanelConfirmaciones() {
+            let totalConfirmadosPersonas = listaComensalesGenerales.length;
+            document.getElementById('val-confirmados').innerText = totalConfirmadosPersonas;
+            
+            let htmlConf = "";
+            dataConfirmados.forEach(c => {
+                htmlConf += `<tr>
+                    <td><strong>${escapeHTML(c.nombre_invitado)}</strong></td>
+                    <td><span class="badge bg-primary">Titular</span></td>
+                    <td>${escapeHTML(c.telefono || '-')}</td>
+                    <td>${escapeHTML(c.dieta || 'Ninguna')}</td>
+                </tr>`;
+
+                if (c.lleva_pareja === "Sí") {
+                    let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") ? `${c.nombre_pareja} (Pareja de ${c.nombre_invitado})` : `Pareja de ${c.nombre_invitado}`;
+                    htmlConf += `<tr style="background-color: #fdfbf7;">
+                        <td class="ps-4">↳ <strong>${escapeHTML(nombreP)}</strong></td>
+                        <td><span class="badge bg-secondary">Pareja</span></td>
+                        <td>-</td>
+                        <td>${escapeHTML(c.dieta_pareja || 'Ninguna')}</td>
+                    </tr>`;
+                }
+            });
+            document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="4" class="text-center text-muted">Aún no hay confirmaciones.</td></tr>`;
+
+            let htmlCanc = "";
+            dataCancelados.forEach(c => {
+                htmlCanc += `<tr>
+                    <td><strong>${escapeHTML(c.nombre)}</strong></td>
+                    <td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td>
+                </tr>`;
+            });
+            document.getElementById('val-cancelados').innerText = dataCancelados.length;
+            document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay cancelaciones registradas.</td></tr>`;
+
+            let potencialTotal = 0;
+            dataMaestra.forEach(m => { potencialTotal += (parseInt(m.pareja) === 1 ? 2 : 1); });
+            let pendientes = potencialTotal - (totalConfirmadosPersonas + dataCancelados.length);
+            document.getElementById('val-pendientes').innerText = pendientes > 0 ? pendientes : 0;
+        }
+
+        // Buscador Cancelación
+        const inputBusquedaCancelar = document.getElementById('input-busqueda-cancelar');
+        const boxSugerenciasCancelar = document.getElementById('sugerencias-box-cancelar');
+        const btnEjecutarCancelar = document.getElementById('btn-ejecutar-cancelacion');
+
+        inputBusquedaCancelar.addEventListener('input', function() {
+            invitadoSeleccionadoParaCancelar = null;
+            btnEjecutarCancelar.disabled = true;
+            const val = quitarTildes(this.value.toLowerCase().trim());
+            if (val.length < 2) { boxSugerenciasCancelar.style.display = 'none'; return; }
+
+            const filtrados = listaCancelables.filter(n => {
+                if (!n.nombre_mostrar) return false;
+                const yaCancelado = dataCancelados.some(c => quitarTildes(c.nombre.toLowerCase()) === quitarTildes(n.nombre_mostrar.toLowerCase()));
+                return !yaCancelado && quitarTildes(n.nombre_mostrar.toLowerCase()).includes(val);
+            });
+
+            boxSugerenciasCancelar.innerHTML = filtrados.map(n => `<div class="sugerencia-item" onclick="seleccionarParaCancelar('${n.nombre_principal}', ${n.es_pareja}, '${escapeHTML(n.nombre_mostrar)}')">${escapeHTML(n.nombre_mostrar)}</div>`).join('');
+            boxSugerenciasCancelar.style.display = filtrados.length ? 'block' : 'none';
+        });
+
+        function seleccionarParaCancelar(nombre_principal, es_pareja, nombre_mostrar) {
+            inputBusquedaCancelar.value = nombre_mostrar;
+            invitadoSeleccionadoParaCancelar = { nombre_principal, es_pareja, nombre_mostrar };
+            boxSugerenciasCancelar.style.display = 'none';
+            btnEjecutarCancelar.disabled = false;
+        }
+
+        async function ejecutarCancelacion() {
+            if (!invitadoSeleccionadoParaCancelar) return;
+            let mensajeConfirm = invitadoSeleccionadoParaCancelar.es_pareja 
+                ? `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?\nEl titular principal seguirá confirmado.`
+                : `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?\nSe dará de baja a esta persona y a su pareja automáticamente.`;
+            if (!confirm(mensajeConfirm)) return;
+
+            btnEjecutarCancelar.innerText = "Procesando...";
+            btnEjecutarCancelar.disabled = true;
+
+            try {
+                await fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: "admin_cancelar", nombre_principal: invitadoSeleccionadoParaCancelar.nombre_principal, es_pareja: invitadoSeleccionadoParaCancelar.es_pareja }) });
+                inputBusquedaCancelar.value = "";
+                btnEjecutarCancelar.innerText = "Mover a Cancelados";
+                await cargarDatos(); 
+                alert("Cancelación procesada exitosamente.");
+            } catch(e) {
+                alert("Hubo un error al cancelar.");
+                btnEjecutarCancelar.innerText = "Mover a Cancelados";
+                btnEjecutarCancelar.disabled = false;
+            }
+        }
+
+
+        // ==============================================
+        // MÓDULO 3: MESAS
+        // ==============================================
+        function dibujarPanelMesas() {
+            const sinAsignar = listaComensalesGenerales.filter(c => c.mesa === null || c.mesa === "");
+            let htmlSinAsignar = "";
+            
+            sinAsignar.forEach(c => {
+                htmlSinAsignar += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
+                    <div><i class="bi bi-grip-vertical text-muted me-1"></i><strong style="font-size:0.8rem">${c.nombre_mostrar}</strong></div>
+                </div>`;
+            });
+            document.getElementById('count-sin-asignar').innerText = sinAsignar.length;
+            document.getElementById('lista-sin-asignar').innerHTML = htmlSinAsignar || "<p class='text-muted small mt-2'>Todos tienen mesa asignada.</p>";
+
+            let htmlMesas = "";
+            dataMesas.forEach(mesa => {
+                const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && c.mesa !== "" && parseInt(c.mesa) === parseInt(mesa.numero));
+                let sillasOcupadas = ocupantes.length; 
+                let htmlOcupantes = "";
+                
+                ocupantes.forEach(c => {
+                    htmlOcupantes += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
+                        <span style="font-size:0.75rem"><i class="bi bi-grip-vertical text-muted me-1"></i>${c.nombre_mostrar}</span>
+                        <button class="btn btn-sm text-danger p-0 m-0" onclick="asignarMesa('${c.id_drag}', null)"><i class="bi bi-x-circle"></i></button>
+                    </div>`;
+                });
+
+                const esMesaNovios = parseInt(mesa.capacidad) === 999;
+                const llena = !esMesaNovios && (sillasOcupadas >= mesa.capacidad);
+                
+                let badgeHtml = esMesaNovios ? `<span class="badge bg-info text-dark">${sillasOcupadas} en mesa</span>` : `<span class="badge ${llena ? 'bg-danger' : 'bg-success'}">${sillasOcupadas} / ${mesa.capacidad}</span>`;
+
+                htmlMesas += `
+                <div class="col-12 col-md-6 col-xl-4">
+                    <div class="mesa-card ${esMesaNovios ? 'mesa-novios' : ''}">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="m-0 fw-bold">${esMesaNovios ? 'Mesa Novios (0)' : `Mesa ${mesa.numero}`}</h6>
+                                ${!esMesaNovios ? `<i class="bi bi-people action-icon" title="Cambiar Capacidad" onclick="cambiarCapacidad(${mesa.numero}, ${mesa.capacidad})"></i>` : ''}
+                                ${!esMesaNovios ? `<i class="bi bi-pencil-square action-icon" title="Cambiar Número" onclick="cambiarNumero(${mesa.numero})"></i>` : ''}
+                                <i class="bi bi-trash action-icon trash-icon" title="Eliminar Mesa" onclick="eliminarMesa(${mesa.numero})"></i>
+                            </div>
+                            ${badgeHtml}
+                        </div>
+                        
+                        <div class="mb-3 drop-zone" style="max-height: 250px; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
+                            ${htmlOcupantes || '<div class="text-muted small mt-2">Arrastra un invitado aquí...</div>'}
+                        </div>
+                        
+                        <div class="position-relative mt-2">
+                            <input type="text" class="form-control form-control-sm" placeholder="🔍 Escribe para buscar y agregar..." autocomplete="off" oninput="filtrarDropdownMesa(this, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
+                            <div class="sugerencias-container shadow-sm"></div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('contenedor-mesas').innerHTML = htmlMesas;
+            filtrarPorAsignar();
+        }
+
+        // Buscador Por Asignar
+        function filtrarPorAsignar() {
+            const input = document.getElementById('buscador-por-asignar');
+            if(!input) return;
+            const term = quitarTildes(input.value.toLowerCase().trim());
+            const items = document.querySelectorAll('#lista-sin-asignar .guest-item');
+            
+            items.forEach(item => {
+                const nombre = quitarTildes(item.innerText.toLowerCase());
+                item.style.display = nombre.includes(term) ? 'flex' : 'none';
+            });
+        }
+
+        // Buscador Cajas Mesas
+        function filtrarDropdownMesa(inputElem, mesaNum, capMax, capActual) {
+            const val = quitarTildes(inputElem.value.toLowerCase().trim());
+            const box = inputElem.nextElementSibling;
+            if(val.length < 2) { box.style.display = 'none'; return; }
+            
+            const filtrados = listaComensalesGenerales.filter(c => {
+                if (c.mesa !== null && c.mesa !== "") return false; 
+                return quitarTildes(c.nombre_mostrar.toLowerCase()).includes(val);
+            });
+            
+            box.innerHTML = filtrados.map(c => `<div class="sugerencia-item" onclick="ejecutarAsignacionDropdown('${c.id_drag}', ${mesaNum}, ${capMax}, ${capActual}, this)">${c.nombre_mostrar}</div>`).join('');
+            box.style.display = filtrados.length ? 'block' : 'none';
+        }
+
+        function ejecutarAsignacionDropdown(idDrag, mesaNum, capMax, capActual, elemClic) {
+            const inputElem = elemClic.parentElement.previousElementSibling;
+            inputElem.value = ""; 
+            elemClic.parentElement.style.display = 'none'; 
+            intentarAsignar(idDrag, mesaNum, capMax, capActual);
+        }
+
+        // Drag & Drop
+        function drag(ev, idDrag) { ev.dataTransfer.setData("text/plain", idDrag); }
+        function allowDrop(ev) { ev.preventDefault(); const d = ev.target.closest('.drop-zone'); if(d) d.classList.add('dragover'); }
+        function leaveDrop(ev) { const d = ev.target.closest('.drop-zone'); if(d) d.classList.remove('dragover'); }
+        function drop(ev, mesaNum, capMax, capActual) {
+            ev.preventDefault();
+            const d = ev.target.closest('.drop-zone');
+            if(d) d.classList.remove('dragover');
+            const idDrag = ev.dataTransfer.getData("text/plain");
+            if (!idDrag) return;
+            if (mesaNum === null) { asignarMesa(idDrag, null); return; }
+            intentarAsignar(idDrag, mesaNum, capMax, capActual);
+        }
+
+        // Acciones Mesas
+        function obtenerSiguienteNumero() {
+            const numeros = dataMesas.map(m => parseInt(m.numero)).filter(n => n > 0).sort((a,b) => a-b);
+            let proximo = 1;
+            for (let i = 0; i < numeros.length; i++) { if (numeros[i] === proximo) proximo++; else break; }
+            return proximo;
+        }
+
+        async function crearMesaNormal() { await crearMesa(obtenerSiguienteNumero(), document.getElementById('nueva-mesa-cap').value); }
+        async function crearMesaNovios() {
+            if(dataMesas.some(m => parseInt(m.numero) === 0)) return alert("La Mesa de Novios ya existe.");
+            await crearMesa(0, 999);
+        }
+
+        async function crearMesa(num, cap) {
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "guardar_mesa", numero: num, capacidad: cap }) });
+            await cargarDatos();
+        }
+
+        async function eliminarMesa(num) {
+            if(!confirm(`¿Estás seguro de eliminar la Mesa ${num}?`)) return;
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "eliminar_mesa", numero: num }) });
+            await cargarDatos();
+        }
+
+        async function cambiarNumero(viejoNum) {
+            const nuevoNum = prompt(`Cambiar Mesa ${viejoNum} al número:`);
+            if(!nuevoNum || isNaN(nuevoNum) || parseInt(nuevoNum) === parseInt(viejoNum)) return;
+            if(dataMesas.some(m => parseInt(m.numero) === parseInt(nuevoNum))) return alert("Ese número de mesa ya está ocupado.");
+            
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "cambiar_numero_mesa", viejo_numero: viejoNum, nuevo_numero: nuevoNum }) });
+            const data = await res.json();
+            if(data.error) alert(data.error); 
+            await cargarDatos();
+        }
+
+        async function cambiarCapacidad(numero, capActual) {
+            const nuevaCap = prompt(`Ingresa la nueva cantidad de sillas:`, capActual);
+            if(!nuevaCap || isNaN(nuevaCap) || parseInt(nuevaCap) <= 0 || parseInt(nuevaCap) === parseInt(capActual)) return;
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap) }) });
+            await cargarDatos();
+        }
+
+        function intentarAsignar(idDrag, mesaNum, capMax, capActual) {
+            if(!idDrag) return;
+            const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
+            if (!comensal || (comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum))) return;
+            if(parseInt(capMax) !== 999 && (capActual + 1 > capMax)) {
+                alert(`¡Faltan sillas! Solo quedan ${capMax - capActual} disponibles en la Mesa ${mesaNum}.`);
+                return;
+            }
+            asignarMesa(idDrag, mesaNum);
+        }
+
+        async function asignarMesa(idDrag, mesaNum) {
+            const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
+            if(!comensal) return;
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "asignar_mesa", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, mesa_numero: mesaNum }) });
+            await cargarDatos();
+        }
+
+        // Cierra los desplegables de búsqueda al hacer clic afuera
+        document.addEventListener('click', function(e) {
+            if(!e.target.closest('.position-relative')) {
+                document.querySelectorAll('.sugerencias-container').forEach(box => box.style.display = 'none');
+            }
+        });
+    </script>
+</body>
+</html>
