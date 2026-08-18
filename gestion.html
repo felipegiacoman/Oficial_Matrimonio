@@ -6,23 +6,19 @@
     <title>Panel de Gestión - Matrimonio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <!-- Polyfill mágico para permitir Drag & Drop en pantallas táctiles (Celulares) -->
     <script src="https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js"></script>
     <style>
         body { background: #f4f1ea; font-family: 'Montserrat', sans-serif; overflow-x: hidden; padding-bottom: 50px; }
         
-        /* PANTALLA DE BLOQUEO */
         #pantalla-bloqueo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #f4f1ea; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
         .login-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; max-width: 90%; width: 400px; border-top: 4px solid #b59a7a; }
         
-        /* BOTONES Y NAVEGACIÓN */
         .btn-gold { background: #b59a7a; color: white; border: none; }
         .btn-gold:hover { background: #2d2d2d; color: white; }
         .nav-pills .nav-link { color: #888; font-weight: 500; border-radius: 4px; margin: 0 5px; transition: 0.3s;}
         .nav-pills .nav-link:hover { background-color: rgba(181, 154, 122, 0.1); color: #b59a7a; }
         .nav-pills .nav-link.active { background-color: #b59a7a; color: white; box-shadow: 0 4px 10px rgba(181, 154, 122, 0.3); }
 
-        /* TARJETAS ESTADÍSTICAS */
         .stat-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; border-top: 4px solid #b59a7a; height: 100%; display: flex; flex-direction: column; justify-content: center; transition: 0.3s;}
         .stat-card.static { border-top-color: #2d2d2d; cursor: default; }
         .stat-card.filtrable { cursor: pointer; }
@@ -31,21 +27,18 @@
         .stat-card.active-filter h6, .stat-card.active-filter .stat-val { color: white !important; }
         .stat-val { font-size: 1.8rem; font-weight: bold; color: #2d2d2d; }
         
-        /* TABLAS Y CONTENEDORES */
         .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .sugerencias-container { position: absolute; z-index: 1050; background: white; width: 100%; max-height: 200px; overflow-y: auto; border: 1px solid #b59a7a; border-radius: 4px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: left; }
         .sugerencia-item { cursor: pointer; padding: 10px 15px; border-bottom: 1px solid #f2ece4; font-size: 0.9rem; }
         .sugerencia-item:last-child { border-bottom: none; }
         .sugerencia-item:hover { background-color: #fdfbf7; color: #b59a7a; font-weight: bold; }
 
-        /* PANEL STICKY Y MÓVIL */
         .sticky-panel { position: sticky; top: 20px; z-index: 100; transition: 0.3s; }
         @media (max-width: 991px) {
             .sticky-panel { top: 10px; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.15); border-bottom: 3px solid #b59a7a; }
-            #lista-sin-asignar { max-height: 25vh !important; } /* En móvil ocupa menos para dejar ver las mesas */
+            #lista-sin-asignar { max-height: 25vh !important; }
         }
 
-        /* GESTIÓN DE MESAS */
         .mesa-card { background: white; border-radius: 8px; border-top: 4px solid #b59a7a; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; transition: 0.2s;}
         .mesa-novios { border-top: 4px solid #d4af37; background: #fffcf5; }
         .guest-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; background: white;}
@@ -62,11 +55,16 @@
         .cursor-move:active { cursor: grabbing; }
         
         .badge-nino { background-color: #8c775e; color: white; }
+
+        #network-status { position: fixed; bottom: 15px; right: 15px; background: rgba(0,0,0,0.8); color: white; padding: 8px 15px; border-radius: 30px; font-size: 0.85rem; display: none; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.3s; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .spin { display: inline-block; animation: spin 1s linear infinite; }
     </style>
 </head>
 <body class="p-3 p-md-5">
 
-    <!-- PANTALLA DE BLOQUEO -->
+    <div id="network-status"><i class="bi bi-arrow-repeat spin me-1"></i>Sincronizando...</div>
+
     <div id="pantalla-bloqueo">
         <div class="login-box">
             <h3 class="mb-2" style="font-family: 'Playfair Display', serif;">Panel de Gestión</h3>
@@ -77,11 +75,9 @@
         </div>
     </div>
 
-    <!-- CONTENIDO PRINCIPAL -->
     <div id="contenido-principal" class="container-fluid container-xl" style="display: none;">
         <h2 id="titulo-principal" class="mb-4 text-center text-md-start" style="font-family: 'Playfair Display', serif; color: #2d2d2d;">Gestión del Matrimonio</h2>
         
-        <!-- NAVEGACIÓN SUPERIOR UNIFICADA -->
         <ul class="nav nav-pills mb-4 flex-column flex-md-row gap-2" id="pills-tab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link w-100 text-center active" data-bs-toggle="pill" data-bs-target="#panel-banquetera" type="button"><i class="bi bi-egg-fried me-2"></i>Banquetería</button>
@@ -96,9 +92,7 @@
 
         <div class="tab-content" id="pills-tabContent">
             
-            <!-- ============================================== -->
-            <!-- PESTAÑA 1: BANQUETERÍA -->
-            <!-- ============================================== -->
+            <!-- BANQUETERÍA -->
             <div class="tab-pane fade show active" id="panel-banquetera">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h4 style="font-family: 'Playfair Display', serif;">Resumen de Platos</h4>
@@ -114,7 +108,12 @@
                 <div class="row g-2 g-md-3 mb-4" id="contenedor-dietas"></div>
 
                 <div class="table-container">
-                    <h5 class="mb-3" id="titulo-tabla-banqueteria" style="font-family: 'Playfair Display', serif;">Todos los Comensales</h5>
+                    <!-- Buscador Banquetería -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+                        <h5 class="m-0" id="titulo-tabla-banqueteria" style="font-family: 'Playfair Display', serif;">Todos los Comensales</h5>
+                        <input type="text" id="buscador-banqueteria" class="form-control form-control-sm w-auto" placeholder="🔍 Buscar invitado..." autocomplete="off" oninput="renderTablaBanqueteria()">
+                    </div>
+                    
                     <div class="table-responsive">
                         <table class="table table-hover align-middle border text-nowrap">
                             <thead class="table-light">
@@ -134,22 +133,24 @@
                 </div>
             </div>
 
-            <!-- ============================================== -->
-            <!-- PESTAÑA 2: CONFIRMACIONES -->
-            <!-- ============================================== -->
+            <!-- CONFIRMACIONES -->
             <div class="tab-pane fade" id="panel-confirmaciones">
                 <div class="row g-3 mb-4">
                     <div class="col-6 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Total Confirmados</h6><div class="stat-val text-success" id="val-confirmados">0</div></div></div>
-                    <div class="col-6 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Total Cancelados</h6><div class="stat-val text-danger" id="val-cancelados">0</div></div></div>
-                    <div class="col-12 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Pendientes</h6><div class="stat-val" id="val-pendientes">0</div></div></div>
+                    <div class="col-6 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Faltan Confirmar</h6><div class="stat-val text-warning" id="val-pendientes">0</div></div></div>
+                    <div class="col-12 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Total Cancelados</h6><div class="stat-val text-danger" id="val-cancelados">0</div></div></div>
                 </div>
 
                 <div class="table-container">
-                    <ul class="nav nav-tabs mb-4">
-                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#subtab-confirmados" type="button">Lista de Confirmados</button></li>
-                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#subtab-cancelados" type="button">Lista de Cancelados</button></li>
-                        <li class="nav-item"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#subtab-gestionar" type="button"><i class="bi bi-x-circle me-1"></i>Cancelar Invitado</button></li>
+                    <ul class="nav nav-tabs mb-3 flex-nowrap" style="overflow-x: auto; overflow-y: hidden;">
+                        <li class="nav-item"><button class="nav-link active text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-confirmados" type="button">Confirmados</button></li>
+                        <li class="nav-item"><button class="nav-link text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-pendientes" type="button">Pendientes</button></li>
+                        <li class="nav-item"><button class="nav-link text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-cancelados" type="button">Cancelados</button></li>
+                        <li class="nav-item"><button class="nav-link text-danger text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-gestionar" type="button"><i class="bi bi-x-circle me-1"></i>Bajar Invitado</button></li>
                     </ul>
+
+                    <!-- Buscador Global Confirmaciones -->
+                    <input type="text" id="buscador-confirmaciones" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar invitado en las listas..." autocomplete="off" oninput="dibujarPanelConfirmaciones()">
 
                     <div class="tab-content">
                         <!-- Sub-Pestaña Confirmados -->
@@ -166,6 +167,23 @@
                                     </thead>
                                     <tbody id="tabla-confirmados">
                                         <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Sub-Pestaña Pendientes -->
+                        <div class="tab-pane fade" id="subtab-pendientes">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle border text-nowrap">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Nombre del Comensal</th>
+                                            <th>Tipo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-pendientes">
+                                        <tr><td colspan="2" class="text-center text-muted">Cargando...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -188,7 +206,7 @@
                             </div>
                         </div>
 
-                        <!-- Sub-Pestaña Cancelar Manual -->
+                        <!-- Sub-Pestaña Bajar Manual -->
                         <div class="tab-pane fade" id="subtab-gestionar">
                             <div class="row justify-content-center py-4">
                                 <div class="col-md-8 col-lg-6 bg-light p-4 rounded border">
@@ -209,13 +227,9 @@
                 </div>
             </div>
 
-            <!-- ============================================== -->
-            <!-- PESTAÑA 3: MESAS -->
-            <!-- ============================================== -->
+            <!-- MESAS -->
             <div class="tab-pane fade" id="panel-mesas">
                 <div class="row position-relative">
-                    
-                    <!-- PANEL IZQUIERDO: STICKY -->
                     <div class="col-12 col-lg-3 mb-4">
                         <div class="bg-white p-3 rounded shadow-sm sticky-panel">
                             <h5 class="mb-3">Por Asignar (<span id="count-sin-asignar">0</span>)</h5>
@@ -226,7 +240,6 @@
                         </div>
                     </div>
 
-                    <!-- PANEL DERECHO: MESAS -->
                     <div class="col-12 col-lg-9">
                         <div class="d-flex flex-column flex-md-row gap-2 gap-md-3 mb-4 bg-white p-3 rounded shadow-sm align-items-md-end">
                             <div class="w-100" style="max-width: 200px;">
@@ -254,8 +267,68 @@
     <script>
         let SCRIPT_URL = "";
         let dataMaestra = []; let dataConfirmados = []; let dataCancelados = []; let dataMesas = [];
-        let listaComensalesGenerales = []; let listaCancelables = []; let tarjetasDietas = [];
+        let listaComensalesGenerales = []; let listaCancelables = []; let listaPendientes = []; let tarjetasDietas = [];
         let invitadoSeleccionadoParaCancelar = null;
+        let filtroActualBanqueteria = 'Todas';
+
+        // ======================= SISTEMA DE SINCRONIZACIÓN BLINDADO (OFFLINE-FIRST) =======================
+        let syncQueue = JSON.parse(localStorage.getItem('matriSyncQueue') || '[]');
+        let isSyncing = false;
+
+        function saveQueue() {
+            localStorage.setItem('matriSyncQueue', JSON.stringify(syncQueue));
+            actualizarEstadoRed();
+        }
+
+        function addToQueue(action) {
+            syncQueue.push(action);
+            saveQueue();
+            processQueue();
+        }
+
+        async function processQueue() {
+            if (isSyncing || syncQueue.length === 0) return;
+            isSyncing = true;
+            actualizarEstadoRed();
+
+            while (syncQueue.length > 0) {
+                const action = syncQueue[0];
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(action)
+                    });
+                    
+                    if (!response.ok) throw new Error('Network error');
+                    syncQueue.shift(); saveQueue();
+                } catch (error) {
+                    console.warn("Conexión inestable. Reintentando en 3 segundos...", error);
+                    isSyncing = false;
+                    actualizarEstadoRed();
+                    setTimeout(processQueue, 3000); 
+                    return;
+                }
+            }
+            
+            isSyncing = false;
+            actualizarEstadoRed();
+        }
+
+        function actualizarEstadoRed() {
+            const el = document.getElementById('network-status');
+            if (!el) return;
+            if (syncQueue.length > 0) {
+                el.innerHTML = `<i class="bi bi-arrow-repeat spin me-2"></i> Guardando (${syncQueue.length})...`;
+                el.style.background = 'rgba(212, 175, 55, 0.95)';
+                el.style.display = 'block';
+            } else {
+                el.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> Guardado exitoso`;
+                el.style.background = 'rgba(40, 167, 69, 0.95)';
+                setTimeout(() => { if (syncQueue.length === 0) el.style.display = 'none'; }, 2500);
+            }
+        }
+        // ==============================================================================================
 
         function verificarPIN() {
             const pin = document.getElementById('input-pin').value.toLowerCase().trim();
@@ -279,39 +352,60 @@
         function escapeHTML(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])); }
 
         async function init() {
-            const cfg = await (await fetch('config.json')).json();
-            SCRIPT_URL = cfg.worker_url;
-            await cargarDatos();
+            try {
+                const resCfg = await fetch('config.json');
+                const cfg = await resCfg.json();
+                SCRIPT_URL = cfg.worker_url;
+                await cargarDatos();
+                processQueue();
+            } catch(e) {
+                alert("Error inicializando el sistema. Comprueba tu conexión.");
+            }
         }
 
         async function cargarDatos() {
-            const [resM, resConf, resCanc, resMesas] = await Promise.all([
-                fetch(SCRIPT_URL + "?action=lista"), fetch(SCRIPT_URL + "?action=confirmados"),
-                fetch(SCRIPT_URL + "?action=cancelados"), fetch(SCRIPT_URL + "?action=mesas")
-            ]);
-            
-            dataMaestra = await resM.json(); dataConfirmados = await resConf.json();
-            dataCancelados = await resCanc.json(); dataMesas = await resMesas.json();
-            
-            // Lógica de Ordenamiento Visual (LocalStorage)
-            const ordenGuardado = JSON.parse(localStorage.getItem('ordenMesas') || "[]");
-            dataMesas.sort((a, b) => {
-                let idxA = ordenGuardado.indexOf(parseInt(a.numero));
-                let idxB = ordenGuardado.indexOf(parseInt(b.numero));
-                if (idxA === -1) idxA = 999;
-                if (idxB === -1) idxB = 999;
-                if(idxA === 999 && idxB === 999) return parseInt(a.numero) - parseInt(b.numero);
-                return idxA - idxB;
-            });
+            try {
+                const [resM, resConf, resCanc, resMesas] = await Promise.all([
+                    fetch(SCRIPT_URL + "?action=lista"), fetch(SCRIPT_URL + "?action=confirmados"),
+                    fetch(SCRIPT_URL + "?action=cancelados"), fetch(SCRIPT_URL + "?action=mesas")
+                ]);
+                
+                dataMaestra = await resM.json(); dataConfirmados = await resConf.json();
+                dataCancelados = await resCanc.json(); dataMesas = await resMesas.json();
+                
+                const ordenGuardado = JSON.parse(localStorage.getItem('ordenMesas') || "[]");
+                dataMesas.sort((a, b) => {
+                    let idxA = ordenGuardado.indexOf(parseInt(a.numero)); let idxB = ordenGuardado.indexOf(parseInt(b.numero));
+                    if (idxA === -1) idxA = 999; if (idxB === -1) idxB = 999;
+                    if(idxA === 999 && idxB === 999) return parseInt(a.numero) - parseInt(b.numero);
+                    return idxA - idxB;
+                });
 
-            procesarDatosGenerales();
-            dibujarPanelBanqueteria(); dibujarPanelConfirmaciones(); dibujarPanelMesas();
+                procesarDatosGenerales();
+                dibujarPanelBanqueteria(); dibujarPanelConfirmaciones(); dibujarPanelMesas();
+            } catch(e) { console.error("Error al obtener datos principales. Recargue la página.", e); }
         }
 
         function procesarDatosGenerales() {
-            listaComensalesGenerales = []; listaCancelables = [];
-            dataMaestra.forEach(m => listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false }));
+            listaComensalesGenerales = []; listaCancelables = []; listaPendientes = [];
 
+            // 1. Procesar Lista Maestra para Cancelables y PENDIENTES
+            dataMaestra.forEach(m => {
+                listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false });
+                
+                // Lógica de Pendientes (No están en Confirmados ni en Cancelados)
+                const estaConfirmado = dataConfirmados.some(c => c.nombre_invitado === m.nombre);
+                const estaCancelado = dataCancelados.some(c => c.nombre === m.nombre);
+                
+                if (!estaConfirmado && !estaCancelado) {
+                    listaPendientes.push({ nombre: m.nombre, tipo: 'Titular' });
+                    if (parseInt(m.pareja) === 1) {
+                        listaPendientes.push({ nombre: `Pareja de ${m.nombre}`, tipo: 'Pareja' });
+                    }
+                }
+            });
+
+            // 2. Procesar Confirmados para Tablas y Mesas
             dataConfirmados.forEach(c => {
                 const infoMaestra = dataMaestra.find(m => m.nombre === c.nombre_invitado);
                 const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
@@ -355,57 +449,84 @@
             renderTablaBanqueteria('Todas');
         }
 
-        function renderTablaBanqueteria(filtro) {
+        function renderTablaBanqueteria(filtro = filtroActualBanqueteria) {
+            filtroActualBanqueteria = filtro;
+            const searchInput = document.getElementById('buscador-banqueteria');
+            const term = searchInput ? quitarTildes(searchInput.value.toLowerCase().trim()) : '';
+
             tarjetasDietas.forEach(t => { t.elemento.classList.toggle('active-filter', filtro !== 'Todas' && filtro !== 'Niños' && t.nombreDieta === filtro); });
             document.getElementById('card-ninos').classList.toggle('active-filter', filtro === 'Niños');
             document.getElementById('titulo-tabla-banqueteria').innerText = filtro === 'Todas' ? 'Todos los Comensales' : (filtro === 'Niños' ? 'Filtrando por: Menú Infantil (Niños)' : `Filtrando por: ${filtro}`);
 
             let html = "";
-            if (filtro === 'Todas') {
-                dataConfirmados.forEach(c => {
-                    const infoMaestra = dataMaestra.find(m => m.nombre === c.nombre_invitado);
-                    const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
-                    const mesaStrT = c.mesa_numero ? `Mesa ${c.mesa_numero}` : `<span class="text-danger small">Sin mesa</span>`;
-                    html += `<tr><td><strong>${escapeHTML(c.nombre_invitado)}</strong></td><td><span class="badge bg-primary">Titular</span></td><td>${mesaStrT}</td><td>${escapeHTML(c.dieta || 'Ninguna')}</td><td><span class="badge ${esNinoTitular ? 'badge-nino' : 'bg-success'}">${esNinoTitular ? 'Niño' : 'Adulto'}</span></td></tr>`;
+            listaComensalesGenerales.forEach(c => {
+                let matchFiltro = false;
+                if (filtro === 'Todas') matchFiltro = true;
+                else if (filtro === 'Niños' && c.esNino) matchFiltro = true;
+                else if (filtro !== 'Todas' && filtro !== 'Niños' && c.dieta === filtro) matchFiltro = true;
 
-                    if (c.lleva_pareja === "Sí") {
-                        let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") ? c.nombre_pareja : `Pareja de ${c.nombre_invitado}`;
-                        const mesaStrP = c.mesa_pareja ? `Mesa ${c.mesa_pareja}` : `<span class="text-danger small">Sin mesa</span>`;
-                        html += `<tr style="background-color: #fdfbf7;"><td class="ps-4">↳ <strong>${escapeHTML(nombreP)}</strong></td><td><span class="badge bg-secondary">Pareja</span></td><td>${mesaStrP}</td><td>${escapeHTML(c.dieta_pareja || 'Ninguna')}</td><td><span class="badge bg-success">Adulto</span></td></tr>`;
-                    }
-                });
-            } else {
-                listaComensalesGenerales.forEach(c => {
-                    if ((filtro === 'Niños' && c.esNino) || (filtro !== 'Niños' && c.dieta === filtro)) {
-                        const mesaStr = c.mesa ? `Mesa ${c.mesa}` : `<span class="text-danger small">Sin mesa</span>`;
-                        html += `<tr ${c.es_pareja ? 'style="background-color: #fdfbf7;"' : ''}><td class="${c.es_pareja ? 'ps-4' : ''}">${c.es_pareja ? '↳ ' : ''}<strong>${escapeHTML(c.nombre_mostrar)}</strong></td><td><span class="badge ${c.es_pareja ? 'bg-secondary' : 'bg-primary'}">${c.es_pareja ? 'Pareja' : 'Titular'}</span></td><td>${mesaStr}</td><td>${escapeHTML(c.dieta)}</td><td><span class="badge ${c.esNino ? 'badge-nino' : 'bg-success'}">${c.esNino ? 'Niño' : 'Adulto'}</span></td></tr>`;
-                    }
-                });
-            }
-            document.getElementById('lista-tabla-banqueteria').innerHTML = html || `<tr><td colspan="5" class="text-center text-muted">No hay comensales.</td></tr>`;
+                let matchSearch = term === "" || quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term);
+
+                if (matchFiltro && matchSearch) {
+                    const mesaStr = c.mesa ? `Mesa ${c.mesa}` : `<span class="text-danger small">Sin mesa</span>`;
+                    html += `<tr ${c.es_pareja ? 'style="background-color: #fdfbf7;"' : ''}>
+                        <td class="${c.es_pareja ? 'ps-4' : ''}">${c.es_pareja ? '↳ ' : ''}<strong>${escapeHTML(c.nombre_mostrar)}</strong></td>
+                        <td><span class="badge ${c.es_pareja ? 'bg-secondary' : 'bg-primary'}">${c.es_pareja ? 'Pareja' : 'Titular'}</span></td>
+                        <td>${mesaStr}</td>
+                        <td>${escapeHTML(c.dieta)}</td>
+                        <td><span class="badge ${c.esNino ? 'badge-nino' : 'bg-success'}">${c.esNino ? 'Niño' : 'Adulto'}</span></td>
+                    </tr>`;
+                }
+            });
+            document.getElementById('lista-tabla-banqueteria').innerHTML = html || `<tr><td colspan="5" class="text-center text-muted">No hay resultados.</td></tr>`;
         }
 
         // ======================= CONFIRMACIONES =======================
         function dibujarPanelConfirmaciones() {
+            const term = document.getElementById('buscador-confirmaciones') ? quitarTildes(document.getElementById('buscador-confirmaciones').value.toLowerCase().trim()) : "";
+
+            // Contadores Fijos
             document.getElementById('val-confirmados').innerText = listaComensalesGenerales.length;
+            document.getElementById('val-pendientes').innerText = listaPendientes.length;
+            document.getElementById('val-cancelados').innerText = dataCancelados.length;
+
+            // Tabla Confirmados
             let htmlConf = "";
-            dataConfirmados.forEach(c => {
-                htmlConf += `<tr><td><strong>${escapeHTML(c.nombre_invitado)}</strong></td><td><span class="badge bg-primary">Titular</span></td><td>${escapeHTML(c.telefono || '-')}</td><td>${escapeHTML(c.dieta || 'Ninguna')}</td></tr>`;
-                if (c.lleva_pareja === "Sí") {
-                    let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") ? `${c.nombre_pareja} (Pareja de ${c.nombre_invitado})` : `Pareja de ${c.nombre_invitado}`;
-                    htmlConf += `<tr style="background-color: #fdfbf7;"><td class="ps-4">↳ <strong>${escapeHTML(nombreP)}</strong></td><td><span class="badge bg-secondary">Pareja</span></td><td>-</td><td>${escapeHTML(c.dieta_pareja || 'Ninguna')}</td></tr>`;
+            listaComensalesGenerales.forEach(c => {
+                if (term === "" || quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term)) {
+                    htmlConf += `<tr ${c.es_pareja ? 'style="background-color: #fdfbf7;"' : ''}>
+                        <td class="${c.es_pareja ? 'ps-4' : ''}">${c.es_pareja ? '↳ ' : ''}<strong>${escapeHTML(c.nombre_mostrar)}</strong></td>
+                        <td><span class="badge ${c.es_pareja ? 'bg-secondary' : 'bg-primary'}">${c.es_pareja ? 'Pareja' : 'Titular'}</span></td>
+                        <td>${escapeHTML(c.telefono || '-')}</td>
+                        <td>${escapeHTML(c.dieta)}</td>
+                    </tr>`;
                 }
             });
-            document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="4" class="text-center text-muted">Aún no hay confirmaciones.</td></tr>`;
+            document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="4" class="text-center text-muted">No hay resultados en Confirmados.</td></tr>`;
 
+            // Tabla Pendientes
+            let htmlPend = "";
+            listaPendientes.forEach(p => {
+                if (term === "" || quitarTildes(p.nombre.toLowerCase()).includes(term)) {
+                    htmlPend += `<tr ${p.tipo === 'Pareja' ? 'style="background-color: #fdfbf7;"' : ''}>
+                        <td class="${p.tipo === 'Pareja' ? 'ps-4' : ''}">${p.tipo === 'Pareja' ? '↳ ' : ''}<strong>${escapeHTML(p.nombre)}</strong></td>
+                        <td><span class="badge ${p.tipo === 'Pareja' ? 'bg-secondary' : 'bg-warning text-dark'}">${p.tipo}</span></td>
+                    </tr>`;
+                }
+            });
+            document.getElementById('tabla-pendientes').innerHTML = htmlPend || `<tr><td colspan="2" class="text-center text-muted">No hay resultados en Pendientes.</td></tr>`;
+
+            // Tabla Cancelados
             let htmlCanc = "";
-            dataCancelados.forEach(c => { htmlCanc += `<tr><td><strong>${escapeHTML(c.nombre)}</strong></td><td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td></tr>`; });
-            document.getElementById('val-cancelados').innerText = dataCancelados.length;
-            document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay cancelaciones.</td></tr>`;
-
-            let potencialTotal = 0; dataMaestra.forEach(m => { potencialTotal += (parseInt(m.pareja) === 1 ? 2 : 1); });
-            let pendientes = potencialTotal - (listaComensalesGenerales.length + dataCancelados.length);
-            document.getElementById('val-pendientes').innerText = pendientes > 0 ? pendientes : 0;
+            dataCancelados.forEach(c => {
+                if (term === "" || quitarTildes(c.nombre.toLowerCase()).includes(term)) {
+                    htmlCanc += `<tr>
+                        <td><strong>${escapeHTML(c.nombre)}</strong></td>
+                        <td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td>
+                    </tr>`;
+                }
+            });
+            document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay resultados en Cancelados.</td></tr>`;
         }
 
         const inputBusquedaCancelar = document.getElementById('input-busqueda-cancelar');
@@ -438,14 +559,19 @@
             if (!confirm(msg)) return;
 
             btnEjecutarCancelar.innerText = "Procesando..."; btnEjecutarCancelar.disabled = true;
-            try {
-                await fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: "admin_cancelar", nombre_principal: invitadoSeleccionadoParaCancelar.nombre_principal, es_pareja: invitadoSeleccionadoParaCancelar.es_pareja }) });
-                inputBusquedaCancelar.value = ""; btnEjecutarCancelar.innerText = "Mover a Cancelados";
-                await cargarDatos(); alert("Cancelación procesada exitosamente.");
-            } catch(e) { alert("Hubo un error al cancelar."); btnEjecutarCancelar.innerText = "Mover a Cancelados"; btnEjecutarCancelar.disabled = false; }
+            
+            addToQueue({ 
+                tipo: "admin_cancelar", 
+                nombre_principal: invitadoSeleccionadoParaCancelar.nombre_principal, 
+                es_pareja: invitadoSeleccionadoParaCancelar.es_pareja 
+            });
+            
+            alert("Cancelación encolada. Refrescando datos locales...");
+            inputBusquedaCancelar.value = ""; btnEjecutarCancelar.innerText = "Mover a Cancelados";
+            setTimeout(cargarDatos, 1000); 
         }
 
-        // ======================= MESAS (DRAG & DROP Y ORDEN) =======================
+        // ======================= MESAS =======================
         function dibujarPanelMesas() {
             const sinAsignar = listaComensalesGenerales.filter(c => c.mesa === null || c.mesa === "");
             let htmlSinAsignar = "";
@@ -466,7 +592,7 @@
                 ocupantes.forEach(c => {
                     htmlOcupantes += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
                         <span style="font-size:0.75rem"><i class="bi bi-grip-vertical text-muted me-1"></i>${c.nombre_mostrar}</span>
-                        <button class="btn btn-sm text-danger p-0 m-0" onclick="asignarMesa('${c.id_drag}', null)"><i class="bi bi-x-circle"></i></button>
+                        <button class="btn btn-sm text-danger p-0 m-0" onclick="intentarAsignar('${c.id_drag}', null, null, null)"><i class="bi bi-x-circle"></i></button>
                     </div>`;
                 });
 
@@ -503,7 +629,6 @@
             filtrarPorAsignar();
         }
 
-        // Buscadores
         function filtrarPorAsignar() {
             const input = document.getElementById('buscador-por-asignar'); if(!input) return;
             const term = quitarTildes(input.value.toLowerCase().trim());
@@ -525,29 +650,18 @@
             intentarAsignar(idDrag, mesaNum, capMax, capActual);
         }
 
-        // LÓGICA DRAG & DROP INVITADOS
-        function drag(ev, idDrag) { 
-            ev.stopPropagation(); 
-            ev.dataTransfer.setData("type", "guest"); 
-            ev.dataTransfer.setData("text/plain", idDrag); 
-        }
+        function drag(ev, idDrag) { ev.stopPropagation(); ev.dataTransfer.setData("type", "guest"); ev.dataTransfer.setData("text/plain", idDrag); }
         function allowDrop(ev) { ev.preventDefault(); const d = ev.target.closest('.drop-zone'); if(d) d.classList.add('dragover'); }
         function leaveDrop(ev) { const d = ev.target.closest('.drop-zone'); if(d) d.classList.remove('dragover'); }
         function drop(ev, mesaNum, capMax, capActual) {
             ev.preventDefault(); ev.stopPropagation();
             const d = ev.target.closest('.drop-zone'); if(d) d.classList.remove('dragover');
-            if(ev.dataTransfer.getData("type") !== "guest") return; // Evita soltar mesas aquí
+            if(ev.dataTransfer.getData("type") !== "guest") return;
             const idDrag = ev.dataTransfer.getData("text/plain"); if (!idDrag) return;
-            if (mesaNum === null) { asignarMesa(idDrag, null); return; }
             intentarAsignar(idDrag, mesaNum, capMax, capActual);
         }
 
-        // LÓGICA DRAG & DROP MESAS (NUEVO)
-        function dragMesa(ev, mesaNum) {
-            ev.stopPropagation();
-            ev.dataTransfer.setData("type", "mesa");
-            ev.dataTransfer.setData("text/plain", mesaNum);
-        }
+        function dragMesa(ev, mesaNum) { ev.stopPropagation(); ev.dataTransfer.setData("type", "mesa"); ev.dataTransfer.setData("text/plain", mesaNum); }
         function allowDropMesa(ev) { ev.preventDefault(); }
         function dropMesa(ev, targetMesaNum) {
             ev.preventDefault(); ev.stopPropagation();
@@ -560,43 +674,66 @@
             const [moved] = dataMesas.splice(fromIdx, 1);
             dataMesas.splice(toIdx, 0, moved);
             
-            // Guardar en el navegador
             localStorage.setItem('ordenMesas', JSON.stringify(dataMesas.map(m => parseInt(m.numero))));
             dibujarPanelMesas();
         }
 
-        // Acciones Mesas BBDD
         function obtenerSiguienteNumero() {
             const numeros = dataMesas.map(m => parseInt(m.numero)).filter(n => n > 0).sort((a,b) => a-b);
             let proximo = 1; for (let i = 0; i < numeros.length; i++) { if (numeros[i] === proximo) proximo++; else break; } return proximo;
         }
 
-        async function crearMesaNormal() { await crearMesa(obtenerSiguienteNumero(), document.getElementById('nueva-mesa-cap').value); }
-        async function crearMesaNovios() { if(dataMesas.some(m => parseInt(m.numero) === 0)) return alert("La Mesa de Novios ya existe."); await crearMesa(0, 999); }
-        async function crearMesa(num, cap) { await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "guardar_mesa", numero: num, capacidad: cap }) }); await cargarDatos(); }
-        async function eliminarMesa(num) { if(!confirm(`¿Estás seguro de eliminar la Mesa ${num}?`)) return; await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "eliminar_mesa", numero: num }) }); await cargarDatos(); }
-        async function cambiarNumero(viejoNum) {
+        function crearMesaNormal() { crearMesa(obtenerSiguienteNumero(), document.getElementById('nueva-mesa-cap').value); }
+        function crearMesaNovios() { if(dataMesas.some(m => parseInt(m.numero) === 0)) return alert("La Mesa de Novios ya existe."); crearMesa(0, 999); }
+        
+        function crearMesa(num, cap) {
+            dataMesas.push({ numero: num, capacidad: cap });
+            dibujarPanelMesas();
+            addToQueue({ tipo: "guardar_mesa", numero: num, capacidad: cap });
+        }
+
+        function eliminarMesa(num) {
+            if(!confirm(`¿Estás seguro de eliminar la Mesa ${num}?`)) return;
+            dataMesas = dataMesas.filter(m => parseInt(m.numero) !== parseInt(num));
+            listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(num)) c.mesa = null; });
+            dibujarPanelMesas(); dibujarPanelBanqueteria();
+            addToQueue({ tipo: "eliminar_mesa", numero: num });
+        }
+
+        function cambiarNumero(viejoNum) {
             const nuevoNum = prompt(`Cambiar Mesa ${viejoNum} al número:`); if(!nuevoNum || isNaN(nuevoNum) || parseInt(nuevoNum) === parseInt(viejoNum)) return;
             if(dataMesas.some(m => parseInt(m.numero) === parseInt(nuevoNum))) return alert("Ese número de mesa ya está ocupado.");
-            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "cambiar_numero_mesa", viejo_numero: viejoNum, nuevo_numero: nuevoNum }) });
-            const data = await res.json(); if(data.error) alert(data.error); await cargarDatos();
+            
+            const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(viejoNum));
+            if(mesa) mesa.numero = nuevoNum;
+            listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(viejoNum)) c.mesa = nuevoNum; });
+            dibujarPanelMesas(); dibujarPanelBanqueteria();
+            addToQueue({ tipo: "cambiar_numero_mesa", viejo_numero: viejoNum, nuevo_numero: nuevoNum });
         }
-        async function cambiarCapacidad(numero, capActual) {
+
+        function cambiarCapacidad(numero, capActual) {
             const nuevaCap = prompt(`Ingresa la nueva cantidad de sillas:`, capActual); if(!nuevaCap || isNaN(nuevaCap) || parseInt(nuevaCap) <= 0 || parseInt(nuevaCap) === parseInt(capActual)) return;
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap) }) }); await cargarDatos();
+            
+            const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(numero));
+            if(mesa) mesa.capacidad = parseInt(nuevaCap);
+            dibujarPanelMesas();
+            addToQueue({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap) }); 
         }
 
         function intentarAsignar(idDrag, mesaNum, capMax, capActual) {
+            if(!idDrag) return;
             const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
-            if (!comensal || (comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum))) return;
-            if(parseInt(capMax) !== 999 && (capActual + 1 > capMax)) { alert(`¡Faltan sillas! Solo quedan ${capMax - capActual} disponibles en la Mesa ${mesaNum}.`); return; }
-            asignarMesa(idDrag, mesaNum);
-        }
-
-        async function asignarMesa(idDrag, mesaNum) {
-            const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag); if(!comensal) return;
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ tipo: "asignar_mesa", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, mesa_numero: mesaNum }) });
-            await cargarDatos();
+            if (!comensal) return;
+            
+            if (mesaNum !== null && comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum)) return;
+            if(mesaNum !== null && parseInt(capMax) !== 999 && (capActual + 1 > capMax)) { 
+                alert(`¡Faltan sillas! Solo quedan ${capMax - capActual} disponibles en la Mesa ${mesaNum}.`); 
+                return; 
+            }
+            
+            comensal.mesa = mesaNum;
+            dibujarPanelMesas(); dibujarPanelBanqueteria();
+            addToQueue({ tipo: "asignar_mesa", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, mesa_numero: mesaNum });
         }
 
         document.addEventListener('click', function(e) { if(!e.target.closest('.position-relative')) { document.querySelectorAll('.sugerencias-container').forEach(box => box.style.display = 'none'); } });
