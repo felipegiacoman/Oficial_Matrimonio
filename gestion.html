@@ -184,7 +184,7 @@
                         <div class="tab-pane fade" id="subtab-pendientes">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle border text-nowrap">
-                                    <thead class="table-light"><tr><th style="width: 80px;">Acción</th><th>Nombre del Comensal</th><th>Tipo</th></tr></thead>
+                                    <thead class="table-light"><tr><th style="width: 110px;">Acciones</th><th>Nombre del Comensal</th><th>Tipo</th></tr></thead>
                                     <tbody id="tabla-pendientes"><tr><td colspan="3" class="text-center text-muted">Cargando...</td></tr></tbody>
                                 </table>
                             </div>
@@ -299,7 +299,7 @@
         let invitadoSeleccionadoParaCancelar = null;
         let filtroActualBanqueteria = 'Todas';
 
-        // ======================= SISTEMA DE SINCRONIZACIÓN BLINDADO (OFFLINE-FIRST) =======================
+        // ======================= SISTEMA DE SINCRONIZACIÓN BLINDADO =======================
         let syncQueue = JSON.parse(localStorage.getItem('matriSyncQueue') || '[]');
         let isSyncing = false;
 
@@ -414,7 +414,7 @@
             });
         }
 
-        // ======================= AGREGAR INVITADO (NUEVO) =======================
+        // ======================= AGREGAR INVITADO =======================
         function agregarInvitadoManual(e) {
             e.preventDefault();
             const nombre = document.getElementById('nuevo-nombre').value.trim();
@@ -426,20 +426,15 @@
                 alert("Ese invitado ya existe en la lista maestra."); return;
             }
 
-            // Calcula próximo ID disponible
             const proximoId = dataMaestra.reduce((max, obj) => Math.max(max, parseInt(obj.id) || 0), 0) + 1;
             
-            // Reflejo local inmediato
             dataMaestra.push({ id: proximoId, nombre: nombre, pareja: llevaPareja, nino: esNino });
             procesarDatosGenerales(); dibujarPanelConfirmaciones();
             
-            // Encolar al servidor
             addToQueue({ tipo: "agregar_maestra", id: proximoId, nombre: nombre, pareja: llevaPareja, nino: esNino });
             
             alert("Invitado agregado correctamente. Lo puedes ver en Pendientes.");
             document.getElementById('form-agregar-invitado').reset();
-            
-            // Volver a la pestaña confirmaciones automáticamente
             new bootstrap.Tab(document.querySelector('button[data-bs-target="#panel-confirmaciones"]')).show();
         }
 
@@ -493,7 +488,6 @@
             document.getElementById('lista-tabla-banqueteria').innerHTML = html || `<tr><td colspan="5" class="text-center text-muted">No hay resultados.</td></tr>`;
         }
 
-        // Lógica de Edición de Dietas (NUEVO)
         function editarDietaUI(idDrag) {
             const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
             if(!comensal) return;
@@ -503,7 +497,6 @@
             const dietaFinal = nuevaDieta.trim() === "" ? "Ninguna" : nuevaDieta.trim();
             comensal.dieta = dietaFinal;
             
-            // Actualizar confirmados localmente para que se refleje también en otras tablas
             const conf = dataConfirmados.find(c => c.nombre_invitado === comensal.nombre_principal);
             if(conf) {
                 if(comensal.es_pareja) conf.dieta_pareja = dietaFinal;
@@ -514,7 +507,7 @@
             addToQueue({ tipo: "editar_dieta", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, nueva_dieta: dietaFinal });
         }
 
-        // ======================= CONFIRMACIONES =======================
+        // ======================= CONFIRMACIONES (Y CONFIRMAR MANUALMENTE) =======================
         function dibujarPanelConfirmaciones() {
             const term = quitarTildes(document.getElementById('buscador-confirmaciones').value.toLowerCase().trim());
             document.getElementById('val-confirmados').innerText = listaComensalesGenerales.length;
@@ -538,7 +531,10 @@
             listaPendientes.forEach(p => {
                 if (term === "" || quitarTildes(p.nombre.toLowerCase()).includes(term)) {
                     htmlPend += `<tr ${p.tipo === 'Pareja' ? 'style="background-color: #fdfbf7;"' : ''}>
-                        <td><button class="btn btn-sm btn-outline-danger py-0 px-2" title="Bajar directamente a Cancelados" onclick="cancelarDesdePendientes('${p.nombre_principal}', ${p.es_pareja})"><i class="bi bi-x-circle me-1"></i>Bajar</button></td>
+                        <td style="white-space: nowrap;">
+                            <button class="btn btn-sm btn-outline-success py-0 px-2 me-1" title="Confirmar asistencia" onclick="confirmarDesdePendientes('${p.nombre_principal}', ${p.es_pareja}, '${escapeHTML(p.nombre)}')"><i class="bi bi-check-lg"></i></button>
+                            <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Bajar directamente a Cancelados" onclick="cancelarDesdePendientes('${p.nombre_principal}', ${p.es_pareja})"><i class="bi bi-x-circle"></i></button>
+                        </td>
                         <td class="${p.tipo === 'Pareja' ? 'ps-4' : ''}">${p.tipo === 'Pareja' ? '↳ ' : ''}<strong>${escapeHTML(p.nombre)}</strong></td>
                         <td><span class="badge ${p.tipo === 'Pareja' ? 'bg-secondary' : 'bg-warning text-dark'}">${p.tipo}</span></td>
                     </tr>`;
@@ -555,17 +551,44 @@
             document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay resultados.</td></tr>`;
         }
 
-        // Bajar desde pendientes directo (NUEVO)
+        function confirmarDesdePendientes(nombrePrincipal, esPareja, nombreMostrar) {
+            let msg = esPareja ? `¿Confirmar a la ${nombreMostrar}?` : `¿Confirmar al titular ${nombrePrincipal}?`;
+            if(!confirm(msg + "\nQuedará sin restricciones alimentarias por defecto.")) return;
+            
+            let conf = dataConfirmados.find(c => c.nombre_invitado === nombrePrincipal);
+            
+            if (!esPareja) {
+                if (!conf) {
+                    dataConfirmados.push({ nombre_invitado: nombrePrincipal, lleva_pareja: "No", telefono: "-", dieta: "Ninguna", mesa_numero: null });
+                } else {
+                    conf.dieta = "Ninguna";
+                }
+            } else {
+                if (conf) {
+                    conf.lleva_pareja = "Sí";
+                    conf.nombre_pareja = nombreMostrar;
+                    conf.dieta_pareja = "Ninguna";
+                } else {
+                    // Forzar creación del titular si se confirma pareja antes que titular
+                    dataConfirmados.push({ nombre_invitado: nombrePrincipal, lleva_pareja: "Sí", nombre_pareja: nombreMostrar, telefono: "-", dieta: "Ninguna", dieta_pareja: "Ninguna", mesa_numero: null });
+                }
+            }
+            
+            procesarDatosGenerales();
+            dibujarPanelConfirmaciones();
+            dibujarPanelBanqueteria();
+            dibujarPanelMesas();
+            
+            addToQueue({ tipo: "admin_confirmar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
+        }
+
         function cancelarDesdePendientes(nombrePrincipal, esPareja) {
             let msg = esPareja ? `¿Bajar a la pareja de ${nombrePrincipal}?` : `¿Bajar al titular ${nombrePrincipal} (y su pareja si tiene)?`;
             if(!confirm(msg)) return;
             
-            // Reflejo local
             if(!esPareja) {
-                // Bajar ambos si es titular
                 listaPendientes = listaPendientes.filter(p => p.nombre_principal !== nombrePrincipal);
                 dataCancelados.push({ nombre: nombrePrincipal, mensaje: "Dado de baja por admin" });
-                // Si tenía pareja en la lista maestra, la cancelamos también visualmente
                 const ms = dataMaestra.find(m => m.nombre === nombrePrincipal);
                 if(ms && parseInt(ms.pareja) === 1) dataCancelados.push({ nombre: `Pareja de ${nombrePrincipal}`, mensaje: "Titular dado de baja" });
             } else {
@@ -577,7 +600,6 @@
             addToQueue({ tipo: "admin_cancelar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
         }
 
-        // Bajar por buscador (Original)
         const inputBusquedaCancelar = document.getElementById('input-busqueda-cancelar');
         const boxSugerenciasCancelar = document.getElementById('sugerencias-box-cancelar');
         const btnEjecutarCancelar = document.getElementById('btn-ejecutar-cancelacion');
@@ -697,7 +719,7 @@
             comensal.mesa = mesaNum; dibujarPanelMesas(); dibujarPanelBanqueteria(); addToQueue({ tipo: "asignar_mesa", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, mesa_numero: mesaNum });
         }
 
-        // ======================= EXPORTACIONES EXCEL (NUEVO) =======================
+        // ======================= EXPORTACIONES EXCEL =======================
         function exportarExcelBanqueteria() {
             let data = [];
             listaComensalesGenerales.forEach(c => {
@@ -716,27 +738,11 @@
         }
 
         function exportarExcelConfirmaciones() {
-            // Confirmados
-            let confData = listaComensalesGenerales.map(c => ({
-                "Nombre": c.nombre_mostrar,
-                "Tipo": c.es_pareja ? "Pareja" : "Titular",
-                "Teléfono": c.telefono || "-",
-                "Restricción Alimentaria": c.dieta
-            }));
+            let confData = listaComensalesGenerales.map(c => ({ "Nombre": c.nombre_mostrar, "Tipo": c.es_pareja ? "Pareja" : "Titular", "Teléfono": c.telefono || "-", "Restricción Alimentaria": c.dieta }));
             const wsConf = XLSX.utils.json_to_sheet(confData);
-
-            // Pendientes
-            let pendData = listaPendientes.map(p => ({
-                "Nombre": p.nombre,
-                "Tipo": p.tipo
-            }));
+            let pendData = listaPendientes.map(p => ({ "Nombre": p.nombre, "Tipo": p.tipo }));
             const wsPend = XLSX.utils.json_to_sheet(pendData);
-
-            // Cancelados
-            let cancData = dataCancelados.map(c => ({
-                "Nombre": c.nombre,
-                "Motivo": c.mensaje || "-"
-            }));
+            let cancData = dataCancelados.map(c => ({ "Nombre": c.nombre, "Motivo": c.mensaje || "-" }));
             const wsCanc = XLSX.utils.json_to_sheet(cancData);
 
             const wb = XLSX.utils.book_new();
@@ -748,7 +754,6 @@
 
         function exportarExcelMesas() {
             let data = [];
-            // Ordenamos los invitados por mesa
             let invitadosPorMesa = [...listaComensalesGenerales].sort((a, b) => {
                 let mA = a.mesa === null ? 9999 : parseInt(a.mesa);
                 let mB = b.mesa === null ? 9999 : parseInt(b.mesa);
@@ -757,15 +762,8 @@
 
             invitadosPorMesa.forEach(c => {
                 let nombreMesa = "Sin Asignar";
-                if(c.mesa !== null && c.mesa !== "") {
-                    nombreMesa = parseInt(c.mesa) === 0 ? "Mesa Novios" : `Mesa ${c.mesa}`;
-                }
-                data.push({
-                    "Mesa": nombreMesa,
-                    "Nombre": c.nombre_mostrar,
-                    "Tipo": c.es_pareja ? "Pareja" : "Titular",
-                    "Restricción": c.dieta
-                });
+                if(c.mesa !== null && c.mesa !== "") { nombreMesa = parseInt(c.mesa) === 0 ? "Mesa Novios" : `Mesa ${c.mesa}`; }
+                data.push({ "Mesa": nombreMesa, "Nombre": c.nombre_mostrar, "Tipo": c.es_pareja ? "Pareja" : "Titular", "Restricción": c.dieta });
             });
 
             const ws = XLSX.utils.json_to_sheet(data);
