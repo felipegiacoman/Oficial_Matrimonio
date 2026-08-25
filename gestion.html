@@ -6,7 +6,11 @@
     <title>Panel de Gestión - Matrimonio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Polyfill táctil y Librería para generar Excel real -->
     <script src="https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
     <style>
         body { background: #f4f1ea; font-family: 'Montserrat', sans-serif; overflow-x: hidden; padding-bottom: 50px; }
         
@@ -37,6 +41,8 @@
         @media (max-width: 991px) {
             .sticky-panel { top: 10px; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.15); border-bottom: 3px solid #b59a7a; }
             #lista-sin-asignar { max-height: 25vh !important; }
+            .nav-pills { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
+            .nav-pills .nav-link { white-space: nowrap; }
         }
 
         .mesa-card { background: white; border-radius: 8px; border-top: 4px solid #b59a7a; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; transition: 0.2s;}
@@ -55,6 +61,8 @@
         .cursor-move:active { cursor: grabbing; }
         
         .badge-nino { background-color: #8c775e; color: white; }
+        .dieta-editable { cursor: pointer; border-bottom: 1px dashed #b59a7a; transition: 0.2s; }
+        .dieta-editable:hover { color: #b59a7a; font-weight: bold; }
 
         #network-status { position: fixed; bottom: 15px; right: 15px; background: rgba(0,0,0,0.8); color: white; padding: 8px 15px; border-radius: 30px; font-size: 0.85rem; display: none; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.3s; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -78,25 +86,31 @@
     <div id="contenido-principal" class="container-fluid container-xl" style="display: none;">
         <h2 id="titulo-principal" class="mb-4 text-center text-md-start" style="font-family: 'Playfair Display', serif; color: #2d2d2d;">Gestión del Matrimonio</h2>
         
-        <ul class="nav nav-pills mb-4 flex-column flex-md-row gap-2" id="pills-tab" role="tablist">
+        <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link w-100 text-center active" data-bs-toggle="pill" data-bs-target="#panel-banquetera" type="button"><i class="bi bi-egg-fried me-2"></i>Banquetería</button>
+                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#panel-banquetera" type="button"><i class="bi bi-egg-fried me-1"></i>Banquetería</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link w-100 text-center" data-bs-toggle="pill" data-bs-target="#panel-confirmaciones" type="button"><i class="bi bi-check-circle me-2"></i>Confirmaciones</button>
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#panel-confirmaciones" type="button"><i class="bi bi-check-circle me-1"></i>Confirmaciones</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link w-100 text-center" data-bs-toggle="pill" data-bs-target="#panel-mesas" type="button"><i class="bi bi-grid-3x3-gap me-2"></i>Gestión de Mesas</button>
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#panel-mesas" type="button"><i class="bi bi-grid-3x3-gap me-1"></i>Mesas</button>
+            </li>
+            <li class="nav-item ms-md-auto mt-2 mt-md-0" role="presentation">
+                <button class="nav-link text-success fw-bold" data-bs-toggle="pill" data-bs-target="#panel-agregar" type="button"><i class="bi bi-person-plus-fill me-1"></i>Nuevo Invitado</button>
             </li>
         </ul>
 
         <div class="tab-content" id="pills-tabContent">
             
-            <!-- BANQUETERÍA -->
+            <!-- ================= BANQUETERÍA ================= -->
             <div class="tab-pane fade show active" id="panel-banquetera">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h4 style="font-family: 'Playfair Display', serif;">Resumen de Platos</h4>
-                    <button class="btn btn-outline-dark btn-sm fw-bold px-3" onclick="renderTablaBanqueteria('Todas')">Ver a Todos</button>
+                    <div>
+                        <button class="btn btn-outline-dark btn-sm fw-bold px-3" onclick="renderTablaBanqueteria('Todas')">Ver a Todos</button>
+                        <button class="btn btn-success btn-sm fw-bold px-3 ms-2" onclick="exportarExcelBanqueteria()"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+                    </div>
                 </div>
                 
                 <div class="row g-2 g-md-3 mb-4">
@@ -108,7 +122,6 @@
                 <div class="row g-2 g-md-3 mb-4" id="contenedor-dietas"></div>
 
                 <div class="table-container">
-                    <!-- Buscador Banquetería -->
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
                         <h5 class="m-0" id="titulo-tabla-banqueteria" style="font-family: 'Playfair Display', serif;">Todos los Comensales</h5>
                         <input type="text" id="buscador-banqueteria" class="form-control form-control-sm w-auto" placeholder="🔍 Buscar invitado..." autocomplete="off" oninput="renderTablaBanqueteria()">
@@ -121,7 +134,7 @@
                                     <th>Nombre del Comensal</th>
                                     <th>Tipo</th>
                                     <th>Mesa</th>
-                                    <th>Restricción</th>
+                                    <th>Restricción <span class="small text-muted fw-normal">(Click para editar)</span></th>
                                     <th>Menú</th>
                                 </tr>
                             </thead>
@@ -133,12 +146,17 @@
                 </div>
             </div>
 
-            <!-- CONFIRMACIONES -->
+            <!-- ================= CONFIRMACIONES ================= -->
             <div class="tab-pane fade" id="panel-confirmaciones">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 style="font-family: 'Playfair Display', serif; m-0">Estatus de Invitaciones</h4>
+                    <button class="btn btn-success btn-sm fw-bold px-3" onclick="exportarExcelConfirmaciones()"><i class="bi bi-file-earmark-excel me-1"></i>Descargar Excel</button>
+                </div>
+
                 <div class="row g-3 mb-4">
-                    <div class="col-6 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Total Confirmados</h6><div class="stat-val text-success" id="val-confirmados">0</div></div></div>
-                    <div class="col-6 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Faltan Confirmar</h6><div class="stat-val text-warning" id="val-pendientes">0</div></div></div>
-                    <div class="col-12 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Total Cancelados</h6><div class="stat-val text-danger" id="val-cancelados">0</div></div></div>
+                    <div class="col-6 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Confirmados</h6><div class="stat-val text-success" id="val-confirmados">0</div></div></div>
+                    <div class="col-6 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Pendientes</h6><div class="stat-val text-warning" id="val-pendientes">0</div></div></div>
+                    <div class="col-12 col-md-4"><div class="stat-card static"><h6 class="text-muted m-0">Cancelados</h6><div class="stat-val text-danger" id="val-cancelados">0</div></div></div>
                 </div>
 
                 <div class="table-container">
@@ -146,79 +164,54 @@
                         <li class="nav-item"><button class="nav-link active text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-confirmados" type="button">Confirmados</button></li>
                         <li class="nav-item"><button class="nav-link text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-pendientes" type="button">Pendientes</button></li>
                         <li class="nav-item"><button class="nav-link text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-cancelados" type="button">Cancelados</button></li>
-                        <li class="nav-item"><button class="nav-link text-danger text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-gestionar" type="button"><i class="bi bi-x-circle me-1"></i>Bajar Invitado</button></li>
+                        <li class="nav-item ms-auto"><button class="nav-link text-danger text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-gestionar" type="button"><i class="bi bi-search me-1"></i>Buscador Bajas</button></li>
                     </ul>
 
-                    <!-- Buscador Global Confirmaciones -->
                     <input type="text" id="buscador-confirmaciones" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar invitado en las listas..." autocomplete="off" oninput="dibujarPanelConfirmaciones()">
 
                     <div class="tab-content">
-                        <!-- Sub-Pestaña Confirmados -->
+                        <!-- Confirmados -->
                         <div class="tab-pane fade show active" id="subtab-confirmados">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle border text-nowrap">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Nombre del Comensal</th>
-                                            <th>Tipo</th>
-                                            <th>Teléfono</th>
-                                            <th>Restricción</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tabla-confirmados">
-                                        <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
-                                    </tbody>
+                                    <thead class="table-light"><tr><th>Nombre del Comensal</th><th>Tipo</th><th>Teléfono</th><th>Restricción</th></tr></thead>
+                                    <tbody id="tabla-confirmados"><tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr></tbody>
                                 </table>
                             </div>
                         </div>
 
-                        <!-- Sub-Pestaña Pendientes -->
+                        <!-- Pendientes -->
                         <div class="tab-pane fade" id="subtab-pendientes">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle border text-nowrap">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Nombre del Comensal</th>
-                                            <th>Tipo</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tabla-pendientes">
-                                        <tr><td colspan="2" class="text-center text-muted">Cargando...</td></tr>
-                                    </tbody>
+                                    <thead class="table-light"><tr><th style="width: 80px;">Acción</th><th>Nombre del Comensal</th><th>Tipo</th></tr></thead>
+                                    <tbody id="tabla-pendientes"><tr><td colspan="3" class="text-center text-muted">Cargando...</td></tr></tbody>
                                 </table>
                             </div>
                         </div>
 
-                        <!-- Sub-Pestaña Cancelados -->
+                        <!-- Cancelados -->
                         <div class="tab-pane fade" id="subtab-cancelados">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle border text-nowrap">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Nombre del Comensal</th>
-                                            <th>Mensaje / Motivo</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tabla-cancelados">
-                                        <tr><td colspan="2" class="text-center text-muted">Cargando...</td></tr>
-                                    </tbody>
+                                    <thead class="table-light"><tr><th>Nombre del Comensal</th><th>Mensaje / Motivo</th></tr></thead>
+                                    <tbody id="tabla-cancelados"><tr><td colspan="2" class="text-center text-muted">Cargando...</td></tr></tbody>
                                 </table>
                             </div>
                         </div>
 
-                        <!-- Sub-Pestaña Bajar Manual -->
+                        <!-- Bajar Manual por Buscador -->
                         <div class="tab-pane fade" id="subtab-gestionar">
                             <div class="row justify-content-center py-4">
                                 <div class="col-md-8 col-lg-6 bg-light p-4 rounded border">
-                                    <h5 class="mb-3 text-center" style="font-family: 'Playfair Display', serif;">Dar de baja a un invitado</h5>
-                                    <p class="text-muted small text-center mb-4">Busca a la persona (titular o pareja). Si cancelas al titular, su pareja se bajará automáticamente.</p>
+                                    <h5 class="mb-3 text-center" style="font-family: 'Playfair Display', serif;">Forzar baja de invitado</h5>
+                                    <p class="text-muted small text-center mb-4">Baja a alguien que ya había confirmado. Si cancelas al titular, su pareja se bajará automáticamente.</p>
                                     
                                     <div class="mb-3 position-relative">
                                         <label class="form-label fw-bold small">Nombre del Comensal</label>
                                         <input type="text" class="form-control" id="input-busqueda-cancelar" autocomplete="off" placeholder="🔍 Escribe al menos 2 letras...">
                                         <div class="sugerencias-container" id="sugerencias-box-cancelar"></div>
                                     </div>
-                                    
                                     <button class="btn btn-danger w-100 mt-2" id="btn-ejecutar-cancelacion" disabled onclick="ejecutarCancelacion()">Mover a Cancelados</button>
                                 </div>
                             </div>
@@ -227,8 +220,43 @@
                 </div>
             </div>
 
-            <!-- MESAS -->
+            <!-- ================= AGREGAR INVITADO ================= -->
+            <div class="tab-pane fade" id="panel-agregar">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-8 col-lg-6">
+                        <div class="table-container mt-4">
+                            <h4 class="mb-3" style="font-family: 'Playfair Display', serif;">Agregar a Lista Maestra</h4>
+                            <p class="text-muted small mb-4">Ingresa un nuevo invitado que no estaba contemplado originalmente. Aparecerá inmediatamente en la pestaña de "Pendientes".</p>
+                            
+                            <form id="form-agregar-invitado" onsubmit="agregarInvitadoManual(event)">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Nombre Completo del Titular</label>
+                                    <input type="text" class="form-control" id="nuevo-nombre" required placeholder="Ej: Juan Pérez">
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="nuevo-pareja">
+                                    <label class="form-check-label fw-bold small">Lleva Pareja (+1)</label>
+                                </div>
+
+                                <div class="form-check form-switch mb-4">
+                                    <input class="form-check-input" type="checkbox" id="nuevo-nino">
+                                    <label class="form-check-label fw-bold small">Es un Niño (Menú Infantil)</label>
+                                </div>
+
+                                <button type="submit" class="btn btn-gold w-100 fw-bold py-2">Guardar Invitado</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= MESAS ================= -->
             <div class="tab-pane fade" id="panel-mesas">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 style="font-family: 'Playfair Display', serif; m-0">Plano de Mesas</h4>
+                    <button class="btn btn-success btn-sm fw-bold px-3" onclick="exportarExcelMesas()"><i class="bi bi-file-earmark-excel me-1"></i>Descargar Excel</button>
+                </div>
                 <div class="row position-relative">
                     <div class="col-12 col-lg-3 mb-4">
                         <div class="bg-white p-3 rounded shadow-sm sticky-panel">
@@ -275,53 +303,32 @@
         let syncQueue = JSON.parse(localStorage.getItem('matriSyncQueue') || '[]');
         let isSyncing = false;
 
-        function saveQueue() {
-            localStorage.setItem('matriSyncQueue', JSON.stringify(syncQueue));
-            actualizarEstadoRed();
-        }
-
-        function addToQueue(action) {
-            syncQueue.push(action);
-            saveQueue();
-            processQueue();
-        }
+        function saveQueue() { localStorage.setItem('matriSyncQueue', JSON.stringify(syncQueue)); actualizarEstadoRed(); }
+        function addToQueue(action) { syncQueue.push(action); saveQueue(); processQueue(); }
 
         async function processQueue() {
             if (isSyncing || syncQueue.length === 0) return;
-            isSyncing = true;
-            actualizarEstadoRed();
-
+            isSyncing = true; actualizarEstadoRed();
             while (syncQueue.length > 0) {
                 const action = syncQueue[0];
                 try {
-                    const response = await fetch(SCRIPT_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(action)
-                    });
-                    
+                    const response = await fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(action) });
                     if (!response.ok) throw new Error('Network error');
                     syncQueue.shift(); saveQueue();
                 } catch (error) {
-                    console.warn("Conexión inestable. Reintentando en 3 segundos...", error);
-                    isSyncing = false;
-                    actualizarEstadoRed();
-                    setTimeout(processQueue, 3000); 
-                    return;
+                    console.warn("Conexión inestable. Reintentando...", error);
+                    isSyncing = false; actualizarEstadoRed();
+                    setTimeout(processQueue, 3000); return;
                 }
             }
-            
-            isSyncing = false;
-            actualizarEstadoRed();
+            isSyncing = false; actualizarEstadoRed();
         }
 
         function actualizarEstadoRed() {
-            const el = document.getElementById('network-status');
-            if (!el) return;
+            const el = document.getElementById('network-status'); if (!el) return;
             if (syncQueue.length > 0) {
                 el.innerHTML = `<i class="bi bi-arrow-repeat spin me-2"></i> Guardando (${syncQueue.length})...`;
-                el.style.background = 'rgba(212, 175, 55, 0.95)';
-                el.style.display = 'block';
+                el.style.background = 'rgba(212, 175, 55, 0.95)'; el.style.display = 'block';
             } else {
                 el.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> Guardado exitoso`;
                 el.style.background = 'rgba(40, 167, 69, 0.95)';
@@ -335,15 +342,10 @@
             if (pin === "336336336" || pin === "banquetera") {
                 document.getElementById('pantalla-bloqueo').style.display = "none";
                 document.getElementById('contenido-principal').style.display = "block";
-                
-                if (pin === "banquetera") {
-                    document.getElementById('pills-tab').style.display = "none";
-                    document.getElementById('titulo-principal').innerText = "Panel de Banquetería";
-                }
+                if (pin === "banquetera") { document.getElementById('pills-tab').style.display = "none"; document.getElementById('titulo-principal').innerText = "Panel de Banquetería"; }
                 init(); 
             } else {
-                document.getElementById('error-pin').style.display = "block";
-                document.getElementById('input-pin').value = "";
+                document.getElementById('error-pin').style.display = "block"; document.getElementById('input-pin').value = "";
             }
         }
         document.getElementById('input-pin').addEventListener('keypress', function (e) { if (e.key === 'Enter') verificarPIN(); });
@@ -353,14 +355,9 @@
 
         async function init() {
             try {
-                const resCfg = await fetch('config.json');
-                const cfg = await resCfg.json();
-                SCRIPT_URL = cfg.worker_url;
-                await cargarDatos();
-                processQueue();
-            } catch(e) {
-                alert("Error inicializando el sistema. Comprueba tu conexión.");
-            }
+                const resCfg = await fetch('config.json'); const cfg = await resCfg.json(); SCRIPT_URL = cfg.worker_url;
+                await cargarDatos(); processQueue();
+            } catch(e) { alert("Error inicializando el sistema. Comprueba tu conexión."); }
         }
 
         async function cargarDatos() {
@@ -369,7 +366,6 @@
                     fetch(SCRIPT_URL + "?action=lista"), fetch(SCRIPT_URL + "?action=confirmados"),
                     fetch(SCRIPT_URL + "?action=cancelados"), fetch(SCRIPT_URL + "?action=mesas")
                 ]);
-                
                 dataMaestra = await resM.json(); dataConfirmados = await resConf.json();
                 dataCancelados = await resCanc.json(); dataMesas = await resMesas.json();
                 
@@ -377,35 +373,27 @@
                 dataMesas.sort((a, b) => {
                     let idxA = ordenGuardado.indexOf(parseInt(a.numero)); let idxB = ordenGuardado.indexOf(parseInt(b.numero));
                     if (idxA === -1) idxA = 999; if (idxB === -1) idxB = 999;
-                    if(idxA === 999 && idxB === 999) return parseInt(a.numero) - parseInt(b.numero);
-                    return idxA - idxB;
+                    if(idxA === 999 && idxB === 999) return parseInt(a.numero) - parseInt(b.numero); return idxA - idxB;
                 });
 
-                procesarDatosGenerales();
-                dibujarPanelBanqueteria(); dibujarPanelConfirmaciones(); dibujarPanelMesas();
-            } catch(e) { console.error("Error al obtener datos principales. Recargue la página.", e); }
+                procesarDatosGenerales(); dibujarPanelBanqueteria(); dibujarPanelConfirmaciones(); dibujarPanelMesas();
+            } catch(e) { console.error("Error obteniendo datos.", e); }
         }
 
         function procesarDatosGenerales() {
             listaComensalesGenerales = []; listaCancelables = []; listaPendientes = [];
 
-            // 1. Procesar Lista Maestra para Cancelables y PENDIENTES
             dataMaestra.forEach(m => {
                 listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false });
-                
-                // Lógica de Pendientes (No están en Confirmados ni en Cancelados)
                 const estaConfirmado = dataConfirmados.some(c => c.nombre_invitado === m.nombre);
                 const estaCancelado = dataCancelados.some(c => c.nombre === m.nombre);
                 
                 if (!estaConfirmado && !estaCancelado) {
-                    listaPendientes.push({ nombre: m.nombre, tipo: 'Titular' });
-                    if (parseInt(m.pareja) === 1) {
-                        listaPendientes.push({ nombre: `Pareja de ${m.nombre}`, tipo: 'Pareja' });
-                    }
+                    listaPendientes.push({ nombre: m.nombre, tipo: 'Titular', nombre_principal: m.nombre, es_pareja: false });
+                    if (parseInt(m.pareja) === 1) listaPendientes.push({ nombre: `Pareja de ${m.nombre}`, tipo: 'Pareja', nombre_principal: m.nombre, es_pareja: true });
                 }
             });
 
-            // 2. Procesar Confirmados para Tablas y Mesas
             dataConfirmados.forEach(c => {
                 const infoMaestra = dataMaestra.find(m => m.nombre === c.nombre_invitado);
                 const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
@@ -424,6 +412,35 @@
                     listaCancelables.push({ nombre_mostrar: nombreP, nombre_principal: c.nombre_invitado, es_pareja: true });
                 }
             });
+        }
+
+        // ======================= AGREGAR INVITADO (NUEVO) =======================
+        function agregarInvitadoManual(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('nuevo-nombre').value.trim();
+            const llevaPareja = document.getElementById('nuevo-pareja').checked ? 1 : 0;
+            const esNino = document.getElementById('nuevo-nino').checked ? 1 : 0;
+
+            if(!nombre) return;
+            if(dataMaestra.some(m => quitarTildes(m.nombre.toLowerCase()) === quitarTildes(nombre.toLowerCase()))) {
+                alert("Ese invitado ya existe en la lista maestra."); return;
+            }
+
+            // Calcula próximo ID disponible
+            const proximoId = dataMaestra.reduce((max, obj) => Math.max(max, parseInt(obj.id) || 0), 0) + 1;
+            
+            // Reflejo local inmediato
+            dataMaestra.push({ id: proximoId, nombre: nombre, pareja: llevaPareja, nino: esNino });
+            procesarDatosGenerales(); dibujarPanelConfirmaciones();
+            
+            // Encolar al servidor
+            addToQueue({ tipo: "agregar_maestra", id: proximoId, nombre: nombre, pareja: llevaPareja, nino: esNino });
+            
+            alert("Invitado agregado correctamente. Lo puedes ver en Pendientes.");
+            document.getElementById('form-agregar-invitado').reset();
+            
+            // Volver a la pestaña confirmaciones automáticamente
+            new bootstrap.Tab(document.querySelector('button[data-bs-target="#panel-confirmaciones"]')).show();
         }
 
         // ======================= BANQUETERÍA =======================
@@ -446,25 +463,20 @@
                 card.innerHTML = `<h6 class="small fw-bold text-truncate m-0 mb-2" title="${dieta}">${dieta}</h6><div class="stat-val">${cantidad}</div>`;
                 col.appendChild(card); contenedorDietas.appendChild(col);
             }
-            renderTablaBanqueteria('Todas');
+            renderTablaBanqueteria(filtroActualBanqueteria);
         }
 
         function renderTablaBanqueteria(filtro = filtroActualBanqueteria) {
             filtroActualBanqueteria = filtro;
-            const searchInput = document.getElementById('buscador-banqueteria');
-            const term = searchInput ? quitarTildes(searchInput.value.toLowerCase().trim()) : '';
-
+            const term = quitarTildes(document.getElementById('buscador-banqueteria').value.toLowerCase().trim());
+            
             tarjetasDietas.forEach(t => { t.elemento.classList.toggle('active-filter', filtro !== 'Todas' && filtro !== 'Niños' && t.nombreDieta === filtro); });
             document.getElementById('card-ninos').classList.toggle('active-filter', filtro === 'Niños');
             document.getElementById('titulo-tabla-banqueteria').innerText = filtro === 'Todas' ? 'Todos los Comensales' : (filtro === 'Niños' ? 'Filtrando por: Menú Infantil (Niños)' : `Filtrando por: ${filtro}`);
 
             let html = "";
             listaComensalesGenerales.forEach(c => {
-                let matchFiltro = false;
-                if (filtro === 'Todas') matchFiltro = true;
-                else if (filtro === 'Niños' && c.esNino) matchFiltro = true;
-                else if (filtro !== 'Todas' && filtro !== 'Niños' && c.dieta === filtro) matchFiltro = true;
-
+                let matchFiltro = (filtro === 'Todas') || (filtro === 'Niños' && c.esNino) || (filtro !== 'Todas' && filtro !== 'Niños' && c.dieta === filtro);
                 let matchSearch = term === "" || quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term);
 
                 if (matchFiltro && matchSearch) {
@@ -473,7 +485,7 @@
                         <td class="${c.es_pareja ? 'ps-4' : ''}">${c.es_pareja ? '↳ ' : ''}<strong>${escapeHTML(c.nombre_mostrar)}</strong></td>
                         <td><span class="badge ${c.es_pareja ? 'bg-secondary' : 'bg-primary'}">${c.es_pareja ? 'Pareja' : 'Titular'}</span></td>
                         <td>${mesaStr}</td>
-                        <td>${escapeHTML(c.dieta)}</td>
+                        <td><span class="dieta-editable" title="Haz click para editar" onclick="editarDietaUI('${c.id_drag}')">${escapeHTML(c.dieta)}</span></td>
                         <td><span class="badge ${c.esNino ? 'badge-nino' : 'bg-success'}">${c.esNino ? 'Niño' : 'Adulto'}</span></td>
                     </tr>`;
                 }
@@ -481,16 +493,34 @@
             document.getElementById('lista-tabla-banqueteria').innerHTML = html || `<tr><td colspan="5" class="text-center text-muted">No hay resultados.</td></tr>`;
         }
 
+        // Lógica de Edición de Dietas (NUEVO)
+        function editarDietaUI(idDrag) {
+            const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
+            if(!comensal) return;
+            const nuevaDieta = prompt(`Escribe la nueva restricción para ${comensal.nombre_mostrar}:\n(Deja en blanco o escribe "Ninguna" si no tiene)`, comensal.dieta);
+            if(nuevaDieta === null) return; 
+            
+            const dietaFinal = nuevaDieta.trim() === "" ? "Ninguna" : nuevaDieta.trim();
+            comensal.dieta = dietaFinal;
+            
+            // Actualizar confirmados localmente para que se refleje también en otras tablas
+            const conf = dataConfirmados.find(c => c.nombre_invitado === comensal.nombre_principal);
+            if(conf) {
+                if(comensal.es_pareja) conf.dieta_pareja = dietaFinal;
+                else conf.dieta = dietaFinal;
+            }
+
+            dibujarPanelBanqueteria(); dibujarPanelConfirmaciones();
+            addToQueue({ tipo: "editar_dieta", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, nueva_dieta: dietaFinal });
+        }
+
         // ======================= CONFIRMACIONES =======================
         function dibujarPanelConfirmaciones() {
-            const term = document.getElementById('buscador-confirmaciones') ? quitarTildes(document.getElementById('buscador-confirmaciones').value.toLowerCase().trim()) : "";
-
-            // Contadores Fijos
+            const term = quitarTildes(document.getElementById('buscador-confirmaciones').value.toLowerCase().trim());
             document.getElementById('val-confirmados').innerText = listaComensalesGenerales.length;
             document.getElementById('val-pendientes').innerText = listaPendientes.length;
             document.getElementById('val-cancelados').innerText = dataCancelados.length;
 
-            // Tabla Confirmados
             let htmlConf = "";
             listaComensalesGenerales.forEach(c => {
                 if (term === "" || quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term)) {
@@ -502,33 +532,52 @@
                     </tr>`;
                 }
             });
-            document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="4" class="text-center text-muted">No hay resultados en Confirmados.</td></tr>`;
+            document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="4" class="text-center text-muted">No hay resultados.</td></tr>`;
 
-            // Tabla Pendientes
             let htmlPend = "";
             listaPendientes.forEach(p => {
                 if (term === "" || quitarTildes(p.nombre.toLowerCase()).includes(term)) {
                     htmlPend += `<tr ${p.tipo === 'Pareja' ? 'style="background-color: #fdfbf7;"' : ''}>
+                        <td><button class="btn btn-sm btn-outline-danger py-0 px-2" title="Bajar directamente a Cancelados" onclick="cancelarDesdePendientes('${p.nombre_principal}', ${p.es_pareja})"><i class="bi bi-x-circle me-1"></i>Bajar</button></td>
                         <td class="${p.tipo === 'Pareja' ? 'ps-4' : ''}">${p.tipo === 'Pareja' ? '↳ ' : ''}<strong>${escapeHTML(p.nombre)}</strong></td>
                         <td><span class="badge ${p.tipo === 'Pareja' ? 'bg-secondary' : 'bg-warning text-dark'}">${p.tipo}</span></td>
                     </tr>`;
                 }
             });
-            document.getElementById('tabla-pendientes').innerHTML = htmlPend || `<tr><td colspan="2" class="text-center text-muted">No hay resultados en Pendientes.</td></tr>`;
+            document.getElementById('tabla-pendientes').innerHTML = htmlPend || `<tr><td colspan="3" class="text-center text-muted">No hay resultados.</td></tr>`;
 
-            // Tabla Cancelados
             let htmlCanc = "";
             dataCancelados.forEach(c => {
                 if (term === "" || quitarTildes(c.nombre.toLowerCase()).includes(term)) {
-                    htmlCanc += `<tr>
-                        <td><strong>${escapeHTML(c.nombre)}</strong></td>
-                        <td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td>
-                    </tr>`;
+                    htmlCanc += `<tr><td><strong>${escapeHTML(c.nombre)}</strong></td><td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td></tr>`;
                 }
             });
-            document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay resultados en Cancelados.</td></tr>`;
+            document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay resultados.</td></tr>`;
         }
 
+        // Bajar desde pendientes directo (NUEVO)
+        function cancelarDesdePendientes(nombrePrincipal, esPareja) {
+            let msg = esPareja ? `¿Bajar a la pareja de ${nombrePrincipal}?` : `¿Bajar al titular ${nombrePrincipal} (y su pareja si tiene)?`;
+            if(!confirm(msg)) return;
+            
+            // Reflejo local
+            if(!esPareja) {
+                // Bajar ambos si es titular
+                listaPendientes = listaPendientes.filter(p => p.nombre_principal !== nombrePrincipal);
+                dataCancelados.push({ nombre: nombrePrincipal, mensaje: "Dado de baja por admin" });
+                // Si tenía pareja en la lista maestra, la cancelamos también visualmente
+                const ms = dataMaestra.find(m => m.nombre === nombrePrincipal);
+                if(ms && parseInt(ms.pareja) === 1) dataCancelados.push({ nombre: `Pareja de ${nombrePrincipal}`, mensaje: "Titular dado de baja" });
+            } else {
+                listaPendientes = listaPendientes.filter(p => !(p.nombre_principal === nombrePrincipal && p.es_pareja));
+                dataCancelados.push({ nombre: `Pareja de ${nombrePrincipal}`, mensaje: "Dado de baja por admin" });
+            }
+            
+            dibujarPanelConfirmaciones();
+            addToQueue({ tipo: "admin_cancelar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
+        }
+
+        // Bajar por buscador (Original)
         const inputBusquedaCancelar = document.getElementById('input-busqueda-cancelar');
         const boxSugerenciasCancelar = document.getElementById('sugerencias-box-cancelar');
         const btnEjecutarCancelar = document.getElementById('btn-ejecutar-cancelacion');
@@ -543,7 +592,6 @@
                 const yaCancelado = dataCancelados.some(c => quitarTildes(c.nombre.toLowerCase()) === quitarTildes(n.nombre_mostrar.toLowerCase()));
                 return !yaCancelado && quitarTildes(n.nombre_mostrar.toLowerCase()).includes(val);
             });
-
             boxSugerenciasCancelar.innerHTML = filtrados.map(n => `<div class="sugerencia-item" onclick="seleccionarParaCancelar('${n.nombre_principal}', ${n.es_pareja}, '${escapeHTML(n.nombre_mostrar)}')">${escapeHTML(n.nombre_mostrar)}</div>`).join('');
             boxSugerenciasCancelar.style.display = filtrados.length ? 'block' : 'none';
         });
@@ -553,21 +601,13 @@
             boxSugerenciasCancelar.style.display = 'none'; btnEjecutarCancelar.disabled = false;
         }
 
-        async function ejecutarCancelacion() {
+        function ejecutarCancelacion() {
             if (!invitadoSeleccionadoParaCancelar) return;
-            let msg = invitadoSeleccionadoParaCancelar.es_pareja ? `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?\nEl titular principal seguirá confirmado.` : `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?\nSe dará de baja a esta persona y a su pareja automáticamente.`;
+            let msg = invitadoSeleccionadoParaCancelar.es_pareja ? `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}?` : `¿Estás seguro de cancelar a ${invitadoSeleccionadoParaCancelar.nombre_mostrar}? (Se dará de baja a su pareja automáticamente si tiene).`;
             if (!confirm(msg)) return;
 
-            btnEjecutarCancelar.innerText = "Procesando..."; btnEjecutarCancelar.disabled = true;
-            
-            addToQueue({ 
-                tipo: "admin_cancelar", 
-                nombre_principal: invitadoSeleccionadoParaCancelar.nombre_principal, 
-                es_pareja: invitadoSeleccionadoParaCancelar.es_pareja 
-            });
-            
-            alert("Cancelación encolada. Refrescando datos locales...");
-            inputBusquedaCancelar.value = ""; btnEjecutarCancelar.innerText = "Mover a Cancelados";
+            addToQueue({ tipo: "admin_cancelar", nombre_principal: invitadoSeleccionadoParaCancelar.nombre_principal, es_pareja: invitadoSeleccionadoParaCancelar.es_pareja });
+            inputBusquedaCancelar.value = ""; btnEjecutarCancelar.disabled = true;
             setTimeout(cargarDatos, 1000); 
         }
 
@@ -575,12 +615,7 @@
         function dibujarPanelMesas() {
             const sinAsignar = listaComensalesGenerales.filter(c => c.mesa === null || c.mesa === "");
             let htmlSinAsignar = "";
-            
-            sinAsignar.forEach(c => {
-                htmlSinAsignar += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
-                    <div><i class="bi bi-grip-vertical text-muted me-1"></i><strong style="font-size:0.8rem">${c.nombre_mostrar}</strong></div>
-                </div>`;
-            });
+            sinAsignar.forEach(c => { htmlSinAsignar += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.id_drag}')"><div><i class="bi bi-grip-vertical text-muted me-1"></i><strong style="font-size:0.8rem">${c.nombre_mostrar}</strong></div></div>`; });
             document.getElementById('count-sin-asignar').innerText = sinAsignar.length;
             document.getElementById('lista-sin-asignar').innerHTML = htmlSinAsignar || "<p class='text-muted small mt-2'>Todos tienen mesa asignada.</p>";
 
@@ -589,52 +624,28 @@
                 const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && c.mesa !== "" && parseInt(c.mesa) === parseInt(mesa.numero));
                 let sillasOcupadas = ocupantes.length; let htmlOcupantes = "";
                 
-                ocupantes.forEach(c => {
-                    htmlOcupantes += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
-                        <span style="font-size:0.75rem"><i class="bi bi-grip-vertical text-muted me-1"></i>${c.nombre_mostrar}</span>
-                        <button class="btn btn-sm text-danger p-0 m-0" onclick="intentarAsignar('${c.id_drag}', null, null, null)"><i class="bi bi-x-circle"></i></button>
-                    </div>`;
-                });
-
-                const esMesaNovios = parseInt(mesa.capacidad) === 999;
-                const llena = !esMesaNovios && (sillasOcupadas >= mesa.capacidad);
+                ocupantes.forEach(c => { htmlOcupantes += `<div class="guest-item draggable-guest" draggable="true" ondragstart="drag(event, '${c.id_drag}')"><span style="font-size:0.75rem"><i class="bi bi-grip-vertical text-muted me-1"></i>${c.nombre_mostrar}</span><button class="btn btn-sm text-danger p-0 m-0" onclick="intentarAsignar('${c.id_drag}', null, null, null)"><i class="bi bi-x-circle"></i></button></div>`; });
+                const esMesaNovios = parseInt(mesa.capacidad) === 999; const llena = !esMesaNovios && (sillasOcupadas >= mesa.capacidad);
                 let badgeHtml = esMesaNovios ? `<span class="badge bg-info text-dark">${sillasOcupadas} en mesa</span>` : `<span class="badge ${llena ? 'bg-danger' : 'bg-success'}">${sillasOcupadas} / ${mesa.capacidad}</span>`;
 
                 htmlMesas += `
                 <div class="col-12 col-md-6 col-xl-4" draggable="true" ondragstart="dragMesa(event, ${mesa.numero})" ondragover="allowDropMesa(event)" ondrop="dropMesa(event, ${mesa.numero})">
                     <div class="mesa-card ${esMesaNovios ? 'mesa-novios' : ''}">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-arrows-move cursor-move text-muted" title="Mover Mesa de lugar"></i>
-                                <h6 class="m-0 fw-bold">${esMesaNovios ? 'Mesa Novios (0)' : `Mesa ${mesa.numero}`}</h6>
-                                ${!esMesaNovios ? `<i class="bi bi-people action-icon ms-1" title="Cambiar Capacidad" onclick="cambiarCapacidad(${mesa.numero}, ${mesa.capacidad})"></i>` : ''}
-                                ${!esMesaNovios ? `<i class="bi bi-pencil-square action-icon" title="Cambiar Número" onclick="cambiarNumero(${mesa.numero})"></i>` : ''}
-                                <i class="bi bi-trash action-icon trash-icon ms-1" title="Eliminar Mesa" onclick="eliminarMesa(${mesa.numero})"></i>
-                            </div>
-                            ${badgeHtml}
+                            <div class="d-flex align-items-center gap-2"><i class="bi bi-arrows-move cursor-move text-muted" title="Mover Mesa de lugar"></i><h6 class="m-0 fw-bold">${esMesaNovios ? 'Mesa Novios (0)' : `Mesa ${mesa.numero}`}</h6>${!esMesaNovios ? `<i class="bi bi-people action-icon ms-1" title="Cambiar Capacidad" onclick="cambiarCapacidad(${mesa.numero}, ${mesa.capacidad})"></i>` : ''}${!esMesaNovios ? `<i class="bi bi-pencil-square action-icon" title="Cambiar Número" onclick="cambiarNumero(${mesa.numero})"></i>` : ''}<i class="bi bi-trash action-icon trash-icon ms-1" title="Eliminar Mesa" onclick="eliminarMesa(${mesa.numero})"></i></div>${badgeHtml}
                         </div>
-                        
-                        <div class="mb-3 drop-zone" style="max-height: 250px; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
-                            ${htmlOcupantes || '<div class="text-muted small mt-2">Arrastra un invitado aquí...</div>'}
-                        </div>
-                        
-                        <div class="position-relative mt-2">
-                            <input type="text" class="form-control form-control-sm" placeholder="🔍 Buscar para agregar..." autocomplete="off" oninput="filtrarDropdownMesa(this, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">
-                            <div class="sugerencias-container shadow-sm"></div>
-                        </div>
+                        <div class="mb-3 drop-zone" style="max-height: 250px; overflow-y: auto;" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})">${htmlOcupantes || '<div class="text-muted small mt-2">Arrastra un invitado aquí...</div>'}</div>
+                        <div class="position-relative mt-2"><input type="text" class="form-control form-control-sm" placeholder="🔍 Buscar para agregar..." autocomplete="off" oninput="filtrarDropdownMesa(this, ${mesa.numero}, ${mesa.capacidad}, ${sillasOcupadas})"><div class="sugerencias-container shadow-sm"></div></div>
                     </div>
                 </div>`;
             });
-            document.getElementById('contenedor-mesas').innerHTML = htmlMesas;
-            filtrarPorAsignar();
+            document.getElementById('contenedor-mesas').innerHTML = htmlMesas; filtrarPorAsignar();
         }
 
         function filtrarPorAsignar() {
             const input = document.getElementById('buscador-por-asignar'); if(!input) return;
             const term = quitarTildes(input.value.toLowerCase().trim());
-            document.querySelectorAll('#lista-sin-asignar .guest-item').forEach(item => {
-                item.style.display = quitarTildes(item.innerText.toLowerCase()).includes(term) ? 'flex' : 'none';
-            });
+            document.querySelectorAll('#lista-sin-asignar .guest-item').forEach(item => { item.style.display = quitarTildes(item.innerText.toLowerCase()).includes(term) ? 'flex' : 'none'; });
         }
 
         function filtrarDropdownMesa(inputElem, mesaNum, capMax, capActual) {
@@ -645,95 +656,122 @@
             box.style.display = filtrados.length ? 'block' : 'none';
         }
 
-        function ejecutarAsignacionDropdown(idDrag, mesaNum, capMax, capActual, elemClic) {
-            elemClic.parentElement.previousElementSibling.value = ""; elemClic.parentElement.style.display = 'none'; 
-            intentarAsignar(idDrag, mesaNum, capMax, capActual);
-        }
-
+        function ejecutarAsignacionDropdown(idDrag, mesaNum, capMax, capActual, elemClic) { elemClic.parentElement.previousElementSibling.value = ""; elemClic.parentElement.style.display = 'none'; intentarAsignar(idDrag, mesaNum, capMax, capActual); }
         function drag(ev, idDrag) { ev.stopPropagation(); ev.dataTransfer.setData("type", "guest"); ev.dataTransfer.setData("text/plain", idDrag); }
         function allowDrop(ev) { ev.preventDefault(); const d = ev.target.closest('.drop-zone'); if(d) d.classList.add('dragover'); }
         function leaveDrop(ev) { const d = ev.target.closest('.drop-zone'); if(d) d.classList.remove('dragover'); }
         function drop(ev, mesaNum, capMax, capActual) {
-            ev.preventDefault(); ev.stopPropagation();
-            const d = ev.target.closest('.drop-zone'); if(d) d.classList.remove('dragover');
-            if(ev.dataTransfer.getData("type") !== "guest") return;
-            const idDrag = ev.dataTransfer.getData("text/plain"); if (!idDrag) return;
+            ev.preventDefault(); ev.stopPropagation(); const d = ev.target.closest('.drop-zone'); if(d) d.classList.remove('dragover');
+            if(ev.dataTransfer.getData("type") !== "guest") return; const idDrag = ev.dataTransfer.getData("text/plain"); if (!idDrag) return;
             intentarAsignar(idDrag, mesaNum, capMax, capActual);
         }
-
         function dragMesa(ev, mesaNum) { ev.stopPropagation(); ev.dataTransfer.setData("type", "mesa"); ev.dataTransfer.setData("text/plain", mesaNum); }
         function allowDropMesa(ev) { ev.preventDefault(); }
         function dropMesa(ev, targetMesaNum) {
-            ev.preventDefault(); ev.stopPropagation();
-            if(ev.dataTransfer.getData("type") !== "mesa") return;
-            const draggedNum = ev.dataTransfer.getData("text/plain");
-            if (draggedNum == targetMesaNum) return;
-            
-            const fromIdx = dataMesas.findIndex(m => parseInt(m.numero) === parseInt(draggedNum));
-            const toIdx = dataMesas.findIndex(m => parseInt(m.numero) === parseInt(targetMesaNum));
-            const [moved] = dataMesas.splice(fromIdx, 1);
-            dataMesas.splice(toIdx, 0, moved);
-            
-            localStorage.setItem('ordenMesas', JSON.stringify(dataMesas.map(m => parseInt(m.numero))));
-            dibujarPanelMesas();
+            ev.preventDefault(); ev.stopPropagation(); if(ev.dataTransfer.getData("type") !== "mesa") return;
+            const draggedNum = ev.dataTransfer.getData("text/plain"); if (draggedNum == targetMesaNum) return;
+            const fromIdx = dataMesas.findIndex(m => parseInt(m.numero) === parseInt(draggedNum)); const toIdx = dataMesas.findIndex(m => parseInt(m.numero) === parseInt(targetMesaNum));
+            const [moved] = dataMesas.splice(fromIdx, 1); dataMesas.splice(toIdx, 0, moved);
+            localStorage.setItem('ordenMesas', JSON.stringify(dataMesas.map(m => parseInt(m.numero)))); dibujarPanelMesas();
         }
 
-        function obtenerSiguienteNumero() {
-            const numeros = dataMesas.map(m => parseInt(m.numero)).filter(n => n > 0).sort((a,b) => a-b);
-            let proximo = 1; for (let i = 0; i < numeros.length; i++) { if (numeros[i] === proximo) proximo++; else break; } return proximo;
-        }
-
+        function obtenerSiguienteNumero() { const numeros = dataMesas.map(m => parseInt(m.numero)).filter(n => n > 0).sort((a,b) => a-b); let proximo = 1; for (let i = 0; i < numeros.length; i++) { if (numeros[i] === proximo) proximo++; else break; } return proximo; }
         function crearMesaNormal() { crearMesa(obtenerSiguienteNumero(), document.getElementById('nueva-mesa-cap').value); }
         function crearMesaNovios() { if(dataMesas.some(m => parseInt(m.numero) === 0)) return alert("La Mesa de Novios ya existe."); crearMesa(0, 999); }
-        
-        function crearMesa(num, cap) {
-            dataMesas.push({ numero: num, capacidad: cap });
-            dibujarPanelMesas();
-            addToQueue({ tipo: "guardar_mesa", numero: num, capacidad: cap });
-        }
-
-        function eliminarMesa(num) {
-            if(!confirm(`¿Estás seguro de eliminar la Mesa ${num}?`)) return;
-            dataMesas = dataMesas.filter(m => parseInt(m.numero) !== parseInt(num));
-            listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(num)) c.mesa = null; });
-            dibujarPanelMesas(); dibujarPanelBanqueteria();
-            addToQueue({ tipo: "eliminar_mesa", numero: num });
-        }
-
+        function crearMesa(num, cap) { dataMesas.push({ numero: num, capacidad: cap }); dibujarPanelMesas(); addToQueue({ tipo: "guardar_mesa", numero: num, capacidad: cap }); }
+        function eliminarMesa(num) { if(!confirm(`¿Estás seguro de eliminar la Mesa ${num}?`)) return; dataMesas = dataMesas.filter(m => parseInt(m.numero) !== parseInt(num)); listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(num)) c.mesa = null; }); dibujarPanelMesas(); dibujarPanelBanqueteria(); addToQueue({ tipo: "eliminar_mesa", numero: num }); }
         function cambiarNumero(viejoNum) {
             const nuevoNum = prompt(`Cambiar Mesa ${viejoNum} al número:`); if(!nuevoNum || isNaN(nuevoNum) || parseInt(nuevoNum) === parseInt(viejoNum)) return;
             if(dataMesas.some(m => parseInt(m.numero) === parseInt(nuevoNum))) return alert("Ese número de mesa ya está ocupado.");
-            
-            const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(viejoNum));
-            if(mesa) mesa.numero = nuevoNum;
-            listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(viejoNum)) c.mesa = nuevoNum; });
-            dibujarPanelMesas(); dibujarPanelBanqueteria();
-            addToQueue({ tipo: "cambiar_numero_mesa", viejo_numero: viejoNum, nuevo_numero: nuevoNum });
+            const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(viejoNum)); if(mesa) mesa.numero = nuevoNum;
+            listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(viejoNum)) c.mesa = nuevoNum; }); dibujarPanelMesas(); dibujarPanelBanqueteria(); addToQueue({ tipo: "cambiar_numero_mesa", viejo_numero: viejoNum, nuevo_numero: nuevoNum });
         }
-
         function cambiarCapacidad(numero, capActual) {
             const nuevaCap = prompt(`Ingresa la nueva cantidad de sillas:`, capActual); if(!nuevaCap || isNaN(nuevaCap) || parseInt(nuevaCap) <= 0 || parseInt(nuevaCap) === parseInt(capActual)) return;
-            
-            const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(numero));
-            if(mesa) mesa.capacidad = parseInt(nuevaCap);
-            dibujarPanelMesas();
-            addToQueue({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap) }); 
+            const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(numero)); if(mesa) mesa.capacidad = parseInt(nuevaCap); dibujarPanelMesas(); addToQueue({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap) }); 
+        }
+        function intentarAsignar(idDrag, mesaNum, capMax, capActual) {
+            if(!idDrag) return; const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag); if (!comensal) return;
+            if (mesaNum !== null && comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum)) return;
+            if(mesaNum !== null && parseInt(capMax) !== 999 && (capActual + 1 > capMax)) { alert(`¡Faltan sillas! Solo quedan ${capMax - capActual} disponibles en la Mesa ${mesaNum}.`); return; }
+            comensal.mesa = mesaNum; dibujarPanelMesas(); dibujarPanelBanqueteria(); addToQueue({ tipo: "asignar_mesa", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, mesa_numero: mesaNum });
         }
 
-        function intentarAsignar(idDrag, mesaNum, capMax, capActual) {
-            if(!idDrag) return;
-            const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
-            if (!comensal) return;
-            
-            if (mesaNum !== null && comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum)) return;
-            if(mesaNum !== null && parseInt(capMax) !== 999 && (capActual + 1 > capMax)) { 
-                alert(`¡Faltan sillas! Solo quedan ${capMax - capActual} disponibles en la Mesa ${mesaNum}.`); 
-                return; 
-            }
-            
-            comensal.mesa = mesaNum;
-            dibujarPanelMesas(); dibujarPanelBanqueteria();
-            addToQueue({ tipo: "asignar_mesa", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, mesa_numero: mesaNum });
+        // ======================= EXPORTACIONES EXCEL (NUEVO) =======================
+        function exportarExcelBanqueteria() {
+            let data = [];
+            listaComensalesGenerales.forEach(c => {
+                data.push({
+                    "Nombre": c.nombre_mostrar,
+                    "Tipo": c.es_pareja ? "Pareja" : "Titular",
+                    "Mesa": c.mesa ? `Mesa ${c.mesa}` : "Sin asignar",
+                    "Restricción Alimentaria": c.dieta,
+                    "Menú": c.esNino ? "Niño" : "Adulto"
+                });
+            });
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Banquetería");
+            XLSX.writeFile(wb, "Matrimonio_Banqueteria.xlsx");
+        }
+
+        function exportarExcelConfirmaciones() {
+            // Confirmados
+            let confData = listaComensalesGenerales.map(c => ({
+                "Nombre": c.nombre_mostrar,
+                "Tipo": c.es_pareja ? "Pareja" : "Titular",
+                "Teléfono": c.telefono || "-",
+                "Restricción Alimentaria": c.dieta
+            }));
+            const wsConf = XLSX.utils.json_to_sheet(confData);
+
+            // Pendientes
+            let pendData = listaPendientes.map(p => ({
+                "Nombre": p.nombre,
+                "Tipo": p.tipo
+            }));
+            const wsPend = XLSX.utils.json_to_sheet(pendData);
+
+            // Cancelados
+            let cancData = dataCancelados.map(c => ({
+                "Nombre": c.nombre,
+                "Motivo": c.mensaje || "-"
+            }));
+            const wsCanc = XLSX.utils.json_to_sheet(cancData);
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, wsConf, "Confirmados");
+            XLSX.utils.book_append_sheet(wb, wsPend, "Pendientes");
+            XLSX.utils.book_append_sheet(wb, wsCanc, "Cancelados");
+            XLSX.writeFile(wb, "Matrimonio_Confirmaciones.xlsx");
+        }
+
+        function exportarExcelMesas() {
+            let data = [];
+            // Ordenamos los invitados por mesa
+            let invitadosPorMesa = [...listaComensalesGenerales].sort((a, b) => {
+                let mA = a.mesa === null ? 9999 : parseInt(a.mesa);
+                let mB = b.mesa === null ? 9999 : parseInt(b.mesa);
+                return mA - mB;
+            });
+
+            invitadosPorMesa.forEach(c => {
+                let nombreMesa = "Sin Asignar";
+                if(c.mesa !== null && c.mesa !== "") {
+                    nombreMesa = parseInt(c.mesa) === 0 ? "Mesa Novios" : `Mesa ${c.mesa}`;
+                }
+                data.push({
+                    "Mesa": nombreMesa,
+                    "Nombre": c.nombre_mostrar,
+                    "Tipo": c.es_pareja ? "Pareja" : "Titular",
+                    "Restricción": c.dieta
+                });
+            });
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Plano de Mesas");
+            XLSX.writeFile(wb, "Matrimonio_Mesas.xlsx");
         }
 
         document.addEventListener('click', function(e) { if(!e.target.closest('.position-relative')) { document.querySelectorAll('.sugerencias-container').forEach(box => box.style.display = 'none'); } });
