@@ -1,0 +1,41 @@
+{
+  "nombres_hero": "Antonia <span class=\"hero-amp\">&</span> Felipe",
+  "fecha_escrita": "DOMINGO 11 DE OCTUBRE, 2026",
+  "info_adicional_bajo_la_fecha": "Lunes 12 es feriado",
+  "ubicacion_hero": "Santiago, Chile",
+  "fecha_contador": "Oct 11, 2026 16:00:00",
+  
+  "titulo_seccion_eventos": "Ceremonia & Recepción",
+  
+  "ceremonia_titulo": "Ceremonia Religiosa",
+  "ceremonia_hora": "16:00 HRS",
+  "ceremonia_lugar": "Parroquia San Francisco de Sales",
+  "ceremonia_direccion": "Sta. María 5600, Vitacura",
+  "link_waze_ceremonia": "https://ul.waze.com/ul?venue_id=189662650.1896692038.966394&overview=yes&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location",
+  "link_maps_ceremonia": "https://maps.app.goo.gl/urLJYaVreTQ9eECT7",
+  
+  "recepcion_titulo": "Celebración",
+  "recepcion_hora": "18:00 HRS",
+  "recepcion_lugar": "Centro de Eventos ENTREMUROS",
+  "recepcion_direccion": "Camino el Guanaco 4819, Huechuraba",
+  "link_waze_recepcion": "https://ul.waze.com/ul?venue_id=189597114.1896233287.26658947&overview=yes&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location",
+  "link_maps_recepcion": "https://maps.app.goo.gl/JgsjJS6bKf67kQEBA",
+  
+  "itinerario_hora_ceremonia": "16:00 Hrs.",
+  "itinerario_hora_recepcion": "18:00 Hrs.",
+  "itinerario_hora_cena": "19:45 Hrs.",
+  "itinerario_hora_fiesta": "22:00 Hrs.",
+  "itinerario_hora_termino": "04:00 Hrs.",
+  
+  "titulo_transferencia": "Transferencia - Luna de miel & primer hogar",
+  "titulo_lista": "Novios Falabella - Código 2104486",
+  "link_lista": "https://novios.falabella.com/info-evento/evento?codigoEvento=2104486",
+
+  "email_asunto_rsvp": "Asistencia Matrimonio Anto y Felipe confirmada",
+  "email_asunto_cancelacion": "Cancelación de asistencia recibida",
+  
+  "worker_url": "https://rsvp-api.felipegiacoman.workers.dev",
+  "email_comprobantes": "regalos@antoyfelipe.com",
+  
+  "csv_fiesta_url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSS80lahmhX6xknc-Y9y4M8n2vL8iEbf7VMSQqC1U1HlaYhmA0IpEZBgEGvG9wr8t2jBFmbxttEzYjT/pub?output=csv"
+}
