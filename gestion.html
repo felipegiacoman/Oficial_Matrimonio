@@ -77,7 +77,6 @@
         .guest-item-pro { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; border-radius: 6px; margin-bottom: 5px; font-size: 0.83rem; background: white; border: 1px solid #f0ebdf; transition: 0.15s; }
         .guest-item-pro:hover { background: var(--oro-light); border-color: #ded3c1; }
         .guest-item-pro.is-child { border-left: 3px solid #8c775e; }
-        .guest-item-pro.has-diet { border-left: 3px solid var(--oro); }
 
         .drop-zone-pro { min-height: 120px; max-height: 280px; overflow-y: auto; padding: 12px; transition: 0.2s; }
         .drop-zone-pro.dragover { background: rgba(181, 154, 122, 0.12); border: 2px dashed var(--oro); border-radius: 8px; }
@@ -89,6 +88,11 @@
         
         .lado-selector { cursor: pointer; transition: 0.2s; }
         .lado-selector:hover { opacity: 0.85; transform: scale(1.05); }
+
+        .torpedo-badge {
+            width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 4px; font-size: 0.75rem; flex-shrink: 0;
+        }
 
         .dieta-editable { cursor: pointer; border-bottom: 1px dashed var(--oro); transition: 0.2s; }
         .dieta-editable:hover { color: var(--oro); font-weight: bold; }
@@ -202,7 +206,7 @@
                 <div class="table-container">
                     <ul class="nav nav-tabs mb-3 flex-nowrap" style="overflow-x: auto; overflow-y: hidden;">
                         <li class="nav-item"><button class="nav-link active text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-confirmados" type="button">Cena Confirmados</button></li>
-                        <li class="nav-item"><button class="nav-link text-nowrap" style="color:var(--fiesta-color); font-weight:bold;" data-bs-toggle="tab" data-bs-target="#subtab-fiesta" type="button"><i class="bi bi-music-note-beamed me-1"></i>Invitados Fiesta (<span id="tab-count-fiesta">0</span>)</button></li>
+                        <li class="nav-item"><button class="nav-link text-nowrap" style="color:var(--fiesta-color); font-weight:bold;" data-bs-toggle="tab" data-bs-target="#subtab-fiesta" type="button">Invitados Fiesta (<span id="tab-count-fiesta">0</span>)</button></li>
                         <li class="nav-item"><button class="nav-link text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-pendientes" type="button">Cena Pendientes</button></li>
                         <li class="nav-item"><button class="nav-link text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-cancelados" type="button">Cena Cancelados</button></li>
                         <li class="nav-item ms-auto"><button class="nav-link text-danger text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-gestionar" type="button"><i class="bi bi-search me-1"></i>Buscador Bajas</button></li>
@@ -228,29 +232,37 @@
                             </div>
                         </div>
 
-                        <!-- Invitados Fiesta -->
+                        <!-- Invitados Fiesta (Limpio y Correlativo) -->
                         <div class="tab-pane fade" id="subtab-fiesta">
-                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
-                                <div class="small text-muted">Invitados que asistirán a partir de las 22:00 hrs (Bar abierto).</div>
-                                <div class="d-flex gap-2">
-                                    <input type="file" id="input-csv-fiesta" accept=".csv" style="display:none;" onchange="cargarCSVLocalFiesta(event)">
-                                    <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('input-csv-fiesta').click()"><i class="bi bi-upload me-1"></i>Subir CSV Manual</button>
-                                    <button class="btn btn-sm text-white" style="background:var(--fiesta-color);" onclick="exportarExcelFiesta()"><i class="bi bi-file-earmark-excel me-1"></i>Descargar Excel Fiesta</button>
+                            
+                            <!-- Barra de sincronización directa de Google Sheets -->
+                            <div class="bg-light p-3 rounded mb-3 border">
+                                <label class="form-label small fw-bold mb-1">Enlace de Google Sheets (Publicado como CSV):</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control" id="input-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv">
+                                    <button class="btn btn-dark" onclick="guardarYRecargarSheet()"><i class="bi bi-arrow-repeat me-1"></i>Sincronizar Google Sheets</button>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <div class="small text-muted" id="status-sheet-sync">Cargando datos...</div>
+                                    <div>
+                                        <input type="file" id="input-csv-fiesta" accept=".csv" style="display:none;" onchange="cargarCSVLocalFiesta(event)">
+                                        <button class="btn btn-outline-secondary btn-sm py-0 px-2 me-2" onclick="document.getElementById('input-csv-fiesta').click()"><i class="bi bi-upload me-1"></i>Subir CSV Manual</button>
+                                        <button class="btn btn-sm text-white py-0 px-2" style="background:var(--fiesta-color);" onclick="exportarExcelFiesta()"><i class="bi bi-file-earmark-excel me-1"></i>Excel Fiesta</button>
+                                    </div>
                                 </div>
                             </div>
+
                             <input type="text" id="buscador-fiesta" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar invitado de fiesta..." autocomplete="off" oninput="dibujarTablaFiesta()">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle border text-nowrap">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>#</th>
+                                            <th style="width: 60px;">#</th>
                                             <th>Nombre del Invitado</th>
                                             <th>Tipo</th>
-                                            <th>Fecha Confirmación</th>
-                                            <th>Comentarios / Acompañante</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="tabla-fiesta"><tr><td colspan="5" class="text-center text-muted">Cargando respuestas de fiesta...</td></tr></tbody>
+                                    <tbody id="tabla-fiesta"><tr><td colspan="3" class="text-center text-muted">Cargando respuestas de fiesta...</td></tr></tbody>
                                 </table>
                             </div>
                         </div>
@@ -304,28 +316,37 @@
             <!-- ================= BANQUETERÍA ================= -->
             <div class="tab-pane fade" id="panel-banquetera">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4 style="font-family: 'Playfair Display', serif;">Resumen de Platos</h4>
+                    <h4 style="font-family: 'Playfair Display', serif;">Resumen de Platos y Mesas</h4>
                     <div>
                         <button class="btn btn-outline-dark btn-sm fw-bold px-3" onclick="renderTablaBanqueteria('Todas')">Ver a Todos</button>
-                        <button class="btn btn-success btn-sm fw-bold px-3 ms-2" onclick="exportarExcelBanqueteria()"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+                        <button class="btn btn-success btn-sm fw-bold px-3 ms-2" onclick="exportarExcelBanqueteria()"><i class="bi bi-file-earmark-excel me-1"></i>Excel Banquetería</button>
                     </div>
                 </div>
                 
+                <!-- KPIs Banquetería -->
                 <div class="row g-2 g-md-3 mb-4">
                     <div class="col-6 col-md-4"><div class="stat-card static"><h6>Total Adultos (Cena)</h6><div class="stat-val" id="adult-val">0</div></div></div>
                     <div class="col-6 col-md-4"><div class="stat-card filtrable" id="card-ninos" onclick="renderTablaBanqueteria('Niños')"><h6>Total Niños (Cena)</h6><div class="stat-val" id="nino-val">0</div></div></div>
                     <div class="col-12 col-md-4">
                         <div class="stat-card static" style="border-top-color: var(--fiesta-color);">
-                            <h6 style="color:var(--fiesta-color);">Invitados Fiesta (Bar / Trasnoche)</h6>
+                            <h6 style="color:var(--fiesta-color);">Invitados Fiesta</h6>
                             <div class="stat-val" style="color:var(--fiesta-color);" id="fiesta-banquet-val">0</div>
-                            <small class="text-muted" style="font-size:0.75rem;">(Llegan a la fiesta, no comen cena)</small>
                         </div>
                     </div>
                 </div>
 
+                <!-- Resumen de Platos Especiales -->
                 <h5 class="mb-3" style="font-family: 'Playfair Display', serif;">Restricciones Alimentarias Cena <small class="text-muted fs-6 font-monospace">(Haz clic para filtrar)</small></h5>
                 <div class="row g-2 g-md-3 mb-4" id="contenedor-dietas"></div>
 
+                <!-- NUEVO: RESUMEN VISUAL DE MESAS PARA LA BANQUETERA -->
+                <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                    <h5 class="m-0" style="font-family: 'Playfair Display', serif;"><i class="bi bi-grid-3x3 me-2 text-muted"></i>Resumen de Restricciones por Mesa</h5>
+                    <small class="text-muted">Vista rápida para coordinar el servicio de platos en el salón.</small>
+                </div>
+                <div class="row g-3 mb-4" id="contenedor-mesas-banquetera"></div>
+
+                <!-- Tabla detallada de Comensales Cena -->
                 <div class="table-container">
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
                         <h5 class="m-0" id="titulo-tabla-banqueteria" style="font-family: 'Playfair Display', serif;">Todos los Comensales Cena</h5>
@@ -351,15 +372,13 @@
                 </div>
             </div>
 
-            <!-- ========================================================================= -->
-            <!--                 LISTA MAESTRA (TITULARES Y PAREJAS #1..N)                 -->
-            <!-- ========================================================================= -->
+            <!-- ================= LISTA MAESTRA ================= -->
             <div class="tab-pane fade" id="panel-maestra">
                 
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                     <div>
                         <h4 class="m-0" style="font-family: 'Playfair Display', serif;">Lista Maestra Completa</h4>
-                        <small class="text-muted">Total de comensales y sillas presupuestadas (Titulares y Parejas numerados correlativamente).</small>
+                        <small class="text-muted">Total de comensales presupuestados (Titulares y Parejas numerados correlativamente).</small>
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-outline-dark btn-sm px-3" onclick="abrirModalAgregarInvitado()"><i class="bi bi-person-plus-fill me-1"></i>+ Agregar Invitado</button>
@@ -367,7 +386,6 @@
                     </div>
                 </div>
 
-                <!-- RESUMEN KPI LISTA MAESTRA -->
                 <div class="row g-2 g-md-3 mb-4">
                     <div class="col-6 col-md-3">
                         <div class="stat-card static">
@@ -522,11 +540,11 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let SCRIPT_URL = "";
-        let CSV_FIESTA_URL = "fiesta.csv";
+        let CSV_FIESTA_URL = localStorage.getItem('urlGoogleSheetFiesta') || "fiesta.csv";
         let dataMaestra = []; let dataConfirmados = []; let dataCancelados = []; let dataMesas = [];
         let listaComensalesGenerales = []; let listaCancelables = []; let listaPendientes = []; let tarjetasDietas = [];
         let listaInvitadosFiesta = [];
-        let listaDesglosadaMaestra = []; // Lista con Titulares y Parejas ordenados correlativamente
+        let listaDesglosadaMaestra = [];
         let invitadoSeleccionadoParaCancelar = null;
         let filtroActualBanqueteria = 'Todas';
         let filtroMesasEstado = 'todas';
@@ -591,6 +609,7 @@
         function quitarTildes(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""; }
         function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])) : ""; }
 
+        // ======================= GOOGLE SHEETS / FIESTA =======================
         function parseCSV(text) {
             let r = [], row = [''], q = false;
             for (let i = 0; i < text.length; i++) {
@@ -644,18 +663,51 @@
         }
 
         async function cargarDatosFiesta() {
+            const statusEl = document.getElementById('status-sheet-sync');
+            const inputUrl = document.getElementById('input-sheet-url');
+            if (inputUrl && CSV_FIESTA_URL.startsWith('http')) inputUrl.value = CSV_FIESTA_URL;
+
             try {
-                let res = await fetch(CSV_FIESTA_URL);
-                if (!res.ok) throw new Error("No se pudo descargar el CSV de fiesta");
+                let fetchUrl = CSV_FIESTA_URL;
+                // Si es un enlace de Google Docs o externo, pasarlo por el proxy del Worker para evitar bloqueos CORS
+                if (fetchUrl.startsWith('http') && SCRIPT_URL) {
+                    fetchUrl = `${SCRIPT_URL}?action=proxy_csv&url=${encodeURIComponent(CSV_FIESTA_URL)}`;
+                }
+
+                let res = await fetch(fetchUrl);
+                if (!res.ok) throw new Error("No se pudo cargar el archivo");
                 let text = await res.text();
-                localStorage.setItem('cacheFiestaCSV', text);
-                listaInvitadosFiesta = procesarTextoCSVFiesta(text);
+                
+                if (text && text.length > 20) {
+                    localStorage.setItem('cacheFiestaCSV', text);
+                    listaInvitadosFiesta = procesarTextoCSVFiesta(text);
+                    if (statusEl) statusEl.innerHTML = `<span class="text-success"><i class="bi bi-check-circle me-1"></i>Sincronizado con Google Sheets (${listaInvitadosFiesta.length} comensales)</span>`;
+                } else {
+                    throw new Error("Contenido vacío");
+                }
             } catch (e) {
+                console.warn("Usando cache local de fiesta...", e);
                 let cached = localStorage.getItem('cacheFiestaCSV');
-                if (cached) listaInvitadosFiesta = procesarTextoCSVFiesta(cached);
+                if (cached) {
+                    listaInvitadosFiesta = procesarTextoCSVFiesta(cached);
+                    if (statusEl) statusEl.innerHTML = `<span class="text-muted"><i class="bi bi-info-circle me-1"></i>Mostrando última copia en memoria (${listaInvitadosFiesta.length} comensales)</span>`;
+                } else {
+                    if (statusEl) statusEl.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Pega tu enlace de Google Sheets arriba y pulsa Sincronizar.</span>`;
+                }
             }
             actualizarContadoresFiesta();
             dibujarTablaFiesta();
+            dibujarResumenMesasBanqueteria();
+        }
+
+        function guardarYRecargarSheet() {
+            const url = document.getElementById('input-sheet-url').value.trim();
+            if (!url) return alert("Por favor pega un enlace de Google Sheets publicado como CSV.");
+            
+            CSV_FIESTA_URL = url;
+            localStorage.setItem('urlGoogleSheetFiesta', url);
+            document.getElementById('status-sheet-sync').innerText = "Conectando con Google...";
+            cargarDatosFiesta();
         }
 
         function cargarCSVLocalFiesta(e) {
@@ -668,6 +720,7 @@
                 listaInvitadosFiesta = procesarTextoCSVFiesta(text);
                 actualizarContadoresFiesta();
                 dibujarTablaFiesta();
+                dibujarResumenMesasBanqueteria();
                 alert(`¡CSV cargado con éxito! Se registraron ${listaInvitadosFiesta.length} personas de fiesta.`);
             };
             reader.readAsText(file);
@@ -680,31 +733,37 @@
             document.getElementById('fiesta-banquet-val').innerText = total;
         }
 
+        // TABLA FIESTA: SOLO ID (#), NOMBRE Y TIPO (SIN FECHA NI COMENTARIOS)
         function dibujarTablaFiesta() {
             const term = quitarTildes((document.getElementById('buscador-fiesta')?.value || '').toLowerCase().trim());
             let html = "";
             let idx = 1;
 
             listaInvitadosFiesta.forEach(f => {
-                if (term === "" || quitarTildes(f.nombre.toLowerCase()).includes(term) || quitarTildes(f.notas.toLowerCase()).includes(term)) {
+                if (term === "" || quitarTildes(f.nombre.toLowerCase()).includes(term)) {
                     html += `<tr ${f.es_pareja ? 'style="background-color: #fdfbf7;"' : ''}>
-                        <td>${idx++}</td>
+                        <td class="text-muted fw-bold">${idx++}</td>
                         <td class="${f.es_pareja ? 'ps-4' : ''}">
-                            ${f.es_pareja ? '↳ ' : ''}<strong>${escapeHTML(f.nombre)}</strong>
+                            ${f.es_pareja ? '<span class="text-muted me-1">↳</span>' : ''}
+                            <strong ${f.es_pareja ? 'class="fw-semibold text-secondary"' : ''}>${escapeHTML(f.nombre)}</strong>
                         </td>
-                        <td><span class="badge ${f.es_pareja ? 'bg-secondary' : 'text-white'}" style="${!f.es_pareja ? 'background:var(--fiesta-color);' : ''}">${f.es_pareja ? 'Pareja' : 'Titular'}</span></td>
-                        <td><small class="text-muted">${escapeHTML(f.fecha)}</small></td>
-                        <td><small class="text-muted">${escapeHTML(f.notas || '-')}</small></td>
+                        <td>
+                            <span class="badge ${f.es_pareja ? 'bg-secondary' : 'text-white'}" style="${!f.es_pareja ? 'background:var(--fiesta-color);' : ''}">
+                                ${f.es_pareja ? 'Pareja' : 'Titular'}
+                            </span>
+                        </td>
                     </tr>`;
                 }
             });
 
-            document.getElementById('tabla-fiesta').innerHTML = html || `<tr><td colspan="5" class="text-center text-muted">No hay invitados de fiesta que coincidan.</td></tr>`;
+            document.getElementById('tabla-fiesta').innerHTML = html || `<tr><td colspan="3" class="text-center text-muted py-4">No hay invitados de fiesta registrados.</td></tr>`;
         }
 
         function exportarExcelFiesta() {
             let data = listaInvitadosFiesta.map((f, i) => ({
-                "#": i + 1, "Nombre": f.nombre, "Tipo": f.es_pareja ? "Pareja" : "Titular", "Fecha": f.fecha, "Notas": f.notas || "-"
+                "#": i + 1, 
+                "Nombre": f.nombre, 
+                "Tipo": f.es_pareja ? "Pareja" : "Titular"
             }));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
@@ -712,12 +771,15 @@
             XLSX.writeFile(wb, "Matrimonio_Fiesta.xlsx");
         }
 
+        // ======================= CARGA GENERAL =======================
         async function init() {
             try {
                 const resCfg = await fetch('config.json'); 
                 const cfg = await resCfg.json(); 
                 SCRIPT_URL = cfg.worker_url;
-                if(cfg.csv_fiesta_url) CSV_FIESTA_URL = cfg.csv_fiesta_url;
+                if (!localStorage.getItem('urlGoogleSheetFiesta') && cfg.csv_fiesta_url) {
+                    CSV_FIESTA_URL = cfg.csv_fiesta_url;
+                }
 
                 await Promise.all([cargarDatos(), cargarDatosFiesta()]);
                 processQueue();
@@ -749,7 +811,6 @@
             listaPendientes = [];
             listaDesglosadaMaestra = [];
 
-            // Construir la lista maestra correlativa (Titular y de inmediato su Pareja)
             dataMaestra.forEach(m => {
                 listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false });
 
@@ -761,7 +822,6 @@
                 if (estaConfirmado) estadoTitular = 'Confirmado';
                 else if (titularCancelado) estadoTitular = 'Cancelado';
 
-                // 1. Agregar Titular a Lista Maestra Desglosada
                 listaDesglosadaMaestra.push({
                     id_maestra: m.id,
                     nombre: m.nombre,
@@ -773,7 +833,6 @@
                     estado: estadoTitular
                 });
 
-                // 2. Si tiene pareja, agregarla inmediatamente después (desplaza la numeración contigua)
                 if (parseInt(m.pareja) === 1) {
                     const parejaConfirmada = conf && conf.lleva_pareja === "Sí";
                     const nombreParejaPotencial = (conf && conf.nombre_pareja && conf.nombre_pareja !== '-' && conf.nombre_pareja.toLowerCase() !== 'pendiente') 
@@ -801,7 +860,6 @@
                         estado: estadoPareja
                     });
 
-                    // Si la pareja no ha confirmado ni cancelado, entra en Pendientes
                     if (!parejaConfirmada && !parejaCancelada) {
                         listaPendientes.push({
                             nombre: nombreParejaPotencial,
@@ -824,10 +882,10 @@
                 }
             });
 
-            // Procesar Confirmados
             dataConfirmados.forEach(c => {
                 const infoMaestra = dataMaestra.find(m => m.nombre === c.nombre_invitado);
                 const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
+                const ladoTitular = infoMaestra ? (infoMaestra.lado || 'Novio') : 'Novio';
                 
                 listaComensalesGenerales.push({
                     id_drag: `prin_${c.nombre_invitado}`,
@@ -837,6 +895,7 @@
                     mesa: c.mesa_numero,
                     dieta: c.dieta || 'Ninguna',
                     esNino: esNinoTitular,
+                    lado: ladoTitular,
                     telefono: c.telefono,
                     lleva_pareja: c.lleva_pareja
                 });
@@ -854,6 +913,7 @@
                         mesa: c.mesa_pareja,
                         dieta: c.dieta_pareja || 'Ninguna',
                         esNino: false,
+                        lado: ladoTitular,
                         telefono: "-"
                     });
                     listaCancelables.push({ nombre_mostrar: nombreP, nombre_principal: c.nombre_invitado, es_pareja: true });
@@ -861,9 +921,7 @@
             });
         }
 
-        // =========================================================================
-        //                 TABLA LISTA MAESTRA (DESGLOSE CORRELATIVO)
-        // =========================================================================
+        // ======================= LISTA MAESTRA =======================
         function dibujarTablaListaMaestra() {
             const term = quitarTildes((document.getElementById('buscador-maestra')?.value || '').toLowerCase().trim());
             
@@ -910,9 +968,8 @@
                     let columnaAcciones = '';
 
                     if (!item.es_pareja) {
-                        // Fila de Titular
                         columnaPareja = `
-                            <button class="btn btn-sm ${item.pareja_activa ? 'btn-outline-primary' : 'btn-outline-secondary'} py-0 px-2" style="font-size:0.75rem;" title="Al activar, se inserta su pareja como el número siguiente y desplaza a todos hacia abajo" onclick="alternarParejaMaestra(${item.id_maestra})">
+                            <button class="btn btn-sm ${item.pareja_activa ? 'btn-outline-primary' : 'btn-outline-secondary'} py-0 px-2" style="font-size:0.75rem;" title="Al activar, su pareja se inserta con el número siguiente desplazando a los demás" onclick="alternarParejaMaestra(${item.id_maestra})">
                                 ${item.pareja_activa ? '<i class="bi bi-people-fill me-1"></i>Con Pareja' : '<i class="bi bi-person me-1"></i>Solo'}
                             </button>`;
                         
@@ -921,7 +978,6 @@
                                 <i class="bi bi-trash"></i>
                             </button>`;
                     } else {
-                        // Fila de Pareja
                         columnaPareja = `<span class="badge bg-light text-secondary border"><i class="bi bi-link-45deg me-1"></i>Acompañante</span>`;
                         columnaAcciones = `
                             <button class="btn btn-sm btn-outline-warning py-0 px-2" title="Quitar pareja (desplaza números hacia arriba)" onclick="alternarParejaMaestra(${item.id_maestra})">
@@ -978,6 +1034,7 @@
             item.lado = nuevoLado;
             procesarDatosGenerales();
             dibujarTablaListaMaestra();
+            dibujarPanelMesas();
             addToQueue({ tipo: "editar_lado_maestra", id: item.id, lado: nuevoLado });
         }
 
@@ -988,7 +1045,6 @@
             const nuevaPareja = parseInt(item.pareja) === 1 ? 0 : 1;
             item.pareja = nuevaPareja;
             
-            // Si se quita la pareja, limpiar de cancelados si estaba
             if (nuevaPareja === 0) {
                 const conf = dataConfirmados.find(c => c.nombre_invitado === item.nombre);
                 if (conf) {
@@ -1042,7 +1098,7 @@
         }
 
         function eliminarInvitadoMaestra(id, nombre) {
-            if (!confirm(`¿Estás seguro de eliminar definitivamente a "${nombre}" de la Lista Maestra?\nSe eliminará de pendientes, confirmaciones y mesas.`)) return;
+            if (!confirm(`¿Estás seguro de eliminar a "${nombre}" de la Lista Maestra?\nSe eliminará de pendientes, confirmaciones y mesas.`)) return;
 
             dataMaestra = dataMaestra.filter(m => parseInt(m.id) !== parseInt(id));
             dataConfirmados = dataConfirmados.filter(c => c.nombre_invitado !== nombre);
@@ -1080,11 +1136,14 @@
             XLSX.writeFile(wb, "Matrimonio_Lista_Maestra.xlsx");
         }
 
-        // ======================= MESAS (CON ALIAS EN D1) =======================
+        // =========================================================================
+        //                 MESAS (LIMPIO, SIN DIETAS + TORPEDO NOVIO/NOVIA)
+        // =========================================================================
         function dibujarPanelMesas() {
             actualizarKPIMesas();
             dibujarListaSinAsignar();
             dibujarGridMesas();
+            dibujarResumenMesasBanqueteria();
         }
 
         function actualizarKPIMesas() {
@@ -1114,15 +1173,20 @@
             let html = "";
             sinAsignar.forEach(c => {
                 if (term === "" || quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term)) {
+                    const torpedoBg = c.lado === 'Novia' ? 'var(--color-novia)' : (c.lado === 'Ambos' ? 'var(--color-ambos)' : 'var(--color-novio)');
+                    const torpedoEmoji = c.lado === 'Novia' ? '👰' : (c.lado === 'Ambos' ? '💍' : '🤵');
+
                     html += `
-                    <div class="guest-item-pro ${c.esNino ? 'is-child' : ''} ${c.dieta !== 'Ninguna' ? 'has-diet' : ''}" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
-                        <div class="text-truncate me-2">
-                            <span class="fw-bold d-block text-truncate" title="${escapeHTML(c.nombre_mostrar)}">${escapeHTML(c.nombre_mostrar)}</span>
-                            <small class="text-muted" style="font-size:0.7rem;">
-                                ${c.esNino ? '<span class="badge badge-nino me-1">Niño</span>' : ''}
-                                ${c.dieta !== 'Ninguna' ? `<span class="text-primary me-1">${escapeHTML(c.dieta)}</span>` : ''}
-                                ${c.es_pareja ? '<span class="badge bg-light text-secondary border">Pareja</span>' : ''}
-                            </small>
+                    <div class="guest-item-pro ${c.esNino ? 'is-child' : ''}" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
+                        <div class="d-flex align-items-center text-truncate me-2">
+                            <span class="torpedo-badge me-2 text-white" style="background-color: ${torpedoBg};" title="Lado: ${c.lado}">${torpedoEmoji}</span>
+                            <div class="text-truncate">
+                                <span class="fw-bold d-block text-truncate" title="${escapeHTML(c.nombre_mostrar)}">${escapeHTML(c.nombre_mostrar)}</span>
+                                <small class="text-muted" style="font-size:0.7rem;">
+                                    ${c.esNino ? '<span class="badge badge-nino me-1">Niño</span>' : ''}
+                                    ${c.es_pareja ? '<span class="badge bg-light text-secondary border">Pareja</span>' : ''}
+                                </small>
+                            </div>
                         </div>
                         <button class="btn btn-outline-dark btn-sm py-0 px-2 flex-shrink-0" style="font-size:0.72rem;" onclick="abrirModalAsignarDirecto('${c.id_drag}')">
                             <i class="bi bi-arrow-right-short"></i> Sentar
@@ -1152,28 +1216,23 @@
                 const pctBar = esMesaNovios ? 100 : Math.min(100, Math.round((cant / cap) * 100));
                 let colorBar = pctBar >= 100 ? 'bg-dark' : (pctBar >= 75 ? 'bg-warning' : 'bg-success');
 
-                let dietasMap = {}, ninosCount = 0;
-                ocupantes.forEach(o => {
-                    if (o.esNino) ninosCount++;
-                    if (o.dieta && o.dieta !== 'Ninguna' && o.dieta !== '-') dietasMap[o.dieta] = (dietasMap[o.dieta] || 0) + 1;
-                });
-
-                let chipsHtml = "";
-                if (ninosCount > 0) chipsHtml += `<span class="diet-chip">${ninosCount} Menú Niño</span>`;
-                for (const [dieta, cantD] of Object.entries(dietasMap)) chipsHtml += `<span class="diet-chip">${cantD} ${escapeHTML(dieta)}</span>`;
-                if (!chipsHtml) chipsHtml = `<span class="text-muted" style="font-size:0.68rem;">Menú general</span>`;
-
+                // Lista de ocupantes: SIN DIETAS (SOLO TORPEDO Y NOMBRE)
                 let htmlOcupantes = "";
                 ocupantes.forEach(c => {
+                    const torpedoBg = c.lado === 'Novia' ? 'var(--color-novia)' : (c.lado === 'Ambos' ? 'var(--color-ambos)' : 'var(--color-novio)');
+                    const torpedoEmoji = c.lado === 'Novia' ? '👰' : (c.lado === 'Ambos' ? '💍' : '🤵');
+
                     htmlOcupantes += `
-                    <div class="guest-item-pro ${c.esNino ? 'is-child' : ''} ${c.dieta !== 'Ninguna' ? 'has-diet' : ''}" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
-                        <div class="text-truncate me-2">
-                            <span class="d-block text-truncate fw-semibold" style="font-size:0.8rem;" title="${escapeHTML(c.nombre_mostrar)}">${escapeHTML(c.nombre_mostrar)}</span>
-                            <small class="text-muted" style="font-size:0.68rem;">
-                                ${c.esNino ? '<span class="badge badge-nino me-1">Niño</span>' : ''}
-                                ${c.dieta !== 'Ninguna' ? `<span class="text-primary me-1">${escapeHTML(c.dieta)}</span>` : ''}
-                                ${c.es_pareja ? '<span class="text-secondary">Pareja</span>' : ''}
-                            </small>
+                    <div class="guest-item-pro ${c.esNino ? 'is-child' : ''}" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
+                        <div class="d-flex align-items-center text-truncate me-2">
+                            <span class="torpedo-badge me-2 text-white" style="background-color: ${torpedoBg};" title="Lado: ${c.lado}">${torpedoEmoji}</span>
+                            <div class="text-truncate">
+                                <span class="d-block text-truncate fw-semibold" style="font-size:0.83rem;" title="${escapeHTML(c.nombre_mostrar)}">${escapeHTML(c.nombre_mostrar)}</span>
+                                <small class="text-muted" style="font-size:0.68rem;">
+                                    ${c.esNino ? '<span class="badge badge-nino me-1">Niño</span>' : ''}
+                                    ${c.es_pareja ? '<span class="text-secondary">Pareja</span>' : ''}
+                                </small>
+                            </div>
                         </div>
                         <div class="d-flex align-items-center gap-1">
                             <button class="btn btn-sm btn-light border py-0 px-1 text-muted" title="Mover a otra mesa" onclick="abrirModalAsignarDirecto('${c.id_drag}', ${num})"><i class="bi bi-arrow-left-right" style="font-size:0.75rem;"></i></button>
@@ -1214,8 +1273,6 @@
                             </div>
                             <div class="progress-seats"><div class="progress-bar ${colorBar}" style="width: ${pctBar}%"></div></div>
                         </div>
-
-                        <div class="mesa-dietas-summary">${chipsHtml}</div>
 
                         <div class="drop-zone-pro" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, ${num}, ${cap}, ${cant})">
                             ${htmlOcupantes || '<div class="text-center text-muted small py-4" style="border:1px dashed #e8e2d8; border-radius:6px;"><i class="bi bi-box-arrow-in-down d-block mb-1"></i>Mesa vacía</div>'}
@@ -1309,11 +1366,17 @@
             }
             let html = "";
             lista.forEach(c => {
+                const torpedoBg = c.lado === 'Novia' ? 'var(--color-novia)' : (c.lado === 'Ambos' ? 'var(--color-ambos)' : 'var(--color-novio)');
+                const torpedoEmoji = c.lado === 'Novia' ? '👰' : (c.lado === 'Ambos' ? '💍' : '🤵');
+
                 html += `
                 <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="ejecutarSentarDesdeModal('${c.id_drag}')">
-                    <div>
-                        <strong style="font-size:0.88rem;">${escapeHTML(c.nombre_mostrar)}</strong>
-                        <div class="small text-muted">${c.es_pareja ? 'Pareja' : 'Titular'} ${c.dieta !== 'Ninguna' ? `· ${escapeHTML(c.dieta)}` : ''}</div>
+                    <div class="d-flex align-items-center">
+                        <span class="torpedo-badge me-2 text-white" style="background-color: ${torpedoBg};">${torpedoEmoji}</span>
+                        <div>
+                            <strong style="font-size:0.88rem;">${escapeHTML(c.nombre_mostrar)}</strong>
+                            <div class="small text-muted">${c.es_pareja ? 'Pareja' : 'Titular'}</div>
+                        </div>
                     </div>
                     <span class="btn btn-sm btn-gold py-0 px-2">Sentar</span>
                 </button>`;
@@ -1367,6 +1430,7 @@
             if(mesaObj) mesaObj.alias = aliasFinal;
             
             dibujarGridMesas();
+            dibujarResumenMesasBanqueteria();
             addToQueue({ tipo: "editar_alias_mesa", numero: num, alias: aliasFinal });
         }
 
@@ -1615,7 +1679,7 @@
             addToQueue({ tipo: "admin_cancelar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
         }
 
-        // ======================= BANQUETERÍA =======================
+        // ======================= BANQUETERÍA Y RESUMEN POR MESAS =======================
         function dibujarPanelBanqueteria() {
             let adultos = 0, ninos = 0, dietasDinamicas = {};
             listaComensalesGenerales.forEach(c => {
@@ -1639,6 +1703,72 @@
                 col.appendChild(card); contenedorDietas.appendChild(col);
             }
             renderTablaBanqueteria(filtroActualBanqueteria);
+            dibujarResumenMesasBanqueteria();
+        }
+
+        // NUEVO: RESUMEN DE MESAS PARA LA BANQUETERA
+        function dibujarResumenMesasBanqueteria() {
+            const cont = document.getElementById('contenedor-mesas-banquetera');
+            if (!cont) return;
+
+            let html = "";
+            dataMesas.forEach(m => {
+                const num = parseInt(m.numero);
+                const esNovios = parseInt(m.capacidad) === 999;
+                const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === num);
+                
+                let adultosMesa = 0, ninosMesa = 0;
+                let especiales = [];
+
+                ocupantes.forEach(o => {
+                    if (o.esNino) {
+                        ninosMesa++;
+                        especiales.push({ nombre: o.nombre_mostrar, plato: "Menú Infantil (Niño)" });
+                    } else {
+                        adultosMesa++;
+                    }
+
+                    if (o.dieta && o.dieta !== "Ninguna" && o.dieta !== "-") {
+                        especiales.push({ nombre: o.nombre_mostrar, plato: o.dieta });
+                    }
+                });
+
+                const aliasText = m.alias ? ` - ${escapeHTML(m.alias)}` : '';
+                const tituloMesa = esNovios ? `Mesa de Novios${aliasText}` : `Mesa ${num}${aliasText}`;
+
+                let htmlEspeciales = "";
+                if (especiales.length > 0) {
+                    htmlEspeciales = `<div class="p-2 mb-2 rounded" style="background:#fff7e6; border:1px solid #ffd591;">
+                        <span class="d-block small fw-bold text-dark mb-1"><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Platos Especiales (${especiales.length}):</span>
+                        <ul class="mb-0 ps-3 small" style="font-size:0.78rem;">
+                            ${especiales.map(e => `<li><strong>${escapeHTML(e.nombre)}:</strong> <span class="text-danger fw-semibold">${escapeHTML(e.plato)}</span></li>`).join('')}
+                        </ul>
+                    </div>`;
+                } else {
+                    htmlEspeciales = `<div class="small text-success mb-2"><i class="bi bi-check-circle-fill me-1"></i>Todos comen Menú Adulto Estándar</div>`;
+                }
+
+                html += `
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="bg-white p-3 rounded-3 shadow-sm border h-100" style="border-top: 4px solid var(--oro) !important;">
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                            <h6 class="m-0 fw-bold" style="font-family:'Playfair Display', serif;">${tituloMesa}</h6>
+                            <span class="badge bg-dark">${ocupantes.length} sentados</span>
+                        </div>
+                        <div class="small text-muted mb-2">
+                            <span>Adultos: <strong>${adultosMesa}</strong></span> · 
+                            <span>Niños: <strong>${ninosMesa}</strong></span>
+                        </div>
+                        ${htmlEspeciales}
+                        <div class="small text-muted border-top pt-2" style="font-size:0.75rem;">
+                            <span class="fw-bold d-block mb-1">Comensales en mesa:</span>
+                            ${ocupantes.length ? ocupantes.map(o => `<span class="badge bg-light text-dark border me-1 mb-1">${escapeHTML(o.nombre_mostrar)}</span>`).join('') : '<span class="text-muted">Mesa sin comensales</span>'}
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            cont.innerHTML = html || `<div class="col-12 text-center text-muted py-3">No hay mesas configuradas aún.</div>`;
         }
 
         function renderTablaBanqueteria(filtro = filtroActualBanqueteria) {
@@ -1708,6 +1838,7 @@
                     "Mesa": nombreMesa, 
                     "Nombre": c.nombre_mostrar, 
                     "Tipo": c.es_pareja ? "Pareja" : "Titular", 
+                    "Lado": c.lado,
                     "Restricción Alimentaria": c.dieta,
                     "Menú": c.esNino ? "Niño" : "Adulto"
                 });
@@ -1737,7 +1868,7 @@
             let confData = listaComensalesGenerales.map(c => ({ "Nombre": c.nombre_mostrar, "Tipo": c.es_pareja ? "Pareja" : "Titular", "Teléfono": c.telefono || "-", "Restricción Alimentaria": c.dieta }));
             let pendData = listaPendientes.map(p => ({ "Nombre": p.nombre, "Tipo": p.tipo }));
             let cancData = dataCancelados.map(c => ({ "Nombre": c.nombre, "Motivo": c.mensaje || "-" }));
-            let fiestaData = listaInvitadosFiesta.map((f, i) => ({ "#": i + 1, "Nombre": f.nombre, "Tipo": f.es_pareja ? "Pareja" : "Titular", "Fecha": f.fecha, "Notas": f.notas }));
+            let fiestaData = listaInvitadosFiesta.map((f, i) => ({ "#": i + 1, "Nombre": f.nombre, "Tipo": f.es_pareja ? "Pareja" : "Titular" }));
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(confData), "Cena Confirmados");
