@@ -18,6 +18,9 @@
             --oscuro: #2d2d2d;
             --crema-bg: #f4f1ea;
             --fiesta-color: #6f42c1;
+            --color-novio: #2b5b84;
+            --color-novia: #c75b7a;
+            --color-ambos: #28a745;
         }
 
         body { background: var(--crema-bg); font-family: 'Montserrat', sans-serif; overflow-x: hidden; padding-bottom: 60px; }
@@ -46,7 +49,7 @@
         .sugerencia-item:hover { background-color: var(--oro-light); color: var(--oro-dark); font-weight: bold; }
 
         .kpi-mesa-bar { background: white; border-radius: 10px; padding: 14px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 22px; }
-        .kpi-pill { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 600; color: var(--oscuro); }
+        .kpi-pill { display: inline-flex; align-items: gap: 8px; font-size: 0.88rem; font-weight: 600; color: var(--oscuro); }
         
         .sticky-unassigned { position: sticky; top: 15px; z-index: 100; max-height: calc(100vh - 40px); display: flex; flex-direction: column; }
         @media (max-width: 991px) {
@@ -80,6 +83,13 @@
         .drop-zone-pro.dragover { background: rgba(181, 154, 122, 0.12); border: 2px dashed var(--oro); border-radius: 8px; }
 
         .badge-nino { background-color: #8c775e; color: white; font-size: 0.7rem; }
+        .badge-novio { background-color: var(--color-novio); color: white; }
+        .badge-novia { background-color: var(--color-novia); color: white; }
+        .badge-ambos { background-color: var(--color-ambos); color: white; }
+        
+        .lado-selector { cursor: pointer; transition: 0.2s; }
+        .lado-selector:hover { opacity: 0.85; transform: scale(1.05); }
+
         .dieta-editable { cursor: pointer; border-bottom: 1px dashed var(--oro); transition: 0.2s; }
         .dieta-editable:hover { color: var(--oro); font-weight: bold; }
 
@@ -107,7 +117,7 @@
         
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
             <h2 id="titulo-principal" class="m-0" style="font-family: 'Playfair Display', serif; color: var(--oscuro);">Gestión del Matrimonio</h2>
-            <div id="reloj-guardado" class="small text-muted"><i class="bi bi-shield-check text-success me-1"></i>Sincronización activa</div>
+            <div id="reloj-guardado" class="small text-muted"><i class="bi bi-shield-check text-success me-1"></i>Conectado a Base de Datos D1</div>
         </div>
         
         <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
@@ -121,7 +131,7 @@
                 <button class="nav-link" data-bs-toggle="pill" data-bs-target="#panel-banquetera" type="button"><i class="bi bi-egg-fried me-1"></i>Banquetería</button>
             </li>
             <li class="nav-item ms-md-auto mt-2 mt-md-0" role="presentation">
-                <button class="nav-link text-success fw-bold" data-bs-toggle="pill" data-bs-target="#panel-agregar" type="button"><i class="bi bi-person-plus-fill me-1"></i>Nuevo Invitado</button>
+                <button class="nav-link fw-bold" style="background:#e8dfd2; color:var(--oscuro);" data-bs-toggle="pill" data-bs-target="#panel-maestra" type="button"><i class="bi bi-card-checklist me-1"></i>Lista Maestra</button>
             </li>
         </ul>
 
@@ -198,8 +208,8 @@
                         <li class="nav-item ms-auto"><button class="nav-link text-danger text-nowrap" data-bs-toggle="tab" data-bs-target="#subtab-gestionar" type="button"><i class="bi bi-search me-1"></i>Buscador Bajas</button></li>
                     </ul>
 
-                    <!-- PESTAÑA CENA CONFIRMADOS -->
                     <div class="tab-content">
+                        <!-- Confirmados Cena -->
                         <div class="tab-pane fade show active" id="subtab-confirmados">
                             <input type="text" id="buscador-confirmados" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar comensal cena..." autocomplete="off" oninput="dibujarPanelConfirmaciones()">
                             <div class="table-responsive">
@@ -218,7 +228,7 @@
                             </div>
                         </div>
 
-                        <!-- PESTAÑA INVITADOS FIESTA (GOOGLE FORMS) -->
+                        <!-- Invitados Fiesta -->
                         <div class="tab-pane fade" id="subtab-fiesta">
                             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
                                 <div class="small text-muted">Invitados que asistirán a partir de las 22:00 hrs (Bar abierto).</div>
@@ -229,7 +239,6 @@
                                 </div>
                             </div>
                             <input type="text" id="buscador-fiesta" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar invitado de fiesta..." autocomplete="off" oninput="dibujarTablaFiesta()">
-                            
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle border text-nowrap">
                                     <thead class="table-light">
@@ -246,7 +255,7 @@
                             </div>
                         </div>
 
-                        <!-- PESTAÑA PENDIENTES -->
+                        <!-- Pendientes Cena -->
                         <div class="tab-pane fade" id="subtab-pendientes">
                             <input type="text" id="buscador-pendientes" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar en pendientes..." autocomplete="off" oninput="dibujarPanelConfirmaciones()">
                             <div class="table-responsive">
@@ -263,7 +272,7 @@
                             </div>
                         </div>
 
-                        <!-- PESTAÑA CANCELADOS -->
+                        <!-- Cancelados Cena -->
                         <div class="tab-pane fade" id="subtab-cancelados">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle border text-nowrap">
@@ -273,7 +282,7 @@
                             </div>
                         </div>
 
-                        <!-- BAJAR MANUAL -->
+                        <!-- Buscador Bajas -->
                         <div class="tab-pane fade" id="subtab-gestionar">
                             <div class="row justify-content-center py-4">
                                 <div class="col-md-8 col-lg-6 bg-light p-4 rounded border">
@@ -342,34 +351,130 @@
                 </div>
             </div>
 
-            <!-- ================= AGREGAR INVITADO ================= -->
-            <div class="tab-pane fade" id="panel-agregar">
-                <div class="row justify-content-center">
-                    <div class="col-12 col-md-8 col-lg-6">
-                        <div class="table-container mt-4">
-                            <h4 class="mb-3" style="font-family: 'Playfair Display', serif;">Agregar a Lista Maestra Cena</h4>
-                            <p class="text-muted small mb-4">Ingresa un nuevo invitado titular para la cena. Aparecerá inmediatamente en "Cena Pendientes".</p>
-                            
-                            <form id="form-agregar-invitado" onsubmit="agregarInvitadoManual(event)">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold small">Nombre Completo del Titular</label>
-                                    <input type="text" class="form-control" id="nuevo-nombre" required placeholder="Ej: Juan Pérez">
-                                </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="nuevo-pareja">
-                                    <label class="form-check-label fw-bold small">Lleva Pareja (+1)</label>
-                                </div>
-                                <div class="form-check form-switch mb-4">
-                                    <input class="form-check-input" type="checkbox" id="nuevo-nino">
-                                    <label class="form-check-label fw-bold small">Es un Niño (Menú Infantil)</label>
-                                </div>
-                                <button type="submit" class="btn btn-gold w-100 fw-bold py-2">Guardar Invitado</button>
-                            </form>
+            <!-- ================= LISTA MAESTRA ================= -->
+            <div class="tab-pane fade" id="panel-maestra">
+                
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                    <div>
+                        <h4 class="m-0" style="font-family: 'Playfair Display', serif;">Lista Maestra Completa</h4>
+                        <small class="text-muted">Directorio base de todos los titulares contemplados para la boda.</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-dark btn-sm px-3" onclick="abrirModalAgregarInvitado()"><i class="bi bi-person-plus-fill me-1"></i>+ Agregar Invitado</button>
+                        <button class="btn btn-success btn-sm px-3" onclick="exportarExcelListaMaestra()"><i class="bi bi-file-earmark-excel me-1"></i>Descargar Excel</button>
+                    </div>
+                </div>
+
+                <div class="row g-2 g-md-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card static">
+                            <h6 class="text-muted m-0">Total Titulares</h6>
+                            <div class="stat-val" id="maestra-total-titulares">0</div>
+                            <small class="text-muted" style="font-size:0.75rem;"><span id="maestra-total-sillas">0</span> sillas estimadas</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card static" style="border-top-color: var(--color-novio);">
+                            <h6 class="m-0" style="color:var(--color-novio);">Lado Novio (Felipe)</h6>
+                            <div class="stat-val" style="color:var(--color-novio);" id="maestra-count-novio">0</div>
+                            <small class="text-muted" style="font-size:0.75rem;">Titulares registrados</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card static" style="border-top-color: var(--color-novia);">
+                            <h6 class="m-0" style="color:var(--color-novia);">Lado Novia (Antonia)</h6>
+                            <div class="stat-val" style="color:var(--color-novia);" id="maestra-count-novia">0</div>
+                            <small class="text-muted" style="font-size:0.75rem;">Titulares registrados</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card static" style="border-top-color: var(--color-ambos);">
+                            <h6 class="m-0" style="color:var(--color-ambos);">Ambos / Compartidos</h6>
+                            <div class="stat-val" style="color:var(--color-ambos);" id="maestra-count-ambos">0</div>
+                            <small class="text-muted" style="font-size:0.75rem;">Titulares registrados</small>
                         </div>
                     </div>
                 </div>
+
+                <div class="table-container">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary active" id="btn-filtro-lado-todos" onclick="filtrarLadoMaestra('todos')">Todos</button>
+                            <button type="button" class="btn btn-outline-secondary" id="btn-filtro-lado-novio" onclick="filtrarLadoMaestra('Novio')">Novio (Felipe)</button>
+                            <button type="button" class="btn btn-outline-secondary" id="btn-filtro-lado-novia" onclick="filtrarLadoMaestra('Novia')">Novia (Anto)</button>
+                            <button type="button" class="btn btn-outline-secondary" id="btn-filtro-lado-ambos" onclick="filtrarLadoMaestra('Ambos')">Ambos</button>
+                        </div>
+
+                        <div class="position-relative" style="min-width: 280px;">
+                            <input type="text" id="buscador-maestra" class="form-control form-control-sm" placeholder="🔍 Buscar en lista maestra..." autocomplete="off" oninput="dibujarTablaListaMaestra()">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle border text-nowrap">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th>Nombre del Invitado</th>
+                                    <th>Lado / Origen <small class="text-muted fw-normal">(Clic para cambiar)</small></th>
+                                    <th>Pareja (+1)</th>
+                                    <th>Tipo Menú</th>
+                                    <th>Estado Asistencia</th>
+                                    <th style="width: 90px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-lista-maestra">
+                                <tr><td colspan="7" class="text-center text-muted">Cargando lista maestra...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
 
+        </div>
+    </div>
+
+    <!-- MODAL AGREGAR INVITADO MAESTRA -->
+    <div class="modal fade" id="modalAgregarInvitado" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title fw-bold">Agregar nuevo titular a Lista Maestra</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form onsubmit="guardarInvitadoModalMaestra(event)">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Nombre Completo del Invitado</label>
+                            <input type="text" class="form-control" id="modal-nuevo-nombre" required placeholder="Ej: Juan Pérez">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">¿De parte de quién viene?</label>
+                            <select class="form-select" id="modal-nuevo-lado">
+                                <option value="Novio">Novio (Felipe)</option>
+                                <option value="Novia">Novia (Antonia)</option>
+                                <option value="Ambos">Ambos (Compartido)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="modal-nuevo-pareja">
+                            <label class="form-check-label small fw-bold">Lleva Pareja (+1)</label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="modal-nuevo-nino">
+                            <label class="form-check-label small fw-bold">Es un Niño (Menú Infantil)</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-gold btn-sm px-4">Guardar Invitado</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -416,16 +521,15 @@
         let CSV_FIESTA_URL = "fiesta.csv";
         let dataMaestra = []; let dataConfirmados = []; let dataCancelados = []; let dataMesas = [];
         let listaComensalesGenerales = []; let listaCancelables = []; let listaPendientes = []; let tarjetasDietas = [];
-        let listaInvitadosFiesta = []; // Lista procesada de Google Form
+        let listaInvitadosFiesta = [];
         let invitadoSeleccionadoParaCancelar = null;
         let filtroActualBanqueteria = 'Todas';
         let filtroMesasEstado = 'todas';
+        let filtroLadoMaestraActual = 'todos';
 
         let comensalModalActivo = null;
         let mesaModalActiva = null;
-        let aliasMesas = JSON.parse(localStorage.getItem('aliasMesasMatri') || '{}');
 
-        // ======================= SISTEMA SINCRONIZACIÓN =======================
         let syncQueue = JSON.parse(localStorage.getItem('matriSyncQueue') || '[]');
         let isSyncing = false;
 
@@ -456,13 +560,12 @@
                 el.innerHTML = `<i class="bi bi-arrow-repeat spin me-2"></i> Guardando cambios (${syncQueue.length})...`;
                 el.style.background = 'rgba(212, 175, 55, 0.95)'; el.style.display = 'block';
             } else {
-                el.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> Todos los cambios guardados`;
+                el.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> Cambios sincronizados en D1`;
                 el.style.background = 'rgba(40, 167, 69, 0.95)';
                 setTimeout(() => { if (syncQueue.length === 0) el.style.display = 'none'; }, 2200);
             }
         }
 
-        // ======================= AUTENTICACIÓN =======================
         function verificarPIN() {
             const pin = document.getElementById('input-pin').value.toLowerCase().trim();
             if (pin === "336336336" || pin === "banquetera") {
@@ -483,7 +586,6 @@
         function quitarTildes(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""; }
         function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])) : ""; }
 
-        // ======================= PARSER CSV ROBUSTO =======================
         function parseCSV(text) {
             let r = [], row = [''], q = false;
             for (let i = 0; i < text.length; i++) {
@@ -519,35 +621,18 @@
                 const notas = (r[4] || '').trim();
 
                 if (!nombre) continue;
-
                 const siAsiste = asiste.includes('si') || asiste.includes('sí');
                 if (!siAsiste) continue;
 
                 const tienePareja = parejaVal === 'si' || parejaVal === 'sí';
 
-                // Titular
-                invitados.push({
-                    nombre: nombre,
-                    es_pareja: false,
-                    nombre_principal: nombre,
-                    fecha: fecha,
-                    notas: notas
-                });
-
-                // Pareja
+                invitados.push({ nombre: nombre, es_pareja: false, nombre_principal: nombre, fecha: fecha, notas: notas });
                 if (tienePareja) {
                     let nombrePareja = `Pareja de ${nombre}`;
-                    // Si en notas escribió un nombre corto
                     if (notas && notas.split(/\s+/).length <= 4 && !notas.includes('.') && !notas.includes('!') && !notas.toLowerCase().includes('gracias') && !notas.toLowerCase().includes('aviso')) {
                         nombrePareja = `${notas} (Pareja de ${nombre})`;
                     }
-                    invitados.push({
-                        nombre: nombrePareja,
-                        es_pareja: true,
-                        nombre_principal: nombre,
-                        fecha: fecha,
-                        notas: ''
-                    });
+                    invitados.push({ nombre: nombrePareja, es_pareja: true, nombre_principal: nombre, fecha: fecha, notas: '' });
                 }
             }
             return invitados;
@@ -561,7 +646,6 @@
                 localStorage.setItem('cacheFiestaCSV', text);
                 listaInvitadosFiesta = procesarTextoCSVFiesta(text);
             } catch (e) {
-                console.warn("Cargando fiesta desde cache local...", e);
                 let cached = localStorage.getItem('cacheFiestaCSV');
                 if (cached) listaInvitadosFiesta = procesarTextoCSVFiesta(cached);
             }
@@ -579,7 +663,7 @@
                 listaInvitadosFiesta = procesarTextoCSVFiesta(text);
                 actualizarContadoresFiesta();
                 dibujarTablaFiesta();
-                alert(`¡CSV cargado con éxito! Se registraron ${listaInvitadosFiesta.length} comensales de fiesta.`);
+                alert(`¡CSV cargado con éxito! Se registraron ${listaInvitadosFiesta.length} personas de fiesta.`);
             };
             reader.readAsText(file);
         }
@@ -615,11 +699,7 @@
 
         function exportarExcelFiesta() {
             let data = listaInvitadosFiesta.map((f, i) => ({
-                "#": i + 1,
-                "Nombre": f.nombre,
-                "Tipo": f.es_pareja ? "Pareja" : "Titular",
-                "Fecha Confirmación": f.fecha,
-                "Notas / Acompañante": f.notas || "-"
+                "#": i + 1, "Nombre": f.nombre, "Tipo": f.es_pareja ? "Pareja" : "Titular", "Fecha": f.fecha, "Notas": f.notas || "-"
             }));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
@@ -627,7 +707,6 @@
             XLSX.writeFile(wb, "Matrimonio_Fiesta.xlsx");
         }
 
-        // ======================= CARGA INICIAL GENERAL =======================
         async function init() {
             try {
                 const resCfg = await fetch('config.json'); 
@@ -655,6 +734,7 @@
                 dibujarPanelBanqueteria(); 
                 dibujarPanelConfirmaciones(); 
                 dibujarPanelMesas();
+                dibujarTablaListaMaestra();
             } catch(e) { console.error("Error obteniendo datos.", e); }
         }
 
@@ -740,7 +820,183 @@
             });
         }
 
-        // ======================= GESTIÓN MESAS =======================
+        // ======================= LISTA MAESTRA =======================
+        function dibujarTablaListaMaestra() {
+            const term = quitarTildes((document.getElementById('buscador-maestra')?.value || '').toLowerCase().trim());
+            
+            let totalTitulares = dataMaestra.length;
+            let sillasPotenciales = 0;
+            let countNovio = 0;
+            let countNovia = 0;
+            let countAmbos = 0;
+
+            dataMaestra.forEach(m => {
+                sillasPotenciales += (parseInt(m.pareja) === 1 ? 2 : 1);
+                const lado = m.lado || 'Novio';
+                if (lado === 'Novia') countNovia++;
+                else if (lado === 'Ambos') countAmbos++;
+                else countNovio++;
+            });
+
+            document.getElementById('maestra-total-titulares').innerText = totalTitulares;
+            document.getElementById('maestra-total-sillas').innerText = sillasPotenciales;
+            document.getElementById('maestra-count-novio').innerText = countNovio;
+            document.getElementById('maestra-count-novia').innerText = countNovia;
+            document.getElementById('maestra-count-ambos').innerText = countAmbos;
+
+            let html = "";
+            let contadorVisual = 1;
+
+            dataMaestra.forEach(m => {
+                const lado = m.lado || 'Novio';
+                const matchLado = (filtroLadoMaestraActual === 'todos') || (lado === filtroLadoMaestraActual);
+                const matchBusqueda = term === "" || quitarTildes(m.nombre.toLowerCase()).includes(term);
+
+                if (matchLado && matchBusqueda) {
+                    const estaConfirmado = dataConfirmados.some(c => c.nombre_invitado === m.nombre);
+                    const estaCancelado = dataCancelados.some(c => quitarTildes(c.nombre.toLowerCase()) === quitarTildes(m.nombre.toLowerCase()));
+
+                    let estadoBadge = '<span class="badge bg-warning text-dark">Pendiente</span>';
+                    if (estaConfirmado) estadoBadge = '<span class="badge bg-success">Confirmado</span>';
+                    else if (estaCancelado) estadoBadge = '<span class="badge bg-danger">Cancelado</span>';
+
+                    let ladoIcon = '🤵 Novio';
+                    let ladoClass = 'badge-novio';
+                    if (lado === 'Novia') { ladoIcon = '👰 Novia'; ladoClass = 'badge-novia'; }
+                    else if (lado === 'Ambos') { ladoIcon = '💍 Ambos'; ladoClass = 'badge-ambos'; }
+
+                    html += `
+                    <tr>
+                        <td class="text-muted fw-bold">${contadorVisual++}</td>
+                        <td><strong>${escapeHTML(m.nombre)}</strong></td>
+                        <td>
+                            <span class="badge ${ladoClass} lado-selector" title="Haz clic para alternar (Novio -> Novia -> Ambos)" onclick="alternarLadoMaestra(${m.id})">
+                                ${ladoIcon}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm ${parseInt(m.pareja) === 1 ? 'btn-outline-primary' : 'btn-outline-secondary'} py-0 px-2" style="font-size:0.75rem;" onclick="alternarParejaMaestra(${m.id})">
+                                ${parseInt(m.pareja) === 1 ? '<i class="bi bi-people-fill me-1"></i>Con Pareja' : '<i class="bi bi-person me-1"></i>Solo'}
+                            </button>
+                        </td>
+                        <td>
+                            <span class="badge ${parseInt(m.nino) === 1 ? 'badge-nino' : 'bg-light text-dark border'}">${parseInt(m.nino) === 1 ? 'Niño' : 'Adulto'}</span>
+                        </td>
+                        <td>${estadoBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar definitivamente de Lista Maestra" onclick="eliminarInvitadoMaestra(${m.id}, '${escapeHTML(m.nombre)}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                }
+            });
+
+            document.getElementById('tabla-lista-maestra').innerHTML = html || `<tr><td colspan="7" class="text-center text-muted py-4">No se encontraron invitados con los filtros actuales.</td></tr>`;
+        }
+
+        function filtrarLadoMaestra(lado) {
+            filtroLadoMaestraActual = lado;
+            document.querySelectorAll('[id^="btn-filtro-lado-"]').forEach(btn => btn.classList.remove('active'));
+            if (lado === 'todos') document.getElementById('btn-filtro-lado-todos').classList.add('active');
+            else if (lado === 'Novio') document.getElementById('btn-filtro-lado-novio').classList.add('active');
+            else if (lado === 'Novia') document.getElementById('btn-filtro-lado-novia').classList.add('active');
+            else if (lado === 'Ambos') document.getElementById('btn-filtro-lado-ambos').classList.add('active');
+            dibujarTablaListaMaestra();
+        }
+
+        function alternarLadoMaestra(id) {
+            const item = dataMaestra.find(m => parseInt(m.id) === parseInt(id));
+            if (!item) return;
+
+            const orden = ['Novio', 'Novia', 'Ambos'];
+            let idx = orden.indexOf(item.lado || 'Novio');
+            let nuevoLado = orden[(idx + 1) % orden.length];
+            
+            item.lado = nuevoLado;
+            dibujarTablaListaMaestra();
+            addToQueue({ tipo: "editar_lado_maestra", id: item.id, lado: nuevoLado });
+        }
+
+        function alternarParejaMaestra(id) {
+            const item = dataMaestra.find(m => parseInt(m.id) === parseInt(id));
+            if (!item) return;
+
+            const nuevaPareja = parseInt(item.pareja) === 1 ? 0 : 1;
+            item.pareja = nuevaPareja;
+            
+            procesarDatosGenerales();
+            dibujarTablaListaMaestra();
+            dibujarPanelConfirmaciones();
+            
+            addToQueue({ tipo: "editar_pareja_maestra", id: item.id, pareja: nuevaPareja });
+        }
+
+        function abrirModalAgregarInvitado() {
+            document.getElementById('modal-nuevo-nombre').value = "";
+            document.getElementById('modal-nuevo-lado').value = "Novio";
+            document.getElementById('modal-nuevo-pareja').checked = false;
+            document.getElementById('modal-nuevo-nino').checked = false;
+            new bootstrap.Modal(document.getElementById('modalAgregarInvitado')).show();
+        }
+
+        function guardarInvitadoModalMaestra(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('modal-nuevo-nombre').value.trim();
+            const lado = document.getElementById('modal-nuevo-lado').value;
+            const pareja = document.getElementById('modal-nuevo-pareja').checked ? 1 : 0;
+            const nino = document.getElementById('modal-nuevo-nino').checked ? 1 : 0;
+
+            if (!nombre) return;
+            if (dataMaestra.some(m => quitarTildes(m.nombre.toLowerCase()) === quitarTildes(nombre.toLowerCase()))) {
+                alert("Ese invitado ya existe en la lista maestra."); return;
+            }
+
+            const proximoId = dataMaestra.reduce((max, obj) => Math.max(max, parseInt(obj.id) || 0), 0) + 1;
+            const nuevoObj = { id: proximoId, nombre: nombre, pareja: pareja, nino: nino, lado: lado };
+            
+            dataMaestra.push(nuevoObj);
+            bootstrap.Modal.getInstance(document.getElementById('modalAgregarInvitado')).hide();
+
+            procesarDatosGenerales();
+            dibujarTablaListaMaestra();
+            dibujarPanelConfirmaciones();
+
+            addToQueue({ tipo: "agregar_maestra", id: proximoId, nombre: nombre, pareja: pareja, nino: nino, lado: lado });
+        }
+
+        function eliminarInvitadoMaestra(id, nombre) {
+            if (!confirm(`¿Estás seguro de eliminar definitivamente a "${nombre}" de la Lista Maestra?\nSe eliminará de pendientes, confirmaciones y mesas.`)) return;
+
+            dataMaestra = dataMaestra.filter(m => parseInt(m.id) !== parseInt(id));
+            dataConfirmados = dataConfirmados.filter(c => c.nombre_invitado !== nombre);
+            dataCancelados = dataCancelados.filter(c => c.nombre !== nombre && c.nombre !== `Pareja de ${nombre}`);
+            listaComensalesGenerales = listaComensalesGenerales.filter(c => c.nombre_principal !== nombre);
+
+            procesarDatosGenerales();
+            dibujarTablaListaMaestra();
+            dibujarPanelConfirmaciones();
+            dibujarPanelBanqueteria();
+            dibujarPanelMesas();
+
+            addToQueue({ tipo: "eliminar_maestra", id: id, nombre: nombre });
+        }
+
+        function exportarExcelListaMaestra() {
+            let data = dataMaestra.map((m, idx) => ({
+                "#": idx + 1,
+                "Nombre del Invitado": m.nombre,
+                "Lado": m.lado || "Novio",
+                "Lleva Pareja (+1)": parseInt(m.pareja) === 1 ? "Sí" : "No",
+                "Tipo de Menú": parseInt(m.nino) === 1 ? "Niño" : "Adulto"
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Lista Maestra");
+            XLSX.writeFile(wb, "Matrimonio_Lista_Maestra.xlsx");
+        }
+
+        // ======================= MESAS =======================
         function dibujarPanelMesas() {
             actualizarKPIMesas();
             dibujarListaSinAsignar();
@@ -842,7 +1098,7 @@
                     </div>`;
                 });
 
-                const alias = aliasMesas[num] || (esMesaNovios ? 'Novios & Acompañantes' : 'Clic para asignar nombre (Ej: Amigos)');
+                const alias = mesa.alias || (esMesaNovios ? 'Novios & Acompañantes' : 'Clic para asignar nombre (Ej: Amigos UAI)');
 
                 htmlGrid += `
                 <div class="col-12 col-md-6 col-xxl-4 mesa-col-box" id="mesa-col-${num}">
@@ -893,7 +1149,6 @@
             document.getElementById('contenedor-mesas').innerHTML = htmlGrid || `<div class="col-12 text-center text-muted py-5">No hay mesas en esta categoría.</div>`;
         }
 
-        // ======================= MODALES 1-CLIC =======================
         function abrirModalAsignarDirecto(idDrag, mesaActual = null) {
             const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
             if(!comensal) return;
@@ -901,8 +1156,7 @@
 
             document.getElementById('modalMoverMesaTitulo').innerText = `Asignar a: ${comensal.nombre_mostrar}`;
             document.getElementById('modalMoverMesaSubtitulo').innerText = mesaActual !== null 
-                ? `Actualmente está sentado en Mesa ${mesaActual}. Puedes moverlo a otra mesa o desasignarlo.` 
-                : `Aún no tiene mesa asignada.`;
+                ? `Actualmente en Mesa ${mesaActual}.` : `Aún no tiene mesa asignada.`;
 
             const select = document.getElementById('select-destino-mesa');
             select.innerHTML = "";
@@ -919,7 +1173,7 @@
                 const esNovios = parseInt(m.capacidad) === 999;
                 const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === num).length;
                 const cap = parseInt(m.capacidad);
-                const alias = aliasMesas[num] ? ` (${aliasMesas[num]})` : '';
+                const alias = m.alias ? ` (${m.alias})` : '';
 
                 const opt = document.createElement('option');
                 opt.value = num;
@@ -966,7 +1220,7 @@
         function renderListaModalSinAsignar(lista) {
             const cont = document.getElementById('modal-lista-candidatos');
             if(lista.length === 0) {
-                cont.innerHTML = `<div class="p-3 text-center text-muted small">No se encontraron comensales sin mesa.</div>`;
+                cont.innerHTML = `<div class="p-3 text-center text-muted small">No hay comensales sin mesa.</div>`;
                 return;
             }
             let html = "";
@@ -1020,13 +1274,16 @@
         }
 
         function editarAliasMesa(num) {
-            const actual = aliasMesas[num] || "";
+            const mesaObj = dataMesas.find(m => parseInt(m.numero) === parseInt(num));
+            const actual = mesaObj ? (mesaObj.alias || "") : "";
             const nuevo = prompt(`Asigna un alias a la Mesa ${num} (Ej: 'Amigos UAI'):`, actual);
             if(nuevo === null) return;
-            if(nuevo.trim() === "") delete aliasMesas[num];
-            else aliasMesas[num] = nuevo.trim();
-            localStorage.setItem('aliasMesasMatri', JSON.stringify(aliasMesas));
+            
+            const aliasFinal = nuevo.trim();
+            if(mesaObj) mesaObj.alias = aliasFinal;
+            
             dibujarGridMesas();
+            addToQueue({ tipo: "editar_alias_mesa", numero: num, alias: aliasFinal });
         }
 
         function vaciarMesaCompleta(num) {
@@ -1074,22 +1331,23 @@
         function obtenerSiguienteNumero() { 
             const numeros = dataMesas.map(m => parseInt(m.numero)).filter(n => n > 0).sort((a,b) => a-b); 
             let proximo = 1; 
-            for (let i = 0; i < numeros.length; i++) { if (numeros[i] === proximo) proximo++; else break; } 
+            for (let i = 0; i < numeros.length; i++) { 
+                if (numeros[i] === proximo) proximo++; else break; 
+            } 
             return proximo; 
         }
 
         function crearMesa(num, cap) { 
-            dataMesas.push({ numero: num, capacidad: cap }); 
+            dataMesas.push({ numero: num, capacidad: cap, alias: '' }); 
             dataMesas.sort((a,b) => parseInt(a.numero) - parseInt(b.numero));
             dibujarPanelMesas(); 
-            addToQueue({ tipo: "guardar_mesa", numero: num, capacidad: cap }); 
+            addToQueue({ tipo: "guardar_mesa", numero: num, capacidad: cap, alias: '' }); 
         }
 
         function eliminarMesa(num) { 
             if(!confirm(`¿Eliminar la Mesa ${num}? Los comensales volverán a 'Por Asignar'.`)) return; 
             dataMesas = dataMesas.filter(m => parseInt(m.numero) !== parseInt(num)); 
             listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(num)) c.mesa = null; }); 
-            delete aliasMesas[num]; localStorage.setItem('aliasMesasMatri', JSON.stringify(aliasMesas));
             dibujarPanelMesas(); dibujarPanelBanqueteria(); 
             addToQueue({ tipo: "eliminar_mesa", numero: num }); 
         }
@@ -1101,10 +1359,7 @@
             
             const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(viejoNum)); 
             if(mesa) mesa.numero = nuevoNum;
-            if(aliasMesas[viejoNum]) {
-                aliasMesas[nuevoNum] = aliasMesas[viejoNum]; delete aliasMesas[viejoNum];
-                localStorage.setItem('aliasMesasMatri', JSON.stringify(aliasMesas));
-            }
+            
             listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(viejoNum)) c.mesa = nuevoNum; }); 
             dataMesas.sort((a,b) => parseInt(a.numero) - parseInt(b.numero));
             dibujarPanelMesas(); dibujarPanelBanqueteria(); 
@@ -1117,7 +1372,7 @@
             const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(numero)); 
             if(mesa) mesa.capacidad = parseInt(nuevaCap); 
             dibujarPanelMesas(); 
-            addToQueue({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap) }); 
+            addToQueue({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap), alias: mesa.alias || '' }); 
         }
 
         // ======================= CONFIRMACIONES CENA =======================
@@ -1129,7 +1384,6 @@
             document.getElementById('val-pendientes').innerText = listaPendientes.length;
             document.getElementById('val-cancelados').innerText = dataCancelados.length;
 
-            // Tabla confirmados cena
             let htmlConf = "";
             listaComensalesGenerales.forEach(c => {
                 if (term === "" || quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term)) {
@@ -1149,7 +1403,6 @@
             });
             document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="5" class="text-center text-muted">No hay resultados.</td></tr>`;
 
-            // Tabla pendientes cena
             let htmlPend = "";
             listaPendientes.forEach(p => {
                 if (termPend === "" || quitarTildes(p.nombre.toLowerCase()).includes(termPend)) {
@@ -1172,7 +1425,6 @@
             });
             document.getElementById('tabla-pendientes').innerHTML = htmlPend || `<tr><td colspan="3" class="text-center text-muted">No hay resultados.</td></tr>`;
 
-            // Cancelados
             let htmlCanc = "";
             dataCancelados.forEach(c => {
                 htmlCanc += `<tr><td><strong>${escapeHTML(c.nombre)}</strong></td><td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td></tr>`;
@@ -1206,7 +1458,7 @@
                 addToQueue({ tipo: "admin_cancelar", nombre_principal: comensal.nombre_principal, es_pareja: false });
             }
 
-            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarPanelBanqueteria(); dibujarPanelMesas();
+            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarPanelBanqueteria(); dibujarPanelMesas(); dibujarTablaListaMaestra();
         }
 
         function agregarParejaAConfirmado(nombrePrincipal) {
@@ -1229,7 +1481,7 @@
                 return cNom !== quitarTildes(nombreFinal.toLowerCase()) && cNom !== quitarTildes(`Pareja de ${nombrePrincipal}`.toLowerCase());
             });
 
-            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarPanelBanqueteria(); dibujarPanelMesas();
+            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarPanelBanqueteria(); dibujarPanelMesas(); dibujarTablaListaMaestra();
             addToQueue({ tipo: "admin_agregar_pareja_confirmado", nombre_principal: nombrePrincipal, nombre_pareja: nombreFinal, dieta_pareja: dietaFinal });
         }
 
@@ -1237,7 +1489,7 @@
             if (!confirm(`¿Habilitar acompañante (+1) para ${nombrePrincipal}?`)) return;
             const m = dataMaestra.find(item => item.nombre === nombrePrincipal); if (m) m.pareja = 1;
             dataCancelados = dataCancelados.filter(c => quitarTildes(c.nombre.toLowerCase()) !== quitarTildes(`Pareja de ${nombrePrincipal}`.toLowerCase()));
-            procesarDatosGenerales(); dibujarPanelConfirmaciones();
+            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarTablaListaMaestra();
             addToQueue({ tipo: "admin_habilitar_pareja", nombre_principal: nombrePrincipal });
         }
 
@@ -1259,7 +1511,7 @@
                 });
             }
             
-            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarPanelBanqueteria(); dibujarPanelMesas();
+            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarPanelBanqueteria(); dibujarPanelMesas(); dibujarTablaListaMaestra();
             addToQueue({ tipo: "admin_confirmar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
         }
 
@@ -1275,7 +1527,7 @@
                 dataCancelados.push({ nombre: `Pareja de ${nombrePrincipal}`, mensaje: "Dado de baja" });
             }
             
-            procesarDatosGenerales(); dibujarPanelConfirmaciones();
+            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarTablaListaMaestra();
             addToQueue({ tipo: "admin_cancelar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
         }
 
@@ -1351,27 +1603,6 @@
             addToQueue({ tipo: "editar_dieta", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, nueva_dieta: dietaFinal });
         }
 
-        function agregarInvitadoManual(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('nuevo-nombre').value.trim();
-            const llevaPareja = document.getElementById('nuevo-pareja').checked ? 1 : 0;
-            const esNino = document.getElementById('nuevo-nino').checked ? 1 : 0;
-
-            if(!nombre) return;
-            if(dataMaestra.some(m => quitarTildes(m.nombre.toLowerCase()) === quitarTildes(nombre.toLowerCase()))) {
-                alert("Ese invitado ya existe en la lista maestra."); return;
-            }
-
-            const proximoId = dataMaestra.reduce((max, obj) => Math.max(max, parseInt(obj.id) || 0), 0) + 1;
-            dataMaestra.push({ id: proximoId, nombre: nombre, pareja: llevaPareja, nino: esNino });
-            procesarDatosGenerales(); dibujarPanelConfirmaciones();
-            
-            addToQueue({ tipo: "agregar_maestra", id: proximoId, nombre: nombre, pareja: llevaPareja, nino: esNino });
-            alert("Invitado agregado a Cena Pendientes.");
-            document.getElementById('form-agregar-invitado').reset();
-            new bootstrap.Tab(document.querySelector('button[data-bs-target="#panel-confirmaciones"]')).show();
-        }
-
         // ======================= EXCEL EXPORTS =======================
         function exportarExcelMesas() {
             let data = [];
@@ -1385,7 +1616,8 @@
                 let nombreMesa = "Sin Asignar";
                 if(c.mesa !== null && c.mesa !== "") { 
                     const numM = parseInt(c.mesa);
-                    const aliasM = aliasMesas[numM] ? ` (${aliasMesas[numM]})` : '';
+                    const mesaObj = dataMesas.find(m => parseInt(m.numero) === numM);
+                    const aliasM = (mesaObj && mesaObj.alias) ? ` (${mesaObj.alias})` : '';
                     nombreMesa = numM === 0 ? `Mesa Novios${aliasM}` : `Mesa ${numM}${aliasM}`; 
                 }
                 data.push({ 
