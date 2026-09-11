@@ -49,7 +49,7 @@
         .sugerencia-item:hover { background-color: var(--oro-light); color: var(--oro-dark); font-weight: bold; }
 
         .kpi-mesa-bar { background: white; border-radius: 10px; padding: 14px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 22px; }
-        .kpi-pill { display: inline-flex; align-items: gap: 8px; font-size: 0.88rem; font-weight: 600; color: var(--oscuro); }
+        .kpi-pill { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 600; color: var(--oscuro); }
         
         .sticky-unassigned { position: sticky; top: 15px; z-index: 100; max-height: calc(100vh - 40px); display: flex; flex-direction: column; }
         @media (max-width: 991px) {
@@ -185,7 +185,7 @@
                 </div>
             </div>
 
-            <!-- ================= CONFIRMACIONES (INCLUYE FIESTA) ================= -->
+            <!-- ================= CONFIRMACIONES ================= -->
             <div class="tab-pane fade" id="panel-confirmaciones">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h4 style="font-family: 'Playfair Display', serif; m-0">Estatus de Invitaciones</h4>
@@ -351,13 +351,15 @@
                 </div>
             </div>
 
-            <!-- ================= LISTA MAESTRA ================= -->
+            <!-- ========================================================================= -->
+            <!--                 LISTA MAESTRA (TITULARES Y PAREJAS #1..N)                 -->
+            <!-- ========================================================================= -->
             <div class="tab-pane fade" id="panel-maestra">
                 
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                     <div>
                         <h4 class="m-0" style="font-family: 'Playfair Display', serif;">Lista Maestra Completa</h4>
-                        <small class="text-muted">Directorio base de todos los titulares contemplados para la boda.</small>
+                        <small class="text-muted">Total de comensales y sillas presupuestadas (Titulares y Parejas numerados correlativamente).</small>
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-outline-dark btn-sm px-3" onclick="abrirModalAgregarInvitado()"><i class="bi bi-person-plus-fill me-1"></i>+ Agregar Invitado</button>
@@ -365,33 +367,34 @@
                     </div>
                 </div>
 
+                <!-- RESUMEN KPI LISTA MAESTRA -->
                 <div class="row g-2 g-md-3 mb-4">
                     <div class="col-6 col-md-3">
                         <div class="stat-card static">
-                            <h6 class="text-muted m-0">Total Titulares</h6>
-                            <div class="stat-val" id="maestra-total-titulares">0</div>
-                            <small class="text-muted" style="font-size:0.75rem;"><span id="maestra-total-sillas">0</span> sillas estimadas</small>
+                            <h6 class="text-muted m-0">Total Comensales (Sillas)</h6>
+                            <div class="stat-val text-primary" id="maestra-total-sillas">0</div>
+                            <small class="text-muted" style="font-size:0.75rem;"><span id="maestra-total-titulares">0</span> titulares + <span id="maestra-total-parejas">0</span> parejas</small>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="stat-card static" style="border-top-color: var(--color-novio);">
                             <h6 class="m-0" style="color:var(--color-novio);">Lado Novio (Felipe)</h6>
                             <div class="stat-val" style="color:var(--color-novio);" id="maestra-count-novio">0</div>
-                            <small class="text-muted" style="font-size:0.75rem;">Titulares registrados</small>
+                            <small class="text-muted" style="font-size:0.75rem;">Comensales totales</small>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="stat-card static" style="border-top-color: var(--color-novia);">
                             <h6 class="m-0" style="color:var(--color-novia);">Lado Novia (Antonia)</h6>
                             <div class="stat-val" style="color:var(--color-novia);" id="maestra-count-novia">0</div>
-                            <small class="text-muted" style="font-size:0.75rem;">Titulares registrados</small>
+                            <small class="text-muted" style="font-size:0.75rem;">Comensales totales</small>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="stat-card static" style="border-top-color: var(--color-ambos);">
                             <h6 class="m-0" style="color:var(--color-ambos);">Ambos / Compartidos</h6>
                             <div class="stat-val" style="color:var(--color-ambos);" id="maestra-count-ambos">0</div>
-                            <small class="text-muted" style="font-size:0.75rem;">Titulares registrados</small>
+                            <small class="text-muted" style="font-size:0.75rem;">Comensales totales</small>
                         </div>
                     </div>
                 </div>
@@ -406,7 +409,7 @@
                         </div>
 
                         <div class="position-relative" style="min-width: 280px;">
-                            <input type="text" id="buscador-maestra" class="form-control form-control-sm" placeholder="🔍 Buscar en lista maestra..." autocomplete="off" oninput="dibujarTablaListaMaestra()">
+                            <input type="text" id="buscador-maestra" class="form-control form-control-sm" placeholder="🔍 Buscar titular o pareja..." autocomplete="off" oninput="dibujarTablaListaMaestra()">
                         </div>
                     </div>
 
@@ -414,17 +417,18 @@
                         <table class="table table-hover align-middle border text-nowrap">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 50px;">#</th>
-                                    <th>Nombre del Invitado</th>
-                                    <th>Lado / Origen <small class="text-muted fw-normal">(Clic para cambiar)</small></th>
+                                    <th style="width: 55px;">#</th>
+                                    <th>Nombre del Comensal</th>
+                                    <th>Lado / Origen</th>
+                                    <th>Tipo</th>
                                     <th>Pareja (+1)</th>
                                     <th>Tipo Menú</th>
                                     <th>Estado Asistencia</th>
-                                    <th style="width: 90px;">Acciones</th>
+                                    <th style="width: 80px;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-lista-maestra">
-                                <tr><td colspan="7" class="text-center text-muted">Cargando lista maestra...</td></tr>
+                                <tr><td colspan="8" class="text-center text-muted">Cargando lista maestra...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -478,7 +482,7 @@
         </div>
     </div>
 
-    <!-- MODAL SELECCIONAR MESA RÁPIDO (1-CLIC) -->
+    <!-- MODAL SELECCIONAR MESA RÁPIDO -->
     <div class="modal fade" id="modalMoverMesa" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -522,6 +526,7 @@
         let dataMaestra = []; let dataConfirmados = []; let dataCancelados = []; let dataMesas = [];
         let listaComensalesGenerales = []; let listaCancelables = []; let listaPendientes = []; let tarjetasDietas = [];
         let listaInvitadosFiesta = [];
+        let listaDesglosadaMaestra = []; // Lista con Titulares y Parejas ordenados correlativamente
         let invitadoSeleccionadoParaCancelar = null;
         let filtroActualBanqueteria = 'Todas';
         let filtroMesasEstado = 'todas';
@@ -742,7 +747,9 @@
             listaComensalesGenerales = []; 
             listaCancelables = []; 
             listaPendientes = [];
+            listaDesglosadaMaestra = [];
 
+            // Construir la lista maestra correlativa (Titular y de inmediato su Pareja)
             dataMaestra.forEach(m => {
                 listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false });
 
@@ -750,16 +757,23 @@
                 const estaConfirmado = !!conf;
                 const titularCancelado = dataCancelados.some(c => quitarTildes(c.nombre.toLowerCase()) === quitarTildes(m.nombre.toLowerCase()));
 
-                if (!estaConfirmado && !titularCancelado) {
-                    listaPendientes.push({
-                        nombre: m.nombre,
-                        tipo: 'Titular',
-                        nombre_principal: m.nombre,
-                        es_pareja: false,
-                        tiene_pareja_maestra: parseInt(m.pareja) === 1
-                    });
-                }
+                let estadoTitular = 'Pendiente';
+                if (estaConfirmado) estadoTitular = 'Confirmado';
+                else if (titularCancelado) estadoTitular = 'Cancelado';
 
+                // 1. Agregar Titular a Lista Maestra Desglosada
+                listaDesglosadaMaestra.push({
+                    id_maestra: m.id,
+                    nombre: m.nombre,
+                    nombre_principal: m.nombre,
+                    es_pareja: false,
+                    pareja_activa: parseInt(m.pareja) === 1,
+                    nino: parseInt(m.nino) === 1,
+                    lado: m.lado || 'Novio',
+                    estado: estadoTitular
+                });
+
+                // 2. Si tiene pareja, agregarla inmediatamente después (desplaza la numeración contigua)
                 if (parseInt(m.pareja) === 1) {
                     const parejaConfirmada = conf && conf.lleva_pareja === "Sí";
                     const nombreParejaPotencial = (conf && conf.nombre_pareja && conf.nombre_pareja !== '-' && conf.nombre_pareja.toLowerCase() !== 'pendiente') 
@@ -772,6 +786,22 @@
                                cNom === quitarTildes(`Pareja de ${m.nombre}`.toLowerCase());
                     });
 
+                    let estadoPareja = 'Pendiente';
+                    if (parejaConfirmada) estadoPareja = 'Confirmado';
+                    else if (parejaCancelada) estadoPareja = 'Cancelado';
+
+                    listaDesglosadaMaestra.push({
+                        id_maestra: m.id,
+                        nombre: nombreParejaPotencial,
+                        nombre_principal: m.nombre,
+                        es_pareja: true,
+                        pareja_activa: true,
+                        nino: false,
+                        lado: m.lado || 'Novio',
+                        estado: estadoPareja
+                    });
+
+                    // Si la pareja no ha confirmado ni cancelado, entra en Pendientes
                     if (!parejaConfirmada && !parejaCancelada) {
                         listaPendientes.push({
                             nombre: nombreParejaPotencial,
@@ -782,8 +812,19 @@
                         });
                     }
                 }
+
+                if (!estaConfirmado && !titularCancelado) {
+                    listaPendientes.push({
+                        nombre: m.nombre,
+                        tipo: 'Titular',
+                        nombre_principal: m.nombre,
+                        es_pareja: false,
+                        tiene_pareja_maestra: parseInt(m.pareja) === 1
+                    });
+                }
             });
 
+            // Procesar Confirmados
             dataConfirmados.forEach(c => {
                 const infoMaestra = dataMaestra.find(m => m.nombre === c.nombre_invitado);
                 const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
@@ -820,79 +861,100 @@
             });
         }
 
-        // ======================= LISTA MAESTRA =======================
+        // =========================================================================
+        //                 TABLA LISTA MAESTRA (DESGLOSE CORRELATIVO)
+        // =========================================================================
         function dibujarTablaListaMaestra() {
             const term = quitarTildes((document.getElementById('buscador-maestra')?.value || '').toLowerCase().trim());
             
             let totalTitulares = dataMaestra.length;
-            let sillasPotenciales = 0;
-            let countNovio = 0;
-            let countNovia = 0;
-            let countAmbos = 0;
-
-            dataMaestra.forEach(m => {
-                sillasPotenciales += (parseInt(m.pareja) === 1 ? 2 : 1);
-                const lado = m.lado || 'Novio';
-                if (lado === 'Novia') countNovia++;
-                else if (lado === 'Ambos') countAmbos++;
+            let totalParejas = dataMaestra.filter(m => parseInt(m.pareja) === 1).length;
+            let totalSillas = totalTitulares + totalParejas;
+            
+            let countNovio = 0, countNovia = 0, countAmbos = 0;
+            listaDesglosadaMaestra.forEach(item => {
+                if (item.lado === 'Novia') countNovia++;
+                else if (item.lado === 'Ambos') countAmbos++;
                 else countNovio++;
             });
 
             document.getElementById('maestra-total-titulares').innerText = totalTitulares;
-            document.getElementById('maestra-total-sillas').innerText = sillasPotenciales;
+            document.getElementById('maestra-total-parejas').innerText = totalParejas;
+            document.getElementById('maestra-total-sillas').innerText = totalSillas;
             document.getElementById('maestra-count-novio').innerText = countNovio;
             document.getElementById('maestra-count-novia').innerText = countNovia;
             document.getElementById('maestra-count-ambos').innerText = countAmbos;
 
             let html = "";
-            let contadorVisual = 1;
+            let numeroCorrelativo = 1;
 
-            dataMaestra.forEach(m => {
-                const lado = m.lado || 'Novio';
-                const matchLado = (filtroLadoMaestraActual === 'todos') || (lado === filtroLadoMaestraActual);
-                const matchBusqueda = term === "" || quitarTildes(m.nombre.toLowerCase()).includes(term);
+            listaDesglosadaMaestra.forEach(item => {
+                const matchLado = (filtroLadoMaestraActual === 'todos') || (item.lado === filtroLadoMaestraActual);
+                const matchBusqueda = term === "" || 
+                    quitarTildes(item.nombre.toLowerCase()).includes(term) || 
+                    quitarTildes(item.nombre_principal.toLowerCase()).includes(term);
+
+                const currentNum = numeroCorrelativo++;
 
                 if (matchLado && matchBusqueda) {
-                    const estaConfirmado = dataConfirmados.some(c => c.nombre_invitado === m.nombre);
-                    const estaCancelado = dataCancelados.some(c => quitarTildes(c.nombre.toLowerCase()) === quitarTildes(m.nombre.toLowerCase()));
-
                     let estadoBadge = '<span class="badge bg-warning text-dark">Pendiente</span>';
-                    if (estaConfirmado) estadoBadge = '<span class="badge bg-success">Confirmado</span>';
-                    else if (estaCancelado) estadoBadge = '<span class="badge bg-danger">Cancelado</span>';
+                    if (item.estado === 'Confirmado') estadoBadge = '<span class="badge bg-success">Confirmado</span>';
+                    else if (item.estado === 'Cancelado') estadoBadge = '<span class="badge bg-danger">Cancelado</span>';
 
                     let ladoIcon = '🤵 Novio';
                     let ladoClass = 'badge-novio';
-                    if (lado === 'Novia') { ladoIcon = '👰 Novia'; ladoClass = 'badge-novia'; }
-                    else if (lado === 'Ambos') { ladoIcon = '💍 Ambos'; ladoClass = 'badge-ambos'; }
+                    if (item.lado === 'Novia') { ladoIcon = '👰 Novia'; ladoClass = 'badge-novia'; }
+                    else if (item.lado === 'Ambos') { ladoIcon = '💍 Ambos'; ladoClass = 'badge-ambos'; }
+
+                    let columnaPareja = '';
+                    let columnaAcciones = '';
+
+                    if (!item.es_pareja) {
+                        // Fila de Titular
+                        columnaPareja = `
+                            <button class="btn btn-sm ${item.pareja_activa ? 'btn-outline-primary' : 'btn-outline-secondary'} py-0 px-2" style="font-size:0.75rem;" title="Al activar, se inserta su pareja como el número siguiente y desplaza a todos hacia abajo" onclick="alternarParejaMaestra(${item.id_maestra})">
+                                ${item.pareja_activa ? '<i class="bi bi-people-fill me-1"></i>Con Pareja' : '<i class="bi bi-person me-1"></i>Solo'}
+                            </button>`;
+                        
+                        columnaAcciones = `
+                            <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar titular de Lista Maestra" onclick="eliminarInvitadoMaestra(${item.id_maestra}, '${escapeHTML(item.nombre)}')">
+                                <i class="bi bi-trash"></i>
+                            </button>`;
+                    } else {
+                        // Fila de Pareja
+                        columnaPareja = `<span class="badge bg-light text-secondary border"><i class="bi bi-link-45deg me-1"></i>Acompañante</span>`;
+                        columnaAcciones = `
+                            <button class="btn btn-sm btn-outline-warning py-0 px-2" title="Quitar pareja (desplaza números hacia arriba)" onclick="alternarParejaMaestra(${item.id_maestra})">
+                                <i class="bi bi-person-dash"></i>
+                            </button>`;
+                    }
 
                     html += `
-                    <tr>
-                        <td class="text-muted fw-bold">${contadorVisual++}</td>
-                        <td><strong>${escapeHTML(m.nombre)}</strong></td>
+                    <tr ${item.es_pareja ? 'style="background-color: #fcfaf7;"' : ''}>
+                        <td class="text-muted fw-bold">${currentNum}</td>
+                        <td class="${item.es_pareja ? 'ps-4' : ''}">
+                            ${item.es_pareja ? '<span class="text-muted me-1">↳</span>' : ''}
+                            <strong ${item.es_pareja ? 'class="fw-semibold text-secondary"' : ''}>${escapeHTML(item.nombre)}</strong>
+                        </td>
                         <td>
-                            <span class="badge ${ladoClass} lado-selector" title="Haz clic para alternar (Novio -> Novia -> Ambos)" onclick="alternarLadoMaestra(${m.id})">
+                            <span class="badge ${ladoClass} ${!item.es_pareja ? 'lado-selector' : ''}" title="${!item.es_pareja ? 'Clic para alternar lado (Novio -> Novia -> Ambos)' : 'Hereda el lado de su titular'}" ${!item.es_pareja ? `onclick="alternarLadoMaestra(${item.id_maestra})"` : ''}>
                                 ${ladoIcon}
                             </span>
                         </td>
                         <td>
-                            <button class="btn btn-sm ${parseInt(m.pareja) === 1 ? 'btn-outline-primary' : 'btn-outline-secondary'} py-0 px-2" style="font-size:0.75rem;" onclick="alternarParejaMaestra(${m.id})">
-                                ${parseInt(m.pareja) === 1 ? '<i class="bi bi-people-fill me-1"></i>Con Pareja' : '<i class="bi bi-person me-1"></i>Solo'}
-                            </button>
+                            <span class="badge ${item.es_pareja ? 'bg-secondary' : 'bg-primary'}">${item.es_pareja ? 'Pareja' : 'Titular'}</span>
                         </td>
+                        <td>${columnaPareja}</td>
                         <td>
-                            <span class="badge ${parseInt(m.nino) === 1 ? 'badge-nino' : 'bg-light text-dark border'}">${parseInt(m.nino) === 1 ? 'Niño' : 'Adulto'}</span>
+                            <span class="badge ${item.nino ? 'badge-nino' : 'bg-light text-dark border'}">${item.nino ? 'Niño' : 'Adulto'}</span>
                         </td>
                         <td>${estadoBadge}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar definitivamente de Lista Maestra" onclick="eliminarInvitadoMaestra(${m.id}, '${escapeHTML(m.nombre)}')">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
+                        <td>${columnaAcciones}</td>
                     </tr>`;
                 }
             });
 
-            document.getElementById('tabla-lista-maestra').innerHTML = html || `<tr><td colspan="7" class="text-center text-muted py-4">No se encontraron invitados con los filtros actuales.</td></tr>`;
+            document.getElementById('tabla-lista-maestra').innerHTML = html || `<tr><td colspan="8" class="text-center text-muted py-4">No se encontraron comensales con los filtros actuales.</td></tr>`;
         }
 
         function filtrarLadoMaestra(lado) {
@@ -914,6 +976,7 @@
             let nuevoLado = orden[(idx + 1) % orden.length];
             
             item.lado = nuevoLado;
+            procesarDatosGenerales();
             dibujarTablaListaMaestra();
             addToQueue({ tipo: "editar_lado_maestra", id: item.id, lado: nuevoLado });
         }
@@ -925,9 +988,22 @@
             const nuevaPareja = parseInt(item.pareja) === 1 ? 0 : 1;
             item.pareja = nuevaPareja;
             
+            // Si se quita la pareja, limpiar de cancelados si estaba
+            if (nuevaPareja === 0) {
+                const conf = dataConfirmados.find(c => c.nombre_invitado === item.nombre);
+                if (conf) {
+                    conf.lleva_pareja = 'No';
+                    conf.nombre_pareja = '-';
+                    conf.dieta_pareja = '-';
+                    conf.mesa_pareja = null;
+                }
+            }
+
             procesarDatosGenerales();
             dibujarTablaListaMaestra();
             dibujarPanelConfirmaciones();
+            dibujarPanelBanqueteria();
+            dibujarPanelMesas();
             
             addToQueue({ tipo: "editar_pareja_maestra", id: item.id, pareja: nuevaPareja });
         }
@@ -983,20 +1059,28 @@
         }
 
         function exportarExcelListaMaestra() {
-            let data = dataMaestra.map((m, idx) => ({
-                "#": idx + 1,
-                "Nombre del Invitado": m.nombre,
-                "Lado": m.lado || "Novio",
-                "Lleva Pareja (+1)": parseInt(m.pareja) === 1 ? "Sí" : "No",
-                "Tipo de Menú": parseInt(m.nino) === 1 ? "Niño" : "Adulto"
-            }));
+            let data = [];
+            let correlativo = 1;
+            
+            listaDesglosadaMaestra.forEach(item => {
+                data.push({
+                    "#": correlativo++,
+                    "Nombre del Comensal": item.nombre,
+                    "Tipo": item.es_pareja ? "Pareja" : "Titular",
+                    "Titular Principal": item.nombre_principal,
+                    "Lado": item.lado,
+                    "Tipo de Menú": item.nino ? "Niño" : "Adulto",
+                    "Estado Asistencia": item.estado
+                });
+            });
+
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Lista Maestra");
+            XLSX.utils.book_append_sheet(wb, ws, "Lista Maestra Completa");
             XLSX.writeFile(wb, "Matrimonio_Lista_Maestra.xlsx");
         }
 
-        // ======================= MESAS =======================
+        // ======================= MESAS (CON ALIAS EN D1) =======================
         function dibujarPanelMesas() {
             actualizarKPIMesas();
             dibujarListaSinAsignar();
