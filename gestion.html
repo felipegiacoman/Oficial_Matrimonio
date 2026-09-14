@@ -60,25 +60,24 @@
         .mesa-card-pro {
             background: white; border-radius: 12px; border: 1px solid #e9e4dc;
             border-top: 5px solid var(--oro); box-shadow: 0 3px 10px rgba(0,0,0,0.04);
-            margin-bottom: 22px; transition: transform 0.2s, box-shadow 0.2s; position: relative;
+            margin-bottom: 22px; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; position: relative;
         }
         .mesa-card-pro:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.07); }
         .mesa-card-pro.mesa-novios { border-top: 5px solid #d4af37; background: linear-gradient(180deg, #fffdf8 0%, #ffffff 100%); border-color: #f1e4b8; }
         .mesa-card-pro.highlight-mesa { border-color: #d4af37 !important; box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.35) !important; transform: scale(1.02); }
+        .mesa-card-pro.dragover-mesa { border: 2px dashed #2b5b84 !important; background: #f0f5fa !important; }
 
-        .mesa-header { padding: 14px 16px 10px 16px; border-bottom: 1px solid #f2ece3; }
+        .mesa-header { padding: 12px 14px 10px 14px; border-bottom: 1px solid #f2ece3; }
         .mesa-alias { font-size: 0.78rem; color: #888; font-style: italic; cursor: pointer; }
         .mesa-alias:hover { color: var(--oro-dark); text-decoration: underline; }
 
         .progress-seats { height: 6px; border-radius: 10px; background-color: #ede8e0; overflow: hidden; margin-top: 8px; }
-        .mesa-dietas-summary { padding: 6px 14px; background: #faf8f5; border-bottom: 1px solid #f0eae1; display: flex; flex-wrap: wrap; gap: 4px; min-height: 31px; align-items: center; }
-        .diet-chip { font-size: 0.68rem; font-weight: 600; padding: 2px 7px; border-radius: 12px; background: #eae2d5; color: #5c4f3f; }
 
         .guest-item-pro { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; border-radius: 6px; margin-bottom: 5px; font-size: 0.83rem; background: white; border: 1px solid #f0ebdf; transition: 0.15s; }
         .guest-item-pro:hover { background: var(--oro-light); border-color: #ded3c1; }
         .guest-item-pro.is-child { border-left: 3px solid #8c775e; }
 
-        .drop-zone-pro { min-height: 120px; max-height: 280px; overflow-y: auto; padding: 12px; transition: 0.2s; }
+        .drop-zone-pro { min-height: 110px; max-height: 280px; overflow-y: auto; padding: 12px; transition: 0.2s; }
         .drop-zone-pro.dragover { background: rgba(181, 154, 122, 0.12); border: 2px dashed var(--oro); border-radius: 8px; }
 
         .badge-nino { background-color: #8c775e; color: white; font-size: 0.7rem; }
@@ -93,6 +92,9 @@
             width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
             border-radius: 4px; font-size: 0.75rem; flex-shrink: 0;
         }
+
+        .cursor-grab-mesa { cursor: grab; }
+        .cursor-grab-mesa:active { cursor: grabbing; }
 
         .dieta-editable { cursor: pointer; border-bottom: 1px dashed var(--oro); transition: 0.2s; }
         .dieta-editable:hover { color: var(--oro); font-weight: bold; }
@@ -234,8 +236,6 @@
 
                         <!-- Invitados Fiesta (Limpio y Correlativo) -->
                         <div class="tab-pane fade" id="subtab-fiesta">
-                            
-                            <!-- Barra de sincronización directa de Google Sheets -->
                             <div class="bg-light p-3 rounded mb-3 border">
                                 <label class="form-label small fw-bold mb-1">Enlace de Google Sheets (Publicado como CSV):</label>
                                 <div class="input-group input-group-sm">
@@ -323,7 +323,6 @@
                     </div>
                 </div>
                 
-                <!-- KPIs Banquetería -->
                 <div class="row g-2 g-md-3 mb-4">
                     <div class="col-6 col-md-4"><div class="stat-card static"><h6>Total Adultos (Cena)</h6><div class="stat-val" id="adult-val">0</div></div></div>
                     <div class="col-6 col-md-4"><div class="stat-card filtrable" id="card-ninos" onclick="renderTablaBanqueteria('Niños')"><h6>Total Niños (Cena)</h6><div class="stat-val" id="nino-val">0</div></div></div>
@@ -335,18 +334,16 @@
                     </div>
                 </div>
 
-                <!-- Resumen de Platos Especiales -->
                 <h5 class="mb-3" style="font-family: 'Playfair Display', serif;">Restricciones Alimentarias Cena <small class="text-muted fs-6 font-monospace">(Haz clic para filtrar)</small></h5>
                 <div class="row g-2 g-md-3 mb-4" id="contenedor-dietas"></div>
 
-                <!-- NUEVO: RESUMEN VISUAL DE MESAS PARA LA BANQUETERA -->
+                <!-- RESUMEN VISUAL DE MESAS PARA LA BANQUETERA -->
                 <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
                     <h5 class="m-0" style="font-family: 'Playfair Display', serif;"><i class="bi bi-grid-3x3 me-2 text-muted"></i>Resumen de Restricciones por Mesa</h5>
-                    <small class="text-muted">Vista rápida para coordinar el servicio de platos en el salón.</small>
+                    <small class="text-muted">Vista rápida para coordinar el servicio en el salón.</small>
                 </div>
                 <div class="row g-3 mb-4" id="contenedor-mesas-banquetera"></div>
 
-                <!-- Tabla detallada de Comensales Cena -->
                 <div class="table-container">
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
                         <h5 class="m-0" id="titulo-tabla-banqueteria" style="font-family: 'Playfair Display', serif;">Todos los Comensales Cena</h5>
@@ -374,7 +371,6 @@
 
             <!-- ================= LISTA MAESTRA ================= -->
             <div class="tab-pane fade" id="panel-maestra">
-                
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                     <div>
                         <h4 class="m-0" style="font-family: 'Playfair Display', serif;">Lista Maestra Completa</h4>
@@ -404,7 +400,7 @@
                     <div class="col-6 col-md-3">
                         <div class="stat-card static" style="border-top-color: var(--color-novia);">
                             <h6 class="m-0" style="color:var(--color-novia);">Lado Novia (Antonia)</h6>
-                            <div class="stat-val" style="color:var(--color-novia);" id="maestra-count-novia">0</div>
+                            <div class="stat-val" style="color:var(--color-novio);" id="maestra-count-novia">0</div>
                             <small class="text-muted" style="font-size:0.75rem;">Comensales totales</small>
                         </div>
                     </div>
@@ -545,14 +541,14 @@
         let listaComensalesGenerales = []; let listaCancelables = []; let listaPendientes = []; let tarjetasDietas = [];
         let listaInvitadosFiesta = [];
         let listaDesglosadaMaestra = [];
-        let invitadoSeleccionadoParaCancelar = null;
+        let comensalModalActivo = null;
+        let mesaModalActiva = null;
+
         let filtroActualBanqueteria = 'Todas';
         let filtroMesasEstado = 'todas';
         let filtroLadoMaestraActual = 'todos';
 
-        let comensalModalActivo = null;
-        let mesaModalActiva = null;
-
+        // ======================= SISTEMA DE SINCRONIZACIÓN DESATASCABLE =======================
         let syncQueue = JSON.parse(localStorage.getItem('matriSyncQueue') || '[]');
         let isSyncing = false;
 
@@ -561,17 +557,36 @@
 
         async function processQueue() {
             if (isSyncing || syncQueue.length === 0) return;
+            if (!SCRIPT_URL) {
+                try {
+                    const cfg = await (await fetch('config.json')).json();
+                    SCRIPT_URL = cfg.worker_url;
+                } catch(e) { return; }
+            }
+
             isSyncing = true; actualizarEstadoRed();
             while (syncQueue.length > 0) {
                 const action = syncQueue[0];
                 try {
-                    const response = await fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(action) });
-                    if (!response.ok) throw new Error('Network error');
-                    syncQueue.shift(); saveQueue();
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(action)
+                    });
+                    
+                    const resData = await response.json().catch(() => ({}));
+                    if (!response.ok || resData.error) {
+                        console.error("Acción rechazada por el servidor:", resData.error || response.statusText);
+                    }
+                    // Desencolar siempre para no bloquear la sincronización en Chrome
+                    syncQueue.shift(); 
+                    saveQueue();
                 } catch (error) {
-                    console.warn("Conexión inestable. Reintentando...", error);
+                    // Fallo de red (offline estricto)
+                    console.warn("Sin conexión a internet. Reintentando en 3s...", error);
                     isSyncing = false; actualizarEstadoRed();
-                    setTimeout(processQueue, 3000); return;
+                    setTimeout(processQueue, 3000); 
+                    return;
                 }
             }
             isSyncing = false; actualizarEstadoRed();
@@ -580,15 +595,16 @@
         function actualizarEstadoRed() {
             const el = document.getElementById('network-status'); if (!el) return;
             if (syncQueue.length > 0) {
-                el.innerHTML = `<i class="bi bi-arrow-repeat spin me-2"></i> Guardando cambios (${syncQueue.length})...`;
+                el.innerHTML = `<i class="bi bi-arrow-repeat spin me-2"></i> Guardando (${syncQueue.length})...`;
                 el.style.background = 'rgba(212, 175, 55, 0.95)'; el.style.display = 'block';
             } else {
-                el.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> Cambios sincronizados en D1`;
+                el.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> Cambios guardados en D1`;
                 el.style.background = 'rgba(40, 167, 69, 0.95)';
-                setTimeout(() => { if (syncQueue.length === 0) el.style.display = 'none'; }, 2200);
+                setTimeout(() => { if (syncQueue.length === 0) el.style.display = 'none'; }, 2000);
             }
         }
 
+        // ======================= AUTENTICACIÓN =======================
         function verificarPIN() {
             const pin = document.getElementById('input-pin').value.toLowerCase().trim();
             if (pin === "336336336" || pin === "banquetera") {
@@ -609,7 +625,7 @@
         function quitarTildes(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""; }
         function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])) : ""; }
 
-        // ======================= GOOGLE SHEETS / FIESTA =======================
+        // ======================= PARSER CSV FIESTA =======================
         function parseCSV(text) {
             let r = [], row = [''], q = false;
             for (let i = 0; i < text.length; i++) {
@@ -638,7 +654,6 @@
             for (let i = 1; i < rows.length; i++) {
                 const r = rows[i];
                 if (r.length < 3) continue;
-                const fecha = (r[0] || '').trim();
                 const nombre = (r[1] || '').trim();
                 const asiste = (r[2] || '').trim().toLowerCase();
                 const parejaVal = (r[3] || '').trim().toLowerCase();
@@ -650,13 +665,13 @@
 
                 const tienePareja = parejaVal === 'si' || parejaVal === 'sí';
 
-                invitados.push({ nombre: nombre, es_pareja: false, nombre_principal: nombre, fecha: fecha, notas: notas });
+                invitados.push({ nombre: nombre, es_pareja: false, nombre_principal: nombre });
                 if (tienePareja) {
                     let nombrePareja = `Pareja de ${nombre}`;
                     if (notas && notas.split(/\s+/).length <= 4 && !notas.includes('.') && !notas.includes('!') && !notas.toLowerCase().includes('gracias') && !notas.toLowerCase().includes('aviso')) {
                         nombrePareja = `${notas} (Pareja de ${nombre})`;
                     }
-                    invitados.push({ nombre: nombrePareja, es_pareja: true, nombre_principal: nombre, fecha: fecha, notas: '' });
+                    invitados.push({ nombre: nombrePareja, es_pareja: true, nombre_principal: nombre });
                 }
             }
             return invitados;
@@ -669,7 +684,6 @@
 
             try {
                 let fetchUrl = CSV_FIESTA_URL;
-                // Si es un enlace de Google Docs o externo, pasarlo por el proxy del Worker para evitar bloqueos CORS
                 if (fetchUrl.startsWith('http') && SCRIPT_URL) {
                     fetchUrl = `${SCRIPT_URL}?action=proxy_csv&url=${encodeURIComponent(CSV_FIESTA_URL)}`;
                 }
@@ -686,7 +700,6 @@
                     throw new Error("Contenido vacío");
                 }
             } catch (e) {
-                console.warn("Usando cache local de fiesta...", e);
                 let cached = localStorage.getItem('cacheFiestaCSV');
                 if (cached) {
                     listaInvitadosFiesta = procesarTextoCSVFiesta(cached);
@@ -697,7 +710,6 @@
             }
             actualizarContadoresFiesta();
             dibujarTablaFiesta();
-            dibujarResumenMesasBanqueteria();
         }
 
         function guardarYRecargarSheet() {
@@ -720,7 +732,6 @@
                 listaInvitadosFiesta = procesarTextoCSVFiesta(text);
                 actualizarContadoresFiesta();
                 dibujarTablaFiesta();
-                dibujarResumenMesasBanqueteria();
                 alert(`¡CSV cargado con éxito! Se registraron ${listaInvitadosFiesta.length} personas de fiesta.`);
             };
             reader.readAsText(file);
@@ -733,7 +744,6 @@
             document.getElementById('fiesta-banquet-val').innerText = total;
         }
 
-        // TABLA FIESTA: SOLO ID (#), NOMBRE Y TIPO (SIN FECHA NI COMENTARIOS)
         function dibujarTablaFiesta() {
             const term = quitarTildes((document.getElementById('buscador-fiesta')?.value || '').toLowerCase().trim());
             let html = "";
@@ -761,9 +771,7 @@
 
         function exportarExcelFiesta() {
             let data = listaInvitadosFiesta.map((f, i) => ({
-                "#": i + 1, 
-                "Nombre": f.nombre, 
-                "Tipo": f.es_pareja ? "Pareja" : "Titular"
+                "#": i + 1, "Nombre": f.nombre, "Tipo": f.es_pareja ? "Pareja" : "Titular"
             }));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
@@ -795,6 +803,7 @@
                 dataMaestra = await resM.json(); dataConfirmados = await resConf.json();
                 dataCancelados = await resCanc.json(); dataMesas = await resMesas.json();
                 
+                // Ordenar estrictamente por número de mesa de menor a mayor
                 dataMesas.sort((a, b) => parseInt(a.numero) - parseInt(b.numero));
 
                 procesarDatosGenerales(); 
@@ -892,7 +901,7 @@
                     nombre_mostrar: c.nombre_invitado,
                     nombre_principal: c.nombre_invitado,
                     es_pareja: false,
-                    mesa: c.mesa_numero,
+                    mesa: (c.mesa_numero !== null && c.mesa_numero !== undefined && c.mesa_numero !== "") ? parseInt(c.mesa_numero) : null,
                     dieta: c.dieta || 'Ninguna',
                     esNino: esNinoTitular,
                     lado: ladoTitular,
@@ -910,7 +919,7 @@
                         nombre_mostrar: nombreP,
                         nombre_principal: c.nombre_invitado,
                         es_pareja: true,
-                        mesa: c.mesa_pareja,
+                        mesa: (c.mesa_pareja !== null && c.mesa_pareja !== undefined && c.mesa_pareja !== "") ? parseInt(c.mesa_pareja) : null,
                         dieta: c.dieta_pareja || 'Ninguna',
                         esNino: false,
                         lado: ladoTitular,
@@ -969,7 +978,7 @@
 
                     if (!item.es_pareja) {
                         columnaPareja = `
-                            <button class="btn btn-sm ${item.pareja_activa ? 'btn-outline-primary' : 'btn-outline-secondary'} py-0 px-2" style="font-size:0.75rem;" title="Al activar, su pareja se inserta con el número siguiente desplazando a los demás" onclick="alternarParejaMaestra(${item.id_maestra})">
+                            <button class="btn btn-sm ${item.pareja_activa ? 'btn-outline-primary' : 'btn-outline-secondary'} py-0 px-2" style="font-size:0.75rem;" title="Al activar, su pareja toma el número correlativo siguiente desplazando a todos hacia abajo" onclick="alternarParejaMaestra(${item.id_maestra})">
                                 ${item.pareja_activa ? '<i class="bi bi-people-fill me-1"></i>Con Pareja' : '<i class="bi bi-person me-1"></i>Solo'}
                             </button>`;
                         
@@ -1137,8 +1146,72 @@
         }
 
         // =========================================================================
-        //                 MESAS (LIMPIO, SIN DIETAS + TORPEDO NOVIO/NOVIA)
+        //                 GESTIÓN INTELIGENTE DE MESAS Y NÚMEROS
         // =========================================================================
+        function obtenerProximoNumeroDisponible(excluidos = []) {
+            const ocupados = dataMesas
+                .map(m => parseInt(m.numero))
+                .filter(n => n > 0 && !excluidos.includes(n));
+            let proximo = 1;
+            while (ocupados.includes(proximo) || excluidos.includes(proximo)) {
+                proximo++;
+            }
+            return proximo;
+        }
+
+        function ejecutarCambioNumeroMesa(viejoNum, nuevoNumDeseado) {
+            viejoNum = parseInt(viejoNum);
+            nuevoNumDeseado = parseInt(nuevoNumDeseado);
+
+            if (isNaN(viejoNum) || isNaN(nuevoNumDeseado) || viejoNum === nuevoNumDeseado) return;
+
+            const mesaOrigen = dataMesas.find(m => parseInt(m.numero) === viejoNum);
+            if (!mesaOrigen) return;
+
+            const mesaConflicto = dataMesas.find(m => parseInt(m.numero) === nuevoNumDeseado && parseInt(m.numero) !== viejoNum);
+
+            let conflictoNumero = null;
+            let conflictoNuevoNumero = null;
+
+            if (mesaConflicto) {
+                // El número destino estaba ocupado: buscar el próximo libre para esa mesa
+                conflictoNumero = nuevoNumDeseado;
+                conflictoNuevoNumero = obtenerProximoNumeroDisponible([nuevoNumDeseado, viejoNum]);
+
+                // Actualizar mesa en conflicto en memoria
+                mesaConflicto.numero = conflictoNuevoNumero;
+                listaComensalesGenerales.forEach(c => {
+                    if (c.mesa !== null && parseInt(c.mesa) === conflictoNumero) {
+                        c.mesa = conflictoNuevoNumero;
+                    }
+                });
+
+                alert(`La Mesa ${conflictoNumero} cedió su lugar y fue reasignada automáticamente al próximo número disponible: Mesa ${conflictoNuevoNumero}.`);
+            }
+
+            // Actualizar mesa origen al número deseado
+            mesaOrigen.numero = nuevoNumDeseado;
+            listaComensalesGenerales.forEach(c => {
+                if (c.mesa !== null && parseInt(c.mesa) === viejoNum) {
+                    c.mesa = nuevoNumDeseado;
+                }
+            });
+
+            // Ordenar estrictamente por número de mesa de menor a mayor
+            dataMesas.sort((a, b) => parseInt(a.numero) - parseInt(b.numero));
+
+            dibujarPanelMesas();
+            dibujarPanelBanqueteria();
+
+            addToQueue({
+                tipo: "reorganizar_numero_mesa",
+                viejo_numero: viejoNum,
+                nuevo_numero: nuevoNumDeseado,
+                conflicto_numero: conflictoNumero,
+                conflicto_nuevo_numero: conflictoNuevoNumero
+            });
+        }
+
         function dibujarPanelMesas() {
             actualizarKPIMesas();
             dibujarListaSinAsignar();
@@ -1177,7 +1250,7 @@
                     const torpedoEmoji = c.lado === 'Novia' ? '👰' : (c.lado === 'Ambos' ? '💍' : '🤵');
 
                     html += `
-                    <div class="guest-item-pro ${c.esNino ? 'is-child' : ''}" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
+                    <div class="guest-item-pro ${c.esNino ? 'is-child' : ''}" draggable="true" ondragstart="dragGuest(event, '${c.id_drag}')">
                         <div class="d-flex align-items-center text-truncate me-2">
                             <span class="torpedo-badge me-2 text-white" style="background-color: ${torpedoBg};" title="Lado: ${c.lado}">${torpedoEmoji}</span>
                             <div class="text-truncate">
@@ -1223,7 +1296,7 @@
                     const torpedoEmoji = c.lado === 'Novia' ? '👰' : (c.lado === 'Ambos' ? '💍' : '🤵');
 
                     htmlOcupantes += `
-                    <div class="guest-item-pro ${c.esNino ? 'is-child' : ''}" draggable="true" ondragstart="drag(event, '${c.id_drag}')">
+                    <div class="guest-item-pro ${c.esNino ? 'is-child' : ''}" draggable="true" ondragstart="dragGuest(event, '${c.id_drag}')">
                         <div class="d-flex align-items-center text-truncate me-2">
                             <span class="torpedo-badge me-2 text-white" style="background-color: ${torpedoBg};" title="Lado: ${c.lado}">${torpedoEmoji}</span>
                             <div class="text-truncate">
@@ -1244,12 +1317,15 @@
                 const alias = mesa.alias || (esMesaNovios ? 'Novios & Acompañantes' : 'Clic para asignar nombre (Ej: Amigos UAI)');
 
                 htmlGrid += `
-                <div class="col-12 col-md-6 col-xxl-4 mesa-col-box" id="mesa-col-${num}">
+                <div class="col-12 col-md-6 col-xxl-4 mesa-col-box" id="mesa-col-${num}" 
+                     ondragover="allowDropMesa(event)" ondragleave="leaveDropMesa(event)" ondrop="dropMesa(event, ${num})">
+                    
                     <div class="mesa-card-pro ${esMesaNovios ? 'mesa-novios' : ''}">
-                        <div class="mesa-header">
+                        <div class="mesa-header" draggable="true" ondragstart="dragMesa(event, ${num})">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-grip-vertical text-muted cursor-grab-mesa" title="Arrastra para reordenar esta mesa"></i>
                                         <h6 class="m-0 fw-bold" style="font-family:'Playfair Display', serif; font-size:1.1rem;">
                                             ${esMesaNovios ? '<i class="bi bi-star-fill text-warning me-1"></i>Mesa de Novios' : `Mesa ${num}`}
                                         </h6>
@@ -1274,7 +1350,7 @@
                             <div class="progress-seats"><div class="progress-bar ${colorBar}" style="width: ${pctBar}%"></div></div>
                         </div>
 
-                        <div class="drop-zone-pro" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="drop(event, ${num}, ${cap}, ${cant})">
+                        <div class="drop-zone-pro" ondragover="allowDropGuest(event)" ondragleave="leaveDropGuest(event)" ondrop="dropGuest(event, ${num}, ${cap}, ${cant})">
                             ${htmlOcupantes || '<div class="text-center text-muted small py-4" style="border:1px dashed #e8e2d8; border-radius:6px;"><i class="bi bi-box-arrow-in-down d-block mb-1"></i>Mesa vacía</div>'}
                         </div>
 
@@ -1290,6 +1366,152 @@
             document.getElementById('contenedor-mesas').innerHTML = htmlGrid || `<div class="col-12 text-center text-muted py-5">No hay mesas en esta categoría.</div>`;
         }
 
+        // ======================= DRAG & DROP COMENSALES Y MESAS =======================
+        function dragGuest(ev, idDrag) {
+            ev.stopPropagation();
+            ev.dataTransfer.setData("drag-type", "guest");
+            ev.dataTransfer.setData("text/plain", idDrag);
+        }
+
+        function allowDropGuest(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const d = ev.target.closest('.drop-zone-pro');
+            if (d) d.classList.add('dragover');
+        }
+
+        function leaveDropGuest(ev) {
+            const d = ev.target.closest('.drop-zone-pro');
+            if (d) d.classList.remove('dragover');
+        }
+
+        function dropGuest(ev, mesaNum, capMax, capActual) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const d = ev.target.closest('.drop-zone-pro');
+            if (d) d.classList.remove('dragover');
+
+            if (ev.dataTransfer.getData("drag-type") !== "guest") return;
+            const idDrag = ev.dataTransfer.getData("text/plain");
+            if (!idDrag) return;
+            intentarAsignar(idDrag, mesaNum, capMax, capActual);
+        }
+
+        // DRAG & DROP DE LA MESA COMPLETA
+        function dragMesa(ev, mesaNum) {
+            ev.stopPropagation();
+            ev.dataTransfer.setData("drag-type", "mesa");
+            ev.dataTransfer.setData("text/plain", mesaNum.toString());
+        }
+
+        function allowDropMesa(ev) {
+            if (ev.dataTransfer.types.includes("drag-type")) {
+                ev.preventDefault();
+                const card = ev.currentTarget.querySelector('.mesa-card-pro');
+                if (card) card.classList.add('dragover-mesa');
+            }
+        }
+
+        function leaveDropMesa(ev) {
+            const card = ev.currentTarget.querySelector('.mesa-card-pro');
+            if (card) card.classList.remove('dragover-mesa');
+        }
+
+        function dropMesa(ev, targetMesaNum) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const card = ev.currentTarget.querySelector('.mesa-card-pro');
+            if (card) card.classList.remove('dragover-mesa');
+
+            if (ev.dataTransfer.getData("drag-type") !== "mesa") return;
+            const origenNum = parseInt(ev.dataTransfer.getData("text/plain"));
+            const destinoNum = parseInt(targetMesaNum);
+
+            if (origenNum !== destinoNum) {
+                ejecutarCambioNumeroMesa(origenNum, destinoNum);
+            }
+        }
+
+        function intentarAsignar(idDrag, mesaNum, capMax, capActual) {
+            if(!idDrag) return; 
+            const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag); 
+            if (!comensal) return;
+            
+            if (mesaNum !== null && comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum)) return;
+            if (mesaNum !== null && parseInt(capMax) !== 999 && (capActual + 1 > capMax)) { 
+                alert(`¡Faltan sillas! La Mesa ${mesaNum} solo tiene ${capMax} asientos disponibles.`); 
+                return; 
+            }
+
+            comensal.mesa = mesaNum; 
+            dibujarPanelMesas(); 
+            dibujarPanelBanqueteria(); 
+            addToQueue({ tipo: "asignar_mesa", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, mesa_numero: mesaNum });
+        }
+
+        function cambiarNumero(viejoNum) {
+            const nuevoNum = prompt(`Cambiar Mesa ${viejoNum} al número:`); 
+            if(!nuevoNum || isNaN(nuevoNum)) return;
+            ejecutarCambioNumeroMesa(parseInt(viejoNum), parseInt(nuevoNum));
+        }
+
+        function crearMesa(num, cap) { 
+            dataMesas.push({ numero: num, capacidad: cap, alias: '' }); 
+            dataMesas.sort((a,b) => parseInt(a.numero) - parseInt(b.numero));
+            dibujarPanelMesas(); 
+            addToQueue({ tipo: "guardar_mesa", numero: num, capacidad: cap, alias: '' }); 
+        }
+
+        function abrirModalCrearMesa() {
+            const cap = prompt("¿Cuántas sillas tendrá la nueva mesa? (Ej: 10 u 8):", "10");
+            if(!cap || isNaN(cap) || parseInt(cap) <= 0) return;
+            crearMesa(obtenerProximoNumeroDisponible(), parseInt(cap));
+        }
+
+        function eliminarMesa(num) { 
+            if(!confirm(`¿Eliminar la Mesa ${num}? Los comensales volverán a 'Por Asignar'.`)) return; 
+            dataMesas = dataMesas.filter(m => parseInt(m.numero) !== parseInt(num)); 
+            listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(num)) c.mesa = null; }); 
+            dibujarPanelMesas(); dibujarPanelBanqueteria(); 
+            addToQueue({ tipo: "eliminar_mesa", numero: num }); 
+        }
+
+        function cambiarCapacidad(numero, capActual) {
+            const nuevaCap = prompt(`Ingresa la nueva cantidad de sillas:`, capActual); 
+            if(!nuevaCap || isNaN(nuevaCap) || parseInt(nuevaCap) <= 0 || parseInt(nuevaCap) === parseInt(capActual)) return;
+            const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(numero)); 
+            if(mesa) mesa.capacidad = parseInt(nuevaCap); 
+            dibujarPanelMesas(); 
+            addToQueue({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap), alias: mesa.alias || '' }); 
+        }
+
+        function editarAliasMesa(num) {
+            const mesaObj = dataMesas.find(m => parseInt(m.numero) === parseInt(num));
+            const actual = mesaObj ? (mesaObj.alias || "") : "";
+            const nuevo = prompt(`Asigna un alias a la Mesa ${num} (Ej: 'Amigos UAI'):`, actual);
+            if(nuevo === null) return;
+            
+            const aliasFinal = nuevo.trim();
+            if(mesaObj) mesaObj.alias = aliasFinal;
+            
+            dibujarGridMesas();
+            dibujarResumenMesasBanqueteria();
+            addToQueue({ tipo: "editar_alias_mesa", numero: num, alias: aliasFinal });
+        }
+
+        function vaciarMesaCompleta(num) {
+            const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === parseInt(num));
+            if(ocupantes.length === 0) return alert("La mesa ya está vacía.");
+            if(!confirm(`¿Quitar a los ${ocupantes.length} comensales de la Mesa ${num}? Volverán a 'Por Asignar'.`)) return;
+
+            ocupantes.forEach(c => {
+                c.mesa = null;
+                addToQueue({ tipo: "asignar_mesa", nombre_principal: c.nombre_principal, es_pareja: c.es_pareja, mesa_numero: null });
+            });
+            dibujarPanelMesas(); dibujarPanelBanqueteria();
+        }
+
+        // ======================= MODAL 1-CLIC ASIGNAR DIRECTO =======================
         function abrirModalAsignarDirecto(idDrag, mesaActual = null) {
             const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
             if(!comensal) return;
@@ -1420,265 +1642,6 @@
             dibujarGridMesas();
         }
 
-        function editarAliasMesa(num) {
-            const mesaObj = dataMesas.find(m => parseInt(m.numero) === parseInt(num));
-            const actual = mesaObj ? (mesaObj.alias || "") : "";
-            const nuevo = prompt(`Asigna un alias a la Mesa ${num} (Ej: 'Amigos UAI'):`, actual);
-            if(nuevo === null) return;
-            
-            const aliasFinal = nuevo.trim();
-            if(mesaObj) mesaObj.alias = aliasFinal;
-            
-            dibujarGridMesas();
-            dibujarResumenMesasBanqueteria();
-            addToQueue({ tipo: "editar_alias_mesa", numero: num, alias: aliasFinal });
-        }
-
-        function vaciarMesaCompleta(num) {
-            const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === parseInt(num));
-            if(ocupantes.length === 0) return alert("La mesa ya está vacía.");
-            if(!confirm(`¿Quitar a los ${ocupantes.length} comensales de la Mesa ${num}? Volverán a 'Por Asignar'.`)) return;
-
-            ocupantes.forEach(c => {
-                c.mesa = null;
-                addToQueue({ tipo: "asignar_mesa", nombre_principal: c.nombre_principal, es_pareja: c.es_pareja, mesa_numero: null });
-            });
-            dibujarPanelMesas(); dibujarPanelBanqueteria();
-        }
-
-        function abrirModalCrearMesa() {
-            const cap = prompt("¿Cuántas sillas tendrá la nueva mesa? (Ej: 10 u 8):", "10");
-            if(!cap || isNaN(cap) || parseInt(cap) <= 0) return;
-            crearMesa(obtenerSiguienteNumero(), parseInt(cap));
-        }
-
-        function drag(ev, idDrag) { ev.stopPropagation(); ev.dataTransfer.setData("type", "guest"); ev.dataTransfer.setData("text/plain", idDrag); }
-        function allowDrop(ev) { ev.preventDefault(); const d = ev.target.closest('.drop-zone-pro'); if(d) d.classList.add('dragover'); }
-        function leaveDrop(ev) { const d = ev.target.closest('.drop-zone-pro'); if(d) d.classList.remove('dragover'); }
-        function drop(ev, mesaNum, capMax, capActual) {
-            ev.preventDefault(); ev.stopPropagation();
-            const d = ev.target.closest('.drop-zone-pro'); if(d) d.classList.remove('dragover');
-            const idDrag = ev.dataTransfer.getData("text/plain"); if (!idDrag) return;
-            intentarAsignar(idDrag, mesaNum, capMax, capActual);
-        }
-
-        function intentarAsignar(idDrag, mesaNum, capMax, capActual) {
-            if(!idDrag) return; 
-            const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag); 
-            if (!comensal) return;
-            if (mesaNum !== null && comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum)) return;
-            if(mesaNum !== null && parseInt(capMax) !== 999 && (capActual + 1 > capMax)) { 
-                alert(`¡Faltan sillas! La Mesa ${mesaNum} solo tiene ${capMax} asientos disponibles.`); return; 
-            }
-
-            comensal.mesa = mesaNum; 
-            dibujarPanelMesas(); dibujarPanelBanqueteria(); 
-            addToQueue({ tipo: "asignar_mesa", nombre_principal: comensal.nombre_principal, es_pareja: comensal.es_pareja, mesa_numero: mesaNum });
-        }
-
-        function obtenerSiguienteNumero() { 
-            const numeros = dataMesas.map(m => parseInt(m.numero)).filter(n => n > 0).sort((a,b) => a-b); 
-            let proximo = 1; 
-            for (let i = 0; i < numeros.length; i++) { 
-                if (numeros[i] === proximo) proximo++; else break; 
-            } 
-            return proximo; 
-        }
-
-        function crearMesa(num, cap) { 
-            dataMesas.push({ numero: num, capacidad: cap, alias: '' }); 
-            dataMesas.sort((a,b) => parseInt(a.numero) - parseInt(b.numero));
-            dibujarPanelMesas(); 
-            addToQueue({ tipo: "guardar_mesa", numero: num, capacidad: cap, alias: '' }); 
-        }
-
-        function eliminarMesa(num) { 
-            if(!confirm(`¿Eliminar la Mesa ${num}? Los comensales volverán a 'Por Asignar'.`)) return; 
-            dataMesas = dataMesas.filter(m => parseInt(m.numero) !== parseInt(num)); 
-            listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(num)) c.mesa = null; }); 
-            dibujarPanelMesas(); dibujarPanelBanqueteria(); 
-            addToQueue({ tipo: "eliminar_mesa", numero: num }); 
-        }
-
-        function cambiarNumero(viejoNum) {
-            const nuevoNum = prompt(`Cambiar Mesa ${viejoNum} al número:`); 
-            if(!nuevoNum || isNaN(nuevoNum) || parseInt(nuevoNum) === parseInt(viejoNum)) return;
-            if(dataMesas.some(m => parseInt(m.numero) === parseInt(nuevoNum))) return alert("Ese número de mesa ya existe.");
-            
-            const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(viejoNum)); 
-            if(mesa) mesa.numero = nuevoNum;
-            
-            listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(viejoNum)) c.mesa = nuevoNum; }); 
-            dataMesas.sort((a,b) => parseInt(a.numero) - parseInt(b.numero));
-            dibujarPanelMesas(); dibujarPanelBanqueteria(); 
-            addToQueue({ tipo: "cambiar_numero_mesa", viejo_numero: viejoNum, nuevo_numero: nuevoNum });
-        }
-
-        function cambiarCapacidad(numero, capActual) {
-            const nuevaCap = prompt(`Ingresa la nueva cantidad de sillas:`, capActual); 
-            if(!nuevaCap || isNaN(nuevaCap) || parseInt(nuevaCap) <= 0 || parseInt(nuevaCap) === parseInt(capActual)) return;
-            const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(numero)); 
-            if(mesa) mesa.capacidad = parseInt(nuevaCap); 
-            dibujarPanelMesas(); 
-            addToQueue({ tipo: "guardar_mesa", numero: numero, capacidad: parseInt(nuevaCap), alias: mesa.alias || '' }); 
-        }
-
-        // ======================= CONFIRMACIONES CENA =======================
-        function dibujarPanelConfirmaciones() {
-            const term = quitarTildes((document.getElementById('buscador-confirmados')?.value || '').toLowerCase().trim());
-            const termPend = quitarTildes((document.getElementById('buscador-pendientes')?.value || '').toLowerCase().trim());
-
-            document.getElementById('val-confirmados').innerText = listaComensalesGenerales.length;
-            document.getElementById('val-pendientes').innerText = listaPendientes.length;
-            document.getElementById('val-cancelados').innerText = dataCancelados.length;
-
-            let htmlConf = "";
-            listaComensalesGenerales.forEach(c => {
-                if (term === "" || quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term)) {
-                    const btnBajar = `<button class="btn btn-sm btn-outline-danger py-0 px-2 me-1" title="Bajar a Cancelados" onclick="bajarDesdeConfirmados('${c.id_drag}')"><i class="bi bi-x-circle"></i> Bajar</button>`;
-                    const btnMasPareja = (!c.es_pareja && c.lleva_pareja !== 'Sí') 
-                        ? `<button class="btn btn-sm btn-outline-primary py-0 px-2" title="Agregar acompañante" onclick="agregarParejaAConfirmado('${escapeHTML(c.nombre_principal)}')"><i class="bi bi-person-plus"></i> + Pareja</button>` 
-                        : '';
-
-                    htmlConf += `<tr ${c.es_pareja ? 'style="background-color: #fdfbf7;"' : ''}>
-                        <td style="white-space: nowrap;">${btnBajar}${btnMasPareja}</td>
-                        <td class="${c.es_pareja ? 'ps-4' : ''}">${c.es_pareja ? '↳ ' : ''}<strong>${escapeHTML(c.nombre_mostrar)}</strong></td>
-                        <td><span class="badge ${c.es_pareja ? 'bg-secondary' : 'bg-primary'}">${c.es_pareja ? 'Pareja' : 'Titular'}</span></td>
-                        <td>${escapeHTML(c.telefono || '-')}</td>
-                        <td>${escapeHTML(c.dieta)}</td>
-                    </tr>`;
-                }
-            });
-            document.getElementById('tabla-confirmados').innerHTML = htmlConf || `<tr><td colspan="5" class="text-center text-muted">No hay resultados.</td></tr>`;
-
-            let htmlPend = "";
-            listaPendientes.forEach(p => {
-                if (termPend === "" || quitarTildes(p.nombre.toLowerCase()).includes(termPend)) {
-                    const btnConfirmar = `<button class="btn btn-sm btn-outline-success py-0 px-2 me-1" title="Confirmar asistencia" onclick="confirmarDesdePendientes('${escapeHTML(p.nombre_principal)}', ${p.es_pareja}, '${escapeHTML(p.nombre)}')"><i class="bi bi-check-lg"></i></button>`;
-                    const btnBajar = `<button class="btn btn-sm btn-outline-danger py-0 px-2 me-1" title="Bajar a Cancelados" onclick="cancelarDesdePendientes('${escapeHTML(p.nombre_principal)}', ${p.es_pareja})"><i class="bi bi-x-circle"></i></button>`;
-                    
-                    const titularTieneParejaActiva = listaPendientes.some(x => x.nombre_principal === p.nombre_principal && x.es_pareja) || 
-                                                     dataConfirmados.some(c => c.nombre_invitado === p.nombre_principal && c.lleva_pareja === 'Sí');
-                    
-                    const btnHabilitarPareja = (!p.es_pareja && !titularTieneParejaActiva) 
-                        ? `<button class="btn btn-sm btn-outline-primary py-0 px-2" title="Habilitar Pareja (+1)" onclick="agregarParejaAPendiente('${escapeHTML(p.nombre_principal)}')"><i class="bi bi-person-plus"></i> + Pareja</button>` 
-                        : '';
-
-                    htmlPend += `<tr ${p.tipo === 'Pareja' ? 'style="background-color: #fdfbf7;"' : ''}>
-                        <td style="white-space: nowrap;">${btnConfirmar}${btnBajar}${btnHabilitarPareja}</td>
-                        <td class="${p.tipo === 'Pareja' ? 'ps-4' : ''}">${p.tipo === 'Pareja' ? '↳ ' : ''}<strong>${escapeHTML(p.nombre)}</strong></td>
-                        <td><span class="badge ${p.tipo === 'Pareja' ? 'bg-secondary' : 'bg-warning text-dark'}">${p.tipo}</span></td>
-                    </tr>`;
-                }
-            });
-            document.getElementById('tabla-pendientes').innerHTML = htmlPend || `<tr><td colspan="3" class="text-center text-muted">No hay resultados.</td></tr>`;
-
-            let htmlCanc = "";
-            dataCancelados.forEach(c => {
-                htmlCanc += `<tr><td><strong>${escapeHTML(c.nombre)}</strong></td><td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td></tr>`;
-            });
-            document.getElementById('tabla-cancelados').innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay resultados.</td></tr>`;
-        }
-
-        function bajarDesdeConfirmados(idDrag) {
-            const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
-            if (!comensal) return;
-
-            if (comensal.es_pareja) {
-                if (!confirm(`¿Dar de baja a la pareja ${comensal.nombre_mostrar}?`)) return;
-                const conf = dataConfirmados.find(c => c.nombre_invitado === comensal.nombre_principal);
-                if (conf) { conf.lleva_pareja = 'No'; conf.nombre_pareja = '-'; conf.dieta_pareja = '-'; conf.mesa_pareja = null; }
-                dataCancelados.push({ nombre: comensal.nombre_mostrar, mensaje: 'Cancelada manualmente' });
-                addToQueue({ tipo: "admin_cancelar", nombre_principal: comensal.nombre_principal, es_pareja: true });
-            } else {
-                const conf = dataConfirmados.find(c => c.nombre_invitado === comensal.nombre_principal);
-                const tienePareja = conf && conf.lleva_pareja === 'Sí';
-                let advertencia = `¿Dar de baja a ${comensal.nombre_mostrar}?`;
-                if (tienePareja) advertencia += `\nSu pareja registrada (${conf.nombre_pareja || 'Pareja'}) también será dada de baja.`;
-                if (!confirm(advertencia)) return;
-
-                dataConfirmados = dataConfirmados.filter(c => c.nombre_invitado !== comensal.nombre_principal);
-                dataCancelados.push({ nombre: comensal.nombre_mostrar, mensaje: 'Cancelado manualmente' });
-                if (tienePareja) {
-                    let nPareja = (conf.nombre_pareja && conf.nombre_pareja !== '-' && conf.nombre_pareja.toLowerCase() !== 'pendiente') ? conf.nombre_pareja : `Pareja de ${comensal.nombre_principal}`;
-                    dataCancelados.push({ nombre: nPareja, mensaje: 'Cancelado junto al titular' });
-                }
-                addToQueue({ tipo: "admin_cancelar", nombre_principal: comensal.nombre_principal, es_pareja: false });
-            }
-
-            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarPanelBanqueteria(); dibujarPanelMesas(); dibujarTablaListaMaestra();
-        }
-
-        function agregarParejaAConfirmado(nombrePrincipal) {
-            const conf = dataConfirmados.find(c => c.nombre_invitado === nombrePrincipal);
-            if (!conf) return;
-
-            const nombreP = prompt(`Nombre de la pareja para ${nombrePrincipal}:\n(Deja en blanco para 'Pareja de ${nombrePrincipal}')`);
-            if (nombreP === null) return;
-            const dietaP = prompt(`Restricción alimentaria de la pareja (opcional):`);
-            if (dietaP === null) return;
-
-            const nombreFinal = nombreP.trim() !== "" ? nombreP.trim() : `Pareja de ${nombrePrincipal}`;
-            const dietaFinal = dietaP.trim() !== "" ? dietaP.trim() : "Ninguna";
-
-            conf.lleva_pareja = "Sí"; conf.nombre_pareja = nombreFinal; conf.dieta_pareja = dietaFinal;
-            const m = dataMaestra.find(item => item.nombre === nombrePrincipal); if (m) m.pareja = 1;
-
-            dataCancelados = dataCancelados.filter(c => {
-                const cNom = quitarTildes(c.nombre.toLowerCase());
-                return cNom !== quitarTildes(nombreFinal.toLowerCase()) && cNom !== quitarTildes(`Pareja de ${nombrePrincipal}`.toLowerCase());
-            });
-
-            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarPanelBanqueteria(); dibujarPanelMesas(); dibujarTablaListaMaestra();
-            addToQueue({ tipo: "admin_agregar_pareja_confirmado", nombre_principal: nombrePrincipal, nombre_pareja: nombreFinal, dieta_pareja: dietaFinal });
-        }
-
-        function agregarParejaAPendiente(nombrePrincipal) {
-            if (!confirm(`¿Habilitar acompañante (+1) para ${nombrePrincipal}?`)) return;
-            const m = dataMaestra.find(item => item.nombre === nombrePrincipal); if (m) m.pareja = 1;
-            dataCancelados = dataCancelados.filter(c => quitarTildes(c.nombre.toLowerCase()) !== quitarTildes(`Pareja de ${nombrePrincipal}`.toLowerCase()));
-            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarTablaListaMaestra();
-            addToQueue({ tipo: "admin_habilitar_pareja", nombre_principal: nombrePrincipal });
-        }
-
-        function confirmarDesdePendientes(nombrePrincipal, esPareja, nombreMostrar) {
-            let msg = esPareja ? `¿Confirmar a ${nombreMostrar}?` : `¿Confirmar al titular ${nombrePrincipal}?`;
-            if(!confirm(msg)) return;
-            
-            let conf = dataConfirmados.find(c => c.nombre_invitado === nombrePrincipal);
-            if (!esPareja) {
-                if (!conf) dataConfirmados.push({ nombre_invitado: nombrePrincipal, lleva_pareja: "No", telefono: "-", dieta: "Ninguna", mesa_numero: null });
-                else conf.dieta = "Ninguna";
-                dataCancelados = dataCancelados.filter(c => quitarTildes(c.nombre.toLowerCase()) !== quitarTildes(nombrePrincipal.toLowerCase()));
-            } else {
-                if (conf) { conf.lleva_pareja = "Sí"; conf.nombre_pareja = nombreMostrar; conf.dieta_pareja = "Ninguna"; }
-                else { dataConfirmados.push({ nombre_invitado: nombrePrincipal, lleva_pareja: "Sí", nombre_pareja: nombreMostrar, telefono: "-", dieta: "Ninguna", dieta_pareja: "Ninguna", mesa_numero: null }); }
-                dataCancelados = dataCancelados.filter(c => {
-                    const cNom = quitarTildes(c.nombre.toLowerCase());
-                    return cNom !== quitarTildes(nombreMostrar.toLowerCase()) && cNom !== quitarTildes(`Pareja de ${nombrePrincipal}`.toLowerCase());
-                });
-            }
-            
-            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarPanelBanqueteria(); dibujarPanelMesas(); dibujarTablaListaMaestra();
-            addToQueue({ tipo: "admin_confirmar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
-        }
-
-        function cancelarDesdePendientes(nombrePrincipal, esPareja) {
-            let msg = esPareja ? `¿Bajar a la pareja de ${nombrePrincipal}?` : `¿Bajar al titular ${nombrePrincipal}?`;
-            if(!confirm(msg)) return;
-            
-            if(!esPareja) {
-                dataCancelados.push({ nombre: nombrePrincipal, mensaje: "Dado de baja" });
-                const ms = dataMaestra.find(m => m.nombre === nombrePrincipal);
-                if(ms && parseInt(ms.pareja) === 1) dataCancelados.push({ nombre: `Pareja de ${nombrePrincipal}`, mensaje: "Titular dado de baja" });
-            } else {
-                dataCancelados.push({ nombre: `Pareja de ${nombrePrincipal}`, mensaje: "Dado de baja" });
-            }
-            
-            procesarDatosGenerales(); dibujarPanelConfirmaciones(); dibujarTablaListaMaestra();
-            addToQueue({ tipo: "admin_cancelar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
-        }
-
         // ======================= BANQUETERÍA Y RESUMEN POR MESAS =======================
         function dibujarPanelBanqueteria() {
             let adultos = 0, ninos = 0, dietasDinamicas = {};
@@ -1706,7 +1669,6 @@
             dibujarResumenMesasBanqueteria();
         }
 
-        // NUEVO: RESUMEN DE MESAS PARA LA BANQUETERA
         function dibujarResumenMesasBanqueteria() {
             const cont = document.getElementById('contenedor-mesas-banquetera');
             if (!cont) return;
