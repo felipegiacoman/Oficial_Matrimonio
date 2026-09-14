@@ -1,10 +1,134 @@
-/* Menú de control de mesas siempre fijo arriba al hacer scroll */
-.sticky-mesas-header {
-    position: sticky;
-    top: 10px;
-    z-index: 1015;
-    background: rgba(244, 240, 235, 0.96);
-    backdrop-filter: blur(8px);
-    padding: 6px 0;
-    margin-bottom: 12px;
+:root {
+    --oro: #b59a7a;
+    --oro-novios: #d4af37;
+    --oscuro: #2d2d2d;
+    --crema-bg: #f4f1ea;
+    --fiesta-color: #6f42c1;
+    --color-novio: #2b5b84;
+    --color-novia: #c75b7a;
+    --color-ambos: #28a745;
 }
+
+body { 
+    background: var(--crema-bg); 
+    font-family: 'Montserrat', sans-serif; 
+    overflow-x: hidden; 
+    padding-bottom: 50px; 
+    color: var(--oscuro);
+}
+
+/* Pantalla de Bloqueo */
+#pantalla-bloqueo { 
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+    background: var(--crema-bg); z-index: 9999; 
+    display: flex; align-items: center; justify-content: center; flex-direction: column; 
+}
+.login-box { 
+    background: white; padding: 40px; border-radius: 8px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; 
+    max-width: 90%; width: 400px; border-top: 4px solid var(--oro); 
+}
+
+/* Botones y Navegación */
+.btn-gold { background: var(--oro); color: white; border: none; font-weight: 500; }
+.btn-gold:hover { background: var(--oscuro); color: white; }
+
+.nav-pills .nav-link { 
+    color: #888; font-weight: 500; border-radius: 4px; margin: 0 5px; transition: 0.3s;
+}
+.nav-pills .nav-link:hover { background-color: rgba(181, 154, 122, 0.1); color: var(--oro); }
+.nav-pills .nav-link.active { background-color: var(--oro); color: white; box-shadow: 0 4px 10px rgba(181, 154, 122, 0.3); }
+
+/* Estadísticas Originales */
+.stat-card { 
+    background: white; border-radius: 8px; padding: 20px; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; 
+    border-top: 4px solid var(--oro); height: 100%; 
+    display: flex; flex-direction: column; justify-content: center; transition: 0.3s;
+}
+.stat-card.static { border-top-color: var(--oscuro); cursor: default; }
+.stat-card.filtrable { cursor: pointer; }
+.stat-card.filtrable:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.stat-card.active-filter { background: var(--oro); color: white; border-top: 4px solid var(--oscuro); }
+.stat-card.active-filter h6, .stat-card.active-filter .stat-val { color: white !important; }
+.stat-val { font-size: 1.8rem; font-weight: bold; color: var(--oscuro); }
+
+.table-container { 
+    background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+}
+
+/* Panel Izquierdo Fijo (Por Asignar) */
+.sticky-panel { 
+    position: sticky; top: 15px; z-index: 100; transition: 0.3s; 
+}
+@media (max-width: 991px) {
+    .sticky-panel { top: 10px; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.15); border-bottom: 3px solid var(--oro); }
+    #lista-sin-asignar { max-height: 25vh !important; }
+}
+
+/* Controles de Mesas Fijos Arriba al hacer Scroll */
+.sticky-mesas-menu {
+    position: sticky; top: 10px; z-index: 95;
+    background: rgba(244, 241, 234, 0.96); backdrop-filter: blur(6px);
+    padding: 6px 0; margin-bottom: 15px;
+}
+
+/* Tarjeta Original de Mesa */
+.mesa-card { 
+    background: white; border-radius: 8px; border-top: 4px solid var(--oro); 
+    padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; transition: 0.2s;
+}
+.mesa-card.mesa-novios { 
+    border-top: 4px solid var(--oro-novios) !important; 
+    background: #fffdf8; 
+}
+.mesa-card.highlight-mesa {
+    border: 2px solid var(--oro-novios) !important;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.4) !important;
+}
+
+/* Fila Original de Comensal */
+.guest-item { 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; background: white;
+}
+.guest-item:last-child { border-bottom: none; }
+.draggable-guest { cursor: grab; transition: background 0.2s; border-radius: 4px; }
+.draggable-guest:hover { background: #fdfbf7; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+/* Dropzones */
+.drop-zone { 
+    min-height: 100px; padding: 10px; margin: -10px; border-radius: 8px; border: 2px dashed transparent; transition: 0.2s; 
+}
+.drop-zone.dragover { border-color: var(--oro); background: rgba(181, 154, 122, 0.05); }
+
+/* Torpedo Emoji (Novio / Novia) */
+.torpedo-badge {
+    width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 4px; font-size: 0.75rem; flex-shrink: 0; color: white; margin-right: 6px;
+}
+.torpedo-novio { background-color: var(--color-novio); }
+.torpedo-novia { background-color: var(--color-novia); }
+.torpedo-ambos { background-color: var(--color-ambos); }
+
+.action-icon { cursor: pointer; color: #888; transition: 0.2s; font-size: 1.1rem; }
+.action-icon:hover { color: var(--oscuro); }
+.trash-icon:hover { color: #dc3545; }
+.cursor-move { cursor: grab; font-size: 1.1rem; }
+
+.badge-nino { background-color: #8c775e; color: white; font-size: 0.7rem; }
+.badge-novio { background-color: var(--color-novio); color: white; }
+.badge-novia { background-color: var(--color-novia); color: white; }
+.badge-ambos { background-color: var(--color-ambos); color: white; }
+
+.dieta-editable { cursor: pointer; border-bottom: 1px dashed var(--oro); transition: 0.2s; }
+.dieta-editable:hover { color: var(--oro); font-weight: bold; }
+
+/* Notificación Flotante */
+#network-status { 
+    position: fixed; bottom: 15px; right: 15px; background: rgba(0,0,0,0.85); 
+    color: white; padding: 8px 18px; border-radius: 30px; font-size: 0.85rem; 
+    display: none; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+.spin { display: inline-block; animation: spin 1s linear infinite; }

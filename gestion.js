@@ -1,4 +1,4 @@
-// URL directa a tu Cloudflare Worker
+// Conexión directa a tu servidor
 const WORKER_URL_DEFAULT = "https://rsvp-api.felipegiacoman.workers.dev";
 let SCRIPT_URL = WORKER_URL_DEFAULT;
 let CSV_FIESTA_URL = localStorage.getItem('urlGoogleSheetFiesta') || "fiesta.csv";
@@ -14,33 +14,39 @@ let tarjetasDietas = [];
 let listaInvitadosFiesta = [];
 let listaDesglosadaMaestra = [];
 let comensalModalActivo = null;
-let mesaModalActiva = null;
 
 let filtroActualBanqueteria = 'Todas';
 let filtroMesasEstado = 'todas';
 let filtroLadoMaestraActual = 'todos';
 
-// Control de cambios pendientes en mesas
+// Control de cambios y sincronización
 let hayCambiosMesas = false;
+let autoSaveTimer = null;
 
 function marcarCambioPendienteMesas() {
     hayCambiosMesas = true;
     const btn = document.getElementById('btn-guardar-cambios-mesas');
     const btnTexto = document.getElementById('btn-guardar-texto');
-    if (btn) btn.className = "btn btn-warning fw-bold px-3 py-2 shadow";
-    if (btnTexto) btnTexto.innerHTML = `Guardar Cambios <span class="badge bg-danger ms-1">Pendiente</span>`;
+    if (btn) btn.className = "btn btn-warning btn-sm fw-bold px-3 py-2 shadow-sm";
+    if (btnTexto) btnTexto.innerHTML = `Guardar Cambios <span class="badge bg-danger ms-1">●</span>`;
+
+    // Auto-guardado en segundo plano tras 2 segundos de inactividad
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        ejecutarGuardadoSilencioso();
+    }, 2000);
 }
 
 function marcarCambiosGuardadosMesas() {
     hayCambiosMesas = false;
     const btn = document.getElementById('btn-guardar-cambios-mesas');
     const btnTexto = document.getElementById('btn-guardar-texto');
-    if (btn) btn.className = "btn btn-success fw-bold px-3 py-2 shadow-sm";
+    if (btn) btn.className = "btn btn-success btn-sm fw-bold px-3 py-2 shadow-sm";
     if (btnTexto) {
         btnTexto.innerHTML = `<i class="bi bi-check2-circle me-1"></i>¡Guardado!`;
         setTimeout(() => {
             if (!hayCambiosMesas && btnTexto) btnTexto.innerText = "Guardar Cambios";
-        }, 2500);
+        }, 2200);
     }
 }
 
@@ -51,12 +57,12 @@ window.addEventListener('beforeunload', (e) => {
     }
 });
 
-// ======================= SISTEMA AUTO-SCROLL EN ARRASTRE =======================
+// ======================= AUTO-SCROLL EN ARRASTRE =======================
 let autoScrollTimer = null;
 let autoScrollSpeed = 0;
 
 function manejarAutoScroll(ev) {
-    const umbral = 130;
+    const umbral = 120;
     const altura = window.innerHeight;
     const y = ev.clientY;
 
@@ -89,16 +95,16 @@ window.addEventListener('dragover', manejarAutoScroll);
 window.addEventListener('dragend', detenerAutoScroll);
 window.addEventListener('drop', detenerAutoScroll);
 
-// ======================= SISTEMA DE SINCRONIZACIÓN COLA =======================
+// ======================= COLA DE SINCRONIZACIÓN =======================
 let syncQueue = JSON.parse(localStorage.getItem('matriSyncQueue') || '[]');
 let isSyncing = false;
 
-function saveQueue() { localStorage.setItem('matriSyncQueue', JSON.stringify(syncQueue)); actualizarEstadoRed(); }
+function saveQueue() { localStorage.setItem('matriSyncQueue', JSON.stringify(syncQueue)); }
 function addToQueue(action) { syncQueue.push(action); saveQueue(); processQueue(); }
 
 async function processQueue() {
     if (isSyncing || syncQueue.length === 0) return;
-    isSyncing = true; actualizarEstadoRed();
+    isSyncing = true;
     while (syncQueue.length > 0) {
         const action = syncQueue[0];
         try {
@@ -110,31 +116,19 @@ async function processQueue() {
             syncQueue.shift(); 
             saveQueue();
         } catch (error) {
-            console.warn("Reintentando acción...", error);
-            isSyncing = false; actualizarEstadoRed();
+            console.warn("Sin conexión. Reintentando...", error);
+            isSyncing = false;
             setTimeout(processQueue, 3000); 
             return;
         }
     }
-    isSyncing = false; actualizarEstadoRed();
-}
-
-function actualizarEstadoRed() {
-    const el = document.getElementById('network-status'); if (!el) return;
-    if (syncQueue.length > 0) {
-        el.innerHTML = `<i class="bi bi-arrow-repeat spin me-2"></i> Sincronizando (${syncQueue.length})...`;
-        el.style.background = 'rgba(212, 175, 55, 0.95)'; el.style.display = 'block';
-    } else {
-        el.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i> Cambios guardados en D1`;
-        el.style.background = 'rgba(40, 167, 69, 0.95)';
-        setTimeout(() => { if (syncQueue.length === 0) el.style.display = 'none'; }, 2000);
-    }
+    isSyncing = false;
 }
 
 function quitarTildes(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""; }
 function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])) : ""; }
 
-// ======================= PARSER CSV FIESTA =======================
+// ======================= FIESTA Y GOOGLE SHEETS =======================
 function parseCSV(text) {
     let r = [], row = [''], q = false;
     for (let i = 0; i < text.length; i++) {
@@ -285,7 +279,7 @@ function exportarExcelFiesta() {
 // ======================= CARGA INICIAL =======================
 async function init() {
     const relojEl = document.getElementById('reloj-guardado');
-    if (relojEl) relojEl.innerHTML = `<span class="text-muted"><i class="bi bi-arrow-repeat spin me-1"></i>Conectando a Cloudflare D1...</span>`;
+    if (relojEl) relojEl.innerHTML = `<span class="text-muted"><i class="bi bi-arrow-repeat spin me-1"></i>Conectando al sistema...</span>`;
 
     try {
         const resCfg = await fetch('config.json').catch(() => null); 
@@ -296,9 +290,7 @@ async function init() {
                 CSV_FIESTA_URL = cfg.csv_fiesta_url;
             }
         }
-    } catch(e) {
-        console.warn("Usando worker por defecto:", SCRIPT_URL);
-    }
+    } catch(e) {}
 
     try {
         await cargarDatos();
@@ -306,7 +298,7 @@ async function init() {
         processQueue();
     } catch(e) {
         console.error("Error inicial:", e);
-        if (relojEl) relojEl.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Error de conexión</span>`;
+        if (relojEl) relojEl.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Sin conexión</span>`;
     }
 }
 
@@ -325,7 +317,7 @@ async function cargarDatos() {
         dataCancelados = Array.isArray(resCanc) ? resCanc : [];
         dataMesas = Array.isArray(resMesas) ? resMesas : [];
 
-        // MIGRACIÓN Y PROTECCIÓN DE MESA 1 (LOS NOVIOS)
+        // Migrar cualquier mesa 0 histórica a Mesa 1
         const mesaCero = dataMesas.find(m => parseInt(m.numero) === 0);
         if (mesaCero) {
             dataConfirmados.forEach(c => {
@@ -342,12 +334,12 @@ async function cargarDatos() {
             dataMesas = dataMesas.filter(m => parseInt(m.numero) !== 0);
         }
 
-        // Asegurar que Mesa 1 siempre exista como la Mesa de Honor
+        // Asegurar que Mesa 1 siempre exista como la Mesa de los Novios
         if (!dataMesas.some(m => parseInt(m.numero) === 1)) {
             dataMesas.unshift({ numero: 1, capacidad: 10, alias: 'Mesa de los Novios' });
         }
 
-        // Ordenar estrictamente: Mesa 1 de primera, luego 2, 3, 4...
+        // Ordenar estrictamente: Mesa 1 primero, luego 2, 3, 4...
         dataMesas.sort((a, b) => parseInt(a.numero) - parseInt(b.numero));
 
         procesarDatosGenerales(); 
@@ -357,11 +349,11 @@ async function cargarDatos() {
         dibujarTablaListaMaestra();
 
         if (relojEl) {
-            relojEl.innerHTML = `<span class="text-success"><i class="bi bi-shield-check me-1"></i>Conectado a D1 (${dataConfirmados.length} confirmados · ${dataMesas.length} mesas)</span>`;
+            relojEl.innerHTML = `<span class="text-success"><i class="bi bi-shield-check me-1"></i>Sistema conectado (${dataConfirmados.length} confirmados · ${dataMesas.length} mesas)</span>`;
         }
     } catch(e) { 
         console.error("Error en cargarDatos:", e); 
-        if (relojEl) relojEl.innerHTML = `<span class="text-danger"><i class="bi bi-wifi-off me-1"></i>Error de conexión</span>`;
+        if (relojEl) relojEl.innerHTML = `<span class="text-danger"><i class="bi bi-wifi-off me-1"></i>Sin conexión</span>`;
     }
 }
 
@@ -482,15 +474,51 @@ function procesarDatosGenerales() {
 }
 
 // =========================================================================
-//         GUARDADO MAESTRO EN BBDD CON EL BOTÓN "GUARDAR CAMBIOS"
+//         GUARDADO ULTRA-RÁPIDO EN BLOQUE (BATCH)
 // =========================================================================
+async function ejecutarGuardadoSilencioso() {
+    if (!hayCambiosMesas) return;
+    try {
+        const payload = prepararPayloadMesas();
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        marcarCambiosGuardadosMesas();
+    } catch(e) {
+        console.warn("Auto-guardado pendiente de reintento...", e);
+    }
+}
+
 async function guardarCambiosEnBBDD() {
     const btn = document.getElementById('btn-guardar-cambios-mesas');
     const btnTexto = document.getElementById('btn-guardar-texto');
     if (btn) btn.disabled = true;
-    if (btnTexto) btnTexto.innerText = "Guardando en D1...";
+    if (btnTexto) btnTexto.innerText = "Guardando...";
 
-    // Asegurar Mesa 1 presente
+    try {
+        const payload = prepararPayloadMesas();
+        const res = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const resJson = await res.json();
+        if (resJson.error) throw new Error(resJson.error);
+
+        marcarCambiosGuardadosMesas();
+        alert("✅ ¡Todos los cambios han sido guardados con éxito!");
+    } catch(err) {
+        console.error("Error guardando mesas:", err);
+        alert("❌ Error al guardar: " + err.message);
+        marcarCambioPendienteMesas();
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+function prepararPayloadMesas() {
     if (!dataMesas.some(m => parseInt(m.numero) === 1)) {
         dataMesas.unshift({ numero: 1, capacidad: 10, alias: 'Mesa de los Novios' });
     }
@@ -507,116 +535,137 @@ async function guardarCambiosEnBBDD() {
         mesa_numero: (c.mesa !== null && c.mesa !== undefined && c.mesa !== "") ? parseInt(c.mesa) : null
     }));
 
-    try {
-        const res = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tipo: "guardar_todo_mesas",
-                mesas: mesasPayload,
-                asignaciones: asignacionesPayload
-            })
-        });
-        const resJson = await res.json();
-        if (resJson.error) throw new Error(resJson.error);
-
-        marcarCambiosGuardadosMesas();
-        alert("✅ ¡Plano de mesas y comensales guardados con éxito en Cloudflare D1!");
-    } catch(err) {
-        console.error("Error guardando mesas:", err);
-        alert("❌ Error al guardar en D1: " + err.message);
-        marcarCambioPendienteMesas();
-    } finally {
-        if (btn) btn.disabled = false;
-    }
+    return {
+        tipo: "guardar_todo_mesas",
+        mesas: mesasPayload,
+        asignaciones: asignacionesPayload
+    };
 }
 
-// ======================= MESAS (MESA 1 FIJA Y DESPLAZAMIENTO 2..N) =======================
+// =========================================================================
+//    MESAS (MESA 1 FIJA + DESPLAZAMIENTO CON IDENTIDAD 2..N)
+// =========================================================================
 function obtenerProximoNumeroDisponible() {
-    const ocupados = dataMesas
-        .map(m => parseInt(m.numero))
-        .filter(n => n >= 2);
-    let proximo = 2; // Las mesas normales parten desde la 2
-    while (ocupados.includes(proximo)) {
-        proximo++;
-    }
+    const ocupados = dataMesas.map(m => parseInt(m.numero)).filter(n => n >= 2);
+    let proximo = 2;
+    while (ocupados.includes(proximo)) proximo++;
     return proximo;
 }
 
-function calcularDesplazamientoMesas(viejoNum, nuevoNum) {
-    viejoNum = parseInt(viejoNum);
-    nuevoNum = parseInt(nuevoNum);
-
-    if (viejoNum === nuevoNum || isNaN(viejoNum) || isNaN(nuevoNum)) return [];
-
-    // MESA 1 INMUNIZADA
-    if (viejoNum === 1 || nuevoNum === 1) {
-        alert("La Mesa 1 es la Mesa de los Novios y está fija en esa posición.");
-        return [];
-    }
-
-    // Solo se reordenan mesas normales (>= 2)
-    const mesasNormales = dataMesas
-        .filter(m => parseInt(m.numero) >= 2)
-        .sort((a, b) => parseInt(a.numero) - parseInt(b.numero));
-
-    const existeDestino = mesasNormales.some(m => parseInt(m.numero) === nuevoNum);
-    const mapeo = [];
-
-    if (!existeDestino) {
-        mapeo.push({ viejo: viejoNum, nuevo: nuevoNum });
-    } else {
-        if (viejoNum > nuevoNum) {
-            mesasNormales.forEach(m => {
-                const num = parseInt(m.numero);
-                if (num >= nuevoNum && num < viejoNum) {
-                    mapeo.push({ viejo: num, nuevo: num + 1 });
-                }
-            });
-            mapeo.push({ viejo: viejoNum, nuevo: nuevoNum });
-        } else {
-            mesasNormales.forEach(m => {
-                const num = parseInt(m.numero);
-                if (num > viejoNum && num <= nuevoNum) {
-                    mapeo.push({ viejo: num, nuevo: num - 1 });
-                }
-            });
-            mapeo.push({ viejo: viejoNum, nuevo: nuevoNum });
-        }
-    }
-    return mapeo;
-}
-
+// DESPLAZAMIENTO CON IDENTIDAD (Alias y comensales viajan con la mesa)
 function ejecutarCambioNumeroMesa(viejoNum, nuevoNumDeseado) {
     viejoNum = parseInt(viejoNum);
     nuevoNumDeseado = parseInt(nuevoNumDeseado);
 
     if (isNaN(viejoNum) || isNaN(nuevoNumDeseado) || viejoNum === nuevoNumDeseado) return;
     if (viejoNum === 1 || nuevoNumDeseado === 1) {
-        alert("La Mesa 1 es exclusiva de los Novios y no se puede mover.");
+        alert("La Mesa 1 es la Mesa de los Novios y no se puede mover.");
         return;
     }
 
-    const mapeo = calcularDesplazamientoMesas(viejoNum, nuevoNumDeseado);
-    if (mapeo.length === 0) return;
+    // Separar Mesa 1 de las mesas normales
+    const mesa1 = dataMesas.find(m => parseInt(m.numero) === 1);
+    let mesasNormales = dataMesas.filter(m => parseInt(m.numero) >= 2);
 
-    listaComensalesGenerales.forEach(c => {
-        if (c.mesa !== null) {
-            const mNum = parseInt(c.mesa);
-            const cambio = mapeo.find(x => x.viejo === mNum);
-            if (cambio) c.mesa = cambio.nuevo;
+    const indexOrigen = mesasNormales.findIndex(m => parseInt(m.numero) === viejoNum);
+    if (indexOrigen === -1) return;
+
+    // Remover la mesa que se mueve
+    const [mesaMovida] = mesasNormales.splice(indexOrigen, 1);
+
+    // Encontrar dónde insertarla
+    let indexDestino = mesasNormales.findIndex(m => parseInt(m.numero) === nuevoNumDeseado);
+    if (indexDestino === -1) {
+        mesasNormales.push(mesaMovida);
+    } else {
+        mesasNormales.splice(indexDestino, 0, mesaMovida);
+    }
+
+    // Renumerar contiguamente del 2 en adelante
+    const mapaCambios = {};
+    mesasNormales.forEach((m, idx) => {
+        const numAnterior = parseInt(m.numero);
+        const numNuevo = idx + 2;
+        if (numAnterior !== numNuevo) {
+            mapaCambios[numAnterior] = numNuevo;
+            m.numero = numNuevo;
         }
     });
 
-    mapeo.forEach(item => {
-        const mesa = dataMesas.find(m => parseInt(m.numero) === item.viejo);
-        if (mesa) mesa.numero = item.nuevo;
+    // Actualizar comensales que estaban en esas mesas
+    listaComensalesGenerales.forEach(c => {
+        if (c.mesa !== null && mapaCambios[parseInt(c.mesa)]) {
+            c.mesa = mapaCambios[parseInt(c.mesa)];
+        }
     });
 
-    dataMesas.sort((a, b) => parseInt(a.numero) - parseInt(b.numero));
-
+    dataMesas = mesa1 ? [mesa1, ...mesasNormales] : mesasNormales;
     dibujarPanelMesas();
     dibujarPanelBanqueteria();
+    marcarCambioPendienteMesas();
+}
+
+// BOTÓN: RENUMERAR MESAS CONSECUTIVAMENTE (2..N)
+function renumerarMesasContiguas() {
+    const mesa1 = dataMesas.find(m => parseInt(m.numero) === 1);
+    const mesasNormales = dataMesas.filter(m => parseInt(m.numero) >= 2);
+
+    const mapaCambios = {};
+    mesasNormales.forEach((m, idx) => {
+        const numAnterior = parseInt(m.numero);
+        const numNuevo = idx + 2;
+        if (numAnterior !== numNuevo) {
+            mapaCambios[numAnterior] = numNuevo;
+            m.numero = numNuevo;
+        }
+    });
+
+    listaComensalesGenerales.forEach(c => {
+        if (c.mesa !== null && mapaCambios[parseInt(c.mesa)]) {
+            c.mesa = mapaCambios[parseInt(c.mesa)];
+        }
+    });
+
+    dataMesas = mesa1 ? [mesa1, ...mesasNormales] : mesasNormales;
+    dibujarPanelMesas();
+    dibujarPanelBanqueteria();
+    marcarCambioPendienteMesas();
+    alert(`✅ Mesas renumeradas consecutivamente del 2 al ${dataMesas.length}.`);
+}
+
+function eliminarMesa(num) { 
+    num = parseInt(num);
+    if (num === 1) return alert("La Mesa 1 de los Novios no se puede eliminar.");
+    if(!confirm(`¿Eliminar la Mesa ${num}? Sus comensales volverán a 'Por Asignar' y las mesas siguientes se compactarán.`)) return; 
+
+    // 1. Quitar comensales de la mesa eliminada
+    listaComensalesGenerales.forEach(c => { 
+        if(parseInt(c.mesa) === num) c.mesa = null; 
+    });
+
+    // 2. Compactar mesas siguientes (no dejar huecos)
+    const mesa1 = dataMesas.find(m => parseInt(m.numero) === 1);
+    let mesasNormales = dataMesas.filter(m => parseInt(m.numero) >= 2 && parseInt(m.numero) !== num);
+
+    const mapaCambios = {};
+    mesasNormales.forEach((m, idx) => {
+        const numAnterior = parseInt(m.numero);
+        const numNuevo = idx + 2;
+        if (numAnterior !== numNuevo) {
+            mapaCambios[numAnterior] = numNuevo;
+            m.numero = numNuevo;
+        }
+    });
+
+    listaComensalesGenerales.forEach(c => {
+        if (c.mesa !== null && mapaCambios[parseInt(c.mesa)]) {
+            c.mesa = mapaCambios[parseInt(c.mesa)];
+        }
+    });
+
+    dataMesas = mesa1 ? [mesa1, ...mesasNormales] : mesasNormales;
+    dibujarPanelMesas(); 
+    dibujarPanelBanqueteria(); 
     marcarCambioPendienteMesas();
 }
 
@@ -653,37 +702,32 @@ function dibujarListaSinAsignar() {
     let html = "";
     sinAsignar.forEach(c => {
         if (term === "" || quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term)) {
-            const torpedoBg = c.lado === 'Novia' ? 'var(--color-novia)' : (c.lado === 'Ambos' ? 'var(--color-ambos)' : 'var(--color-novio)');
+            const torpedoClass = c.lado === 'Novia' ? 'torpedo-novia' : (c.lado === 'Ambos' ? 'torpedo-ambos' : 'torpedo-novio');
             const torpedoEmoji = c.lado === 'Novia' ? '👰' : (c.lado === 'Ambos' ? '💍' : '🤵');
 
             html += `
-            <div class="guest-item-pro ${c.esNino ? 'is-child' : ''}" draggable="true" ondragstart="dragGuest(event, '${c.id_drag}')">
+            <div class="guest-item draggable-guest" draggable="true" ondragstart="dragGuest(event, '${c.id_drag}')">
                 <div class="d-flex align-items-center text-truncate me-2">
-                    <span class="torpedo-badge me-2 text-white" style="background-color: ${torpedoBg};" title="Lado: ${c.lado}">${torpedoEmoji}</span>
-                    <div class="text-truncate">
-                        <span class="fw-bold d-block text-truncate" title="${escapeHTML(c.nombre_mostrar)}">${escapeHTML(c.nombre_mostrar)}</span>
-                        <small class="text-muted" style="font-size:0.7rem;">
-                            ${c.esNino ? '<span class="badge badge-nino me-1">Niño</span>' : ''}
-                            ${c.es_pareja ? '<span class="badge bg-light text-secondary border">Pareja</span>' : ''}
-                        </small>
-                    </div>
+                    <span class="torpedo-badge ${torpedoClass}" title="Lado: ${c.lado}">${torpedoEmoji}</span>
+                    <strong class="text-truncate" style="font-size:0.83rem;" title="${escapeHTML(c.nombre_mostrar)}">${escapeHTML(c.nombre_mostrar)}</strong>
                 </div>
                 <button class="btn btn-outline-dark btn-sm py-0 px-2 flex-shrink-0" style="font-size:0.72rem;" onclick="abrirModalAsignarDirecto('${c.id_drag}')">
-                    <i class="bi bi-arrow-right-short"></i> Sentar
+                    Sentar
                 </button>
             </div>`;
         }
     });
-    document.getElementById('lista-sin-asignar').innerHTML = html || `<div class="text-center text-muted small py-4"><i class="bi bi-check2-all text-success fs-3 d-block mb-1"></i>Todos tienen mesa asignada</div>`;
+    document.getElementById('lista-sin-asignar').innerHTML = html || `<p class="text-muted small mt-2 text-center">Todos tienen mesa asignada.</p>`;
 }
 
 function filtrarPorAsignar() { dibujarListaSinAsignar(); }
 
+// RENDER DE MESAS: LIMPIO, CON IDENTIDAD Y MESA 1 NOVIOS
 function dibujarGridMesas() {
     let htmlGrid = "";
     dataMesas.forEach(mesa => {
         const num = parseInt(mesa.numero);
-        const esMesaNovios = (num === 1); // Mesa 1 es SIEMPRE la mesa de los novios
+        const esMesaNovios = (num === 1);
         const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === num);
         const cant = ocupantes.length;
         const cap = parseInt(mesa.capacidad);
@@ -693,85 +737,62 @@ function dibujarGridMesas() {
         if (filtroMesasEstado === 'llenas' && !estaLlena) return;
         if (filtroMesasEstado === 'novios' && !esMesaNovios) return;
 
-        const pctBar = Math.min(100, Math.round((cant / cap) * 100));
-        let colorBar = pctBar >= 100 ? 'bg-dark' : (pctBar >= 75 ? 'bg-warning' : 'bg-success');
-
+        // FILAS LIMPIAS: TORPEDO + NOMBRE + BOTÓN QUITAR
         let htmlOcupantes = "";
         ocupantes.forEach(c => {
-            const torpedoBg = c.lado === 'Novia' ? 'var(--color-novia)' : (c.lado === 'Ambos' ? 'var(--color-ambos)' : 'var(--color-novio)');
+            const torpedoClass = c.lado === 'Novia' ? 'torpedo-novia' : (c.lado === 'Ambos' ? 'torpedo-ambos' : 'torpedo-novio');
             const torpedoEmoji = c.lado === 'Novia' ? '👰' : (c.lado === 'Ambos' ? '💍' : '🤵');
 
             htmlOcupantes += `
-            <div class="guest-item-pro ${c.esNino ? 'is-child' : ''}" draggable="true" ondragstart="dragGuest(event, '${c.id_drag}')">
+            <div class="guest-item draggable-guest" draggable="true" ondragstart="dragGuest(event, '${c.id_drag}')">
                 <div class="d-flex align-items-center text-truncate me-2">
-                    <span class="torpedo-badge me-2 text-white" style="background-color: ${torpedoBg};" title="Lado: ${c.lado}">${torpedoEmoji}</span>
-                    <div class="text-truncate">
-                        <span class="d-block text-truncate fw-semibold" style="font-size:0.83rem;" title="${escapeHTML(c.nombre_mostrar)}">${escapeHTML(c.nombre_mostrar)}</span>
-                        <small class="text-muted" style="font-size:0.68rem;">
-                            ${c.esNino ? '<span class="badge badge-nino me-1">Niño</span>' : ''}
-                            ${c.es_pareja ? '<span class="text-secondary">Pareja</span>' : ''}
-                        </small>
-                    </div>
+                    <span class="torpedo-badge ${torpedoClass}" title="Lado: ${c.lado}">${torpedoEmoji}</span>
+                    <span class="text-truncate fw-semibold" style="font-size:0.82rem;" title="${escapeHTML(c.nombre_mostrar)}">${escapeHTML(c.nombre_mostrar)}</span>
                 </div>
-                <div class="d-flex align-items-center gap-1">
+                <div class="d-flex align-items-center gap-1 flex-shrink-0">
                     <button class="btn btn-sm btn-light border py-0 px-1 text-muted" title="Mover a otra mesa" onclick="abrirModalAsignarDirecto('${c.id_drag}', ${num})"><i class="bi bi-arrow-left-right" style="font-size:0.75rem;"></i></button>
-                    <button class="btn btn-sm btn-light border py-0 px-1 text-danger" title="Quitar" onclick="intentarAsignar('${c.id_drag}', null, null, null)"><i class="bi bi-x-lg" style="font-size:0.75rem;"></i></button>
+                    <button class="btn btn-sm text-danger p-0 m-0" title="Quitar de la mesa" onclick="intentarAsignar('${c.id_drag}', null, null, null)"><i class="bi bi-x-circle"></i></button>
                 </div>
             </div>`;
         });
 
-        const alias = mesa.alias || (esMesaNovios ? 'Los Novios (Mesa de Honor)' : 'Clic para asignar nombre');
+        const alias = mesa.alias || (esMesaNovios ? 'Mesa de Honor' : 'Clic para asignar nombre');
 
         htmlGrid += `
-        <div class="col-12 col-md-6 col-xxl-4 mesa-col-box" id="mesa-col-${num}" 
+        <div class="col-12 col-md-6 col-xl-4 mb-3 mesa-col-box" id="mesa-col-${num}" 
              ${!esMesaNovios ? `ondragover="allowDropMesa(event)" ondragleave="leaveDropMesa(event)" ondrop="dropMesa(event, ${num})"` : ''}>
             
-            <div class="mesa-card-pro ${esMesaNovios ? 'mesa-novios' : ''}">
-                <div class="mesa-header" ${!esMesaNovios ? `draggable="true" ondragstart="dragMesa(event, ${num})"` : ''}>
-                    <div class="d-flex justify-content-between align-items-start">
+            <div class="mesa-card ${esMesaNovios ? 'mesa-novios' : ''}">
+                <div class="d-flex justify-content-between align-items-center mb-2" ${!esMesaNovios ? `draggable="true" ondragstart="dragMesa(event, ${num})"` : ''}>
+                    <div class="d-flex align-items-center gap-2">
+                        ${!esMesaNovios ? '<i class="bi bi-arrows-move cursor-move text-muted" title="Arrastra para reordenar esta mesa"></i>' : ''}
                         <div>
-                            <div class="d-flex align-items-center gap-2">
-                                ${!esMesaNovios ? '<i class="bi bi-grip-vertical text-muted cursor-grab-mesa" title="Arrastra para reordenar esta mesa"></i>' : ''}
-                                <h6 class="m-0 fw-bold" style="font-family:'Playfair Display', serif; font-size:1.1rem;">
-                                    ${esMesaNovios ? '👑 Mesa 1: Los Novios' : `Mesa ${num}`}
-                                </h6>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-light py-0 px-1 text-muted border-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm small">
-                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="editarAliasMesa(${num})"><i class="bi bi-pencil me-2"></i>Renombrar / Alias</a></li>
-                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="cambiarCapacidad(${num}, ${cap})"><i class="bi bi-people me-2"></i>Cambiar sillas</a></li>
-                                        ${!esMesaNovios ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="cambiarNumero(${num})"><i class="bi bi-123 me-2"></i>Cambiar número</a></li>` : ''}
-                                        <li><a class="dropdown-item text-warning" href="javascript:void(0)" onclick="vaciarMesaCompleta(${num})"><i class="bi bi-arrow-counterclockwise me-2"></i>Vaciar mesa</a></li>
-                                        ${!esMesaNovios ? `<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="eliminarMesa(${num})"><i class="bi bi-trash me-2"></i>Eliminar mesa</a></li>` : ''}
-                                    </ul>
-                                </div>
-                            </div>
+                            <h6 class="m-0 fw-bold">${esMesaNovios ? '👑 Mesa 1 (Los Novios)' : `Mesa ${num}`}</h6>
                             <div class="mesa-alias" onclick="editarAliasMesa(${num})">${escapeHTML(alias)}</div>
                         </div>
-                        <span class="badge ${estaLlena ? 'bg-dark' : 'bg-success'} px-2 py-1" style="font-size:0.75rem;">
-                            ${cant} / ${cap} sillas
-                        </span>
+                        <i class="bi bi-people action-icon ms-1" title="Cambiar Sillas" onclick="cambiarCapacidad(${num}, ${cap})"></i>
+                        <i class="bi bi-pencil-square action-icon" title="Renombrar Alias" onclick="editarAliasMesa(${num})"></i>
+                        ${!esMesaNovios ? `<i class="bi bi-123 action-icon" title="Cambiar Número de Mesa" onclick="cambiarNumero(${num})"></i>` : ''}
+                        ${!esMesaNovios ? `<i class="bi bi-trash action-icon trash-icon" title="Eliminar Mesa" onclick="eliminarMesa(${num})"></i>` : ''}
                     </div>
-                    <div class="progress-seats"><div class="progress-bar ${colorBar}" style="width: ${pctBar}%"></div></div>
+                    <span class="badge ${estaLlena ? 'bg-danger' : 'bg-success'}">${cant} / ${cap}</span>
                 </div>
 
-                <div class="drop-zone-pro" ondragover="allowDropGuest(event)" ondragleave="leaveDropGuest(event)" ondrop="dropGuest(event, ${num}, ${cap}, ${cant})">
-                    ${htmlOcupantes || '<div class="text-center text-muted small py-4" style="border:1px dashed #e8e2d8; border-radius:6px;"><i class="bi bi-box-arrow-in-down d-block mb-1"></i>Mesa vacía</div>'}
+                <div class="drop-zone mb-2" style="max-height: 250px; overflow-y: auto;" ondragover="allowDropGuest(event)" ondragleave="leaveDropGuest(event)" ondrop="dropGuest(event, ${num}, ${cap}, ${cant})">
+                    ${htmlOcupantes || '<div class="text-muted small mt-2 text-center">Mesa vacía</div>'}
                 </div>
 
-                <div class="p-2 border-top bg-light text-center" style="border-radius: 0 0 12px 12px;">
-                    <button class="btn btn-sm btn-outline-dark w-100 py-1" style="font-size:0.75rem;" onclick="abrirModalSentarEnMesa(${num}, ${cap}, ${cant})" ${estaLlena ? 'disabled' : ''}>
-                        <i class="bi bi-person-plus me-1"></i> ${estaLlena ? 'Mesa Completa' : 'Sentar comensal aquí'}
-                    </button>
-                </div>
+                <button class="btn btn-outline-dark btn-sm w-100 py-1" style="font-size:0.75rem;" onclick="abrirModalSentarEnMesa(${num}, ${cap}, ${cant})" ${estaLlena ? 'disabled' : ''}>
+                    ${estaLlena ? 'Mesa Completa' : '+ Sentar comensal'}
+                </button>
             </div>
         </div>`;
     });
 
-    document.getElementById('contenedor-mesas').innerHTML = htmlGrid || `<div class="col-12 text-center text-muted py-5">No hay mesas en esta categoría.</div>`;
+    document.getElementById('contenedor-mesas').innerHTML = htmlGrid || `<div class="col-12 text-center text-muted py-4">No hay mesas en esta categoría.</div>`;
 }
 
-// ======================= DRAG & DROP GESTIÓN =======================
+// ======================= DRAG & DROP =======================
 function dragGuest(ev, idDrag) {
     ev.stopPropagation();
     ev.dataTransfer.setData("drag-type", "guest");
@@ -780,19 +801,19 @@ function dragGuest(ev, idDrag) {
 
 function allowDropGuest(ev) {
     ev.preventDefault(); ev.stopPropagation();
-    const d = ev.target.closest('.drop-zone-pro');
+    const d = ev.target.closest('.drop-zone');
     if (d) d.classList.add('dragover');
 }
 
 function leaveDropGuest(ev) {
-    const d = ev.target.closest('.drop-zone-pro');
+    const d = ev.target.closest('.drop-zone');
     if (d) d.classList.remove('dragover');
 }
 
 function dropGuest(ev, mesaNum, capMax, capActual) {
     ev.preventDefault(); ev.stopPropagation();
     detenerAutoScroll();
-    const d = ev.target.closest('.drop-zone-pro');
+    const d = ev.target.closest('.drop-zone');
     if (d) d.classList.remove('dragover');
 
     if (ev.dataTransfer.getData("drag-type") !== "guest") return;
@@ -802,9 +823,7 @@ function dropGuest(ev, mesaNum, capMax, capActual) {
 }
 
 function dragMesa(ev, mesaNum) {
-    if (parseInt(mesaNum) === 1) {
-        ev.preventDefault(); return;
-    }
+    if (parseInt(mesaNum) === 1) { ev.preventDefault(); return; }
     ev.stopPropagation();
     ev.dataTransfer.setData("drag-type", "mesa");
     ev.dataTransfer.setData("text/plain", mesaNum.toString());
@@ -813,31 +832,27 @@ function dragMesa(ev, mesaNum) {
 function allowDropMesa(ev) {
     if (ev.dataTransfer.types.includes("drag-type")) {
         ev.preventDefault();
-        const card = ev.currentTarget.querySelector('.mesa-card-pro');
-        if (card && !card.classList.contains('mesa-novios')) card.classList.add('dragover-mesa');
+        const card = ev.currentTarget.querySelector('.mesa-card');
+        if (card && !card.classList.contains('mesa-novios')) card.classList.add('highlight-mesa');
     }
 }
 
 function leaveDropMesa(ev) {
-    const card = ev.currentTarget.querySelector('.mesa-card-pro');
-    if (card) card.classList.remove('dragover-mesa');
+    const card = ev.currentTarget.querySelector('.mesa-card');
+    if (card) card.classList.remove('highlight-mesa');
 }
 
 function dropMesa(ev, targetMesaNum) {
     ev.preventDefault(); ev.stopPropagation();
     detenerAutoScroll();
-    const card = ev.currentTarget.querySelector('.mesa-card-pro');
-    if (card) card.classList.remove('dragover-mesa');
+    const card = ev.currentTarget.querySelector('.mesa-card');
+    if (card) card.classList.remove('highlight-mesa');
 
     if (ev.dataTransfer.getData("drag-type") !== "mesa") return;
     const origenNum = parseInt(ev.dataTransfer.getData("text/plain"));
     const destinoNum = parseInt(targetMesaNum);
 
-    if (origenNum === 1 || destinoNum === 1) {
-        alert("La Mesa 1 es la Mesa de los Novios y no se puede mover.");
-        return;
-    }
-
+    if (origenNum === 1 || destinoNum === 1) return;
     if (origenNum !== destinoNum) {
         ejecutarCambioNumeroMesa(origenNum, destinoNum);
     }
@@ -849,8 +864,8 @@ function intentarAsignar(idDrag, mesaNum, capMax, capActual) {
     if (!comensal) return;
     
     if (mesaNum !== null && comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum)) return;
-    if (mesaNum !== null && parseInt(capMax) !== 999 && (capActual + 1 > capMax)) { 
-        alert(`¡Faltan sillas! Solo quedan ${capMax - capActual} puestos disponibles.`); 
+    if (mesaNum !== null && (capActual + 1 > capMax)) { 
+        alert(`¡Faltan sillas! Solo quedan ${capMax - capActual} disponibles.`); 
         return; 
     }
 
@@ -862,33 +877,17 @@ function intentarAsignar(idDrag, mesaNum, capMax, capActual) {
 
 function cambiarNumero(viejoNum) {
     if (parseInt(viejoNum) === 1) return alert("La Mesa 1 de los Novios no se puede cambiar de número.");
-    const nuevoNum = prompt(`Cambiar Mesa ${viejoNum} al número:`); 
+    const nuevoNum = prompt(`Mover Mesa ${viejoNum} al número:`); 
     if(!nuevoNum || isNaN(nuevoNum)) return;
     ejecutarCambioNumeroMesa(parseInt(viejoNum), parseInt(nuevoNum));
 }
 
-function crearMesa(num, cap) { 
-    dataMesas.push({ numero: num, capacidad: cap, alias: '' }); 
-    dataMesas.sort((a,b) => parseInt(a.numero) - parseInt(b.numero));
-    dibujarPanelMesas(); 
-    marcarCambioPendienteMesas();
-}
-
-function abrirModalCrearMesa() {
-    const cap = prompt("Cantidad de sillas para la nueva mesa (Ej: 10 u 8):", "10");
-    if(!cap || isNaN(cap) || parseInt(cap) <= 0) return;
-    crearMesa(obtenerProximoNumeroDisponible(), parseInt(cap));
-}
-
-function eliminarMesa(num) { 
-    if (parseInt(num) === 1) return alert("La Mesa 1 de los Novios no se puede eliminar.");
-    if(!confirm(`¿Eliminar la Mesa ${num}? Los comensales volverán a 'Por Asignar'.`)) return; 
-    
-    dataMesas = dataMesas.filter(m => parseInt(m.numero) !== parseInt(num)); 
-    listaComensalesGenerales.forEach(c => { if(parseInt(c.mesa) === parseInt(num)) c.mesa = null; }); 
-    
-    dibujarPanelMesas(); 
-    dibujarPanelBanqueteria(); 
+function crearMesaNormal() {
+    const cap = document.getElementById('nueva-mesa-cap').value;
+    const num = obtenerProximoNumeroDisponible();
+    dataMesas.push({ numero: num, capacidad: parseInt(cap), alias: '' });
+    dataMesas.sort((a, b) => parseInt(a.numero) - parseInt(b.numero));
+    dibujarPanelMesas();
     marcarCambioPendienteMesas();
 }
 
@@ -897,7 +896,6 @@ function cambiarCapacidad(numero, capActual) {
     if(!nuevaCap || isNaN(nuevaCap) || parseInt(nuevaCap) <= 0) return;
     const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(numero)); 
     if(mesa) mesa.capacidad = parseInt(nuevaCap); 
-    
     dibujarPanelMesas(); 
     marcarCambioPendienteMesas();
 }
@@ -905,29 +903,55 @@ function cambiarCapacidad(numero, capActual) {
 function editarAliasMesa(num) {
     const mesaObj = dataMesas.find(m => parseInt(m.numero) === parseInt(num));
     const actual = mesaObj ? (mesaObj.alias || "") : "";
-    const nuevo = prompt(`Asigna un alias a la Mesa ${num}:`, actual);
+    const nuevo = prompt(`Asigna un nombre o alias a la Mesa ${num}:`, actual);
     if(nuevo === null) return;
     
-    const aliasFinal = nuevo.trim();
-    if(mesaObj) mesaObj.alias = aliasFinal;
-    
+    if(mesaObj) mesaObj.alias = nuevo.trim();
     dibujarGridMesas();
     dibujarResumenMesasBanqueteria();
     marcarCambioPendienteMesas();
 }
 
-function vaciarMesaCompleta(num) {
-    const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === parseInt(num));
-    if(ocupantes.length === 0) return alert("La mesa ya está vacía.");
-    if(!confirm(`¿Quitar a los ${ocupantes.length} comensales de la Mesa ${num}? Volverán a 'Por Asignar'.`)) return;
+// ======================= BUSCADOR AMPLIADO (COMENSAL, ALIAS O NÚMERO) =======================
+function buscarComensalEnMesas(val) {
+    const term = quitarTildes(val.toLowerCase().trim());
+    document.querySelectorAll('.mesa-card').forEach(card => card.classList.remove('highlight-mesa'));
+    if(term.length < 2) return;
 
-    ocupantes.forEach(c => { c.mesa = null; });
-    dibujarPanelMesas(); 
-    dibujarPanelBanqueteria(); 
-    marcarCambioPendienteMesas();
+    // 1. Buscar por nombre de comensal
+    const comensal = listaComensalesGenerales.find(c => c.mesa !== null && quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term));
+    let mesaObjetivo = comensal ? parseInt(comensal.mesa) : null;
+
+    // 2. Buscar por alias o número de mesa si no coincide con comensal
+    if (!mesaObjetivo) {
+        const mesa = dataMesas.find(m => {
+            const aliasMatch = m.alias && quitarTildes(m.alias.toLowerCase()).includes(term);
+            const numMatch = `mesa ${m.numero}`.includes(term) || (term === m.numero.toString());
+            return aliasMatch || numMatch;
+        });
+        if (mesa) mesaObjetivo = parseInt(mesa.numero);
+    }
+
+    if (mesaObjetivo !== null) {
+        const mesaCol = document.getElementById(`mesa-col-${mesaObjetivo}`);
+        if (mesaCol) {
+            const card = mesaCol.querySelector('.mesa-card');
+            if (card) {
+                card.classList.add('highlight-mesa');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }
 }
 
-// ======================= MODAL 1-CLIC =======================
+function filtrarMesasVista(tipo) {
+    filtroMesasEstado = tipo;
+    document.querySelectorAll('[id^="filtro-mesa-"]').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`filtro-mesa-${tipo}`).classList.add('active');
+    dibujarGridMesas();
+}
+
+// ======================= MODAL SENTAR 1-CLIC =======================
 function abrirModalAsignarDirecto(idDrag, mesaActual = null) {
     const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
     if(!comensal) return;
@@ -956,7 +980,7 @@ function abrirModalAsignarDirecto(idDrag, mesaActual = null) {
 
         const opt = document.createElement('option');
         opt.value = num;
-        opt.innerText = esNovios ? `👑 Mesa 1: Los Novios${alias} — (${ocupantes}/${cap} ocupados)` : `Mesa ${num}${alias} — (${ocupantes}/${cap} ocupados)`;
+        opt.innerText = esNovios ? `👑 Mesa 1: Los Novios${alias} — (${ocupantes}/${cap})` : `Mesa ${num}${alias} — (${ocupantes}/${cap})`;
         
         if (ocupantes >= cap && num !== mesaActual) {
             opt.disabled = true;
@@ -1004,13 +1028,13 @@ function renderListaModalSinAsignar(lista) {
     }
     let html = "";
     lista.forEach(c => {
-        const torpedoBg = c.lado === 'Novia' ? 'var(--color-novia)' : (c.lado === 'Ambos' ? 'var(--color-ambos)' : 'var(--color-novio)');
+        const torpedoClass = c.lado === 'Novia' ? 'torpedo-novia' : (c.lado === 'Ambos' ? 'torpedo-ambos' : 'torpedo-novio');
         const torpedoEmoji = c.lado === 'Novia' ? '👰' : (c.lado === 'Ambos' ? '💍' : '🤵');
 
         html += `
         <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="ejecutarSentarDesdeModal('${c.id_drag}')">
             <div class="d-flex align-items-center">
-                <span class="torpedo-badge me-2 text-white" style="background-color: ${torpedoBg};">${torpedoEmoji}</span>
+                <span class="torpedo-badge ${torpedoClass}">${torpedoEmoji}</span>
                 <div>
                     <strong style="font-size:0.88rem;">${escapeHTML(c.nombre_mostrar)}</strong>
                     <div class="small text-muted">${c.es_pareja ? 'Pareja' : 'Titular'}</div>
@@ -1031,31 +1055,6 @@ function ejecutarSentarDesdeModal(idDrag) {
     if(!mesaModalActiva) return;
     bootstrap.Modal.getInstance(document.getElementById('modalSentarEnMesa')).hide();
     intentarAsignar(idDrag, mesaModalActiva.num, mesaModalActiva.capMax, mesaModalActiva.capActual);
-}
-
-function buscarComensalEnMesas(val) {
-    const term = quitarTildes(val.toLowerCase().trim());
-    document.querySelectorAll('.mesa-card-pro').forEach(card => card.classList.remove('highlight-mesa'));
-    if(term.length < 2) return;
-
-    const coincidencia = listaComensalesGenerales.find(c => c.mesa !== null && quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term));
-    if(coincidencia) {
-        const mesaCol = document.getElementById(`mesa-col-${coincidencia.mesa}`);
-        if(mesaCol) {
-            const card = mesaCol.querySelector('.mesa-card-pro');
-            if(card) {
-                card.classList.add('highlight-mesa');
-                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    }
-}
-
-function filtrarMesasVista(tipo) {
-    filtroMesasEstado = tipo;
-    document.querySelectorAll('[id^="filtro-mesa-"]').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`filtro-mesa-${tipo}`).classList.add('active');
-    dibujarGridMesas();
 }
 
 // ======================= BANQUETERÍA =======================
@@ -1112,7 +1111,7 @@ function dibujarResumenMesasBanqueteria() {
         });
 
         const aliasText = m.alias ? ` - ${escapeHTML(m.alias)}` : '';
-        const tituloMesa = esNovios ? `👑 Mesa 1: Los Novios${aliasText}` : `Mesa ${num}${aliasText}`;
+        const tituloMesa = esNovios ? `👑 Mesa 1 (Los Novios)${aliasText}` : `Mesa ${num}${aliasText}`;
 
         let htmlEspeciales = "";
         if (especiales.length > 0) {
@@ -1128,7 +1127,7 @@ function dibujarResumenMesasBanqueteria() {
 
         html += `
         <div class="col-12 col-md-6 col-lg-4">
-            <div class="bg-white p-3 rounded-3 shadow-sm border h-100" style="border-top: 4px solid ${esNovios ? '#d4af37' : 'var(--oro)'} !important;">
+            <div class="bg-white p-3 rounded shadow-sm border h-100" style="border-top: 4px solid ${esNovios ? '#d4af37' : 'var(--oro)'} !important;">
                 <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
                     <h6 class="m-0 fw-bold" style="font-family:'Playfair Display', serif;">${tituloMesa}</h6>
                     <span class="badge bg-dark">${ocupantes.length} sentados</span>
@@ -1139,8 +1138,8 @@ function dibujarResumenMesasBanqueteria() {
                 </div>
                 ${htmlEspeciales}
                 <div class="small text-muted border-top pt-2" style="font-size:0.75rem;">
-                    <span class="fw-bold d-block mb-1">Comensales en mesa:</span>
-                    ${ocupantes.length ? ocupantes.map(o => `<span class="badge bg-light text-dark border me-1 mb-1">${escapeHTML(o.nombre_mostrar)}</span>`).join('') : '<span class="text-muted">Mesa sin comensales</span>'}
+                    <span class="fw-bold d-block mb-1">Comensales:</span>
+                    ${ocupantes.length ? ocupantes.map(o => `<span class="badge bg-light text-dark border me-1 mb-1">${escapeHTML(o.nombre_mostrar)}</span>`).join('') : '<span class="text-muted">Mesa vacía</span>'}
                 </div>
             </div>
         </div>`;
@@ -1521,7 +1520,7 @@ function guardarInvitadoModalMaestra(e) {
 }
 
 function eliminarInvitadoMaestra(id, nombre) {
-    if (!confirm(`¿Eliminar a "${nombre}" de la Lista Maestra?`)) return;
+    if (!confirm(`¿Eliminar definitivamente a "${nombre}" de la Lista Maestra?`)) return;
 
     dataMaestra = dataMaestra.filter(m => parseInt(m.id) !== parseInt(id));
     dataConfirmados = dataConfirmados.filter(c => c.nombre_invitado !== nombre);

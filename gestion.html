@@ -30,7 +30,7 @@
         
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
             <h2 id="titulo-principal" class="m-0" style="font-family: 'Playfair Display', serif; color: var(--oscuro);">Gestión del Matrimonio</h2>
-            <div id="reloj-guardado" class="small text-muted"><i class="bi bi-shield-check text-success me-1"></i>Sistema sincronizado</div>
+            <div id="reloj-guardado" class="small text-muted"><i class="bi bi-shield-check text-success me-1"></i>Sistema conectado</div>
         </div>
         
         <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
@@ -53,59 +53,69 @@
             <!-- ================= MESAS ================= -->
             <div class="tab-pane fade show active" id="panel-mesas">
                 
-                <!-- CONTENEDOR FIJO (STICKY) DE ACCIONES Y BÚSQUEDA -->
-                <div class="sticky-mesas-header">
-                    <div class="kpi-mesa-bar d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2 shadow-sm">
-                        <div class="d-flex flex-wrap align-items-center gap-3 gap-md-4">
-                            <div class="kpi-pill"><i class="bi bi-disc text-primary fs-5"></i> <span><strong id="kpi-mesas-totales">0</strong> Mesas</span></div>
-                            <div class="kpi-pill"><i class="bi bi-people-fill text-success fs-5"></i> <span><strong id="kpi-sillas-ocupadas">0</strong> / <span id="kpi-sillas-totales">0</span> Sillas (<span id="kpi-pct-ocupacion">0%</span>)</span></div>
-                            <div class="kpi-pill"><i class="bi bi-person-exclamation text-warning fs-5"></i> <span><strong id="kpi-sin-mesa">0</strong> Sin mesa</span></div>
+                <!-- BARRA FIJA (STICKY) CON CONTROLES Y BUSCADOR -->
+                <div class="sticky-mesas-menu">
+                    <div class="d-flex flex-column flex-md-row gap-2 gap-md-3 bg-white p-3 rounded shadow-sm align-items-md-center justify-content-between border">
+                        <div class="d-flex flex-wrap align-items-center gap-3">
+                            <span class="small fw-bold text-muted"><strong class="text-dark" id="kpi-mesas-totales">0</strong> Mesas</span>
+                            <span class="small fw-bold text-muted"><strong class="text-success" id="kpi-sillas-ocupadas">0</strong> / <span id="kpi-sillas-totales">0</span> Sillas (<span id="kpi-pct-ocupacion">0%</span>)</span>
+                            <span class="small fw-bold text-muted"><strong class="text-warning" id="kpi-sin-mesa">0</strong> Sin mesa</span>
                         </div>
                         
-                        <!-- BOTÓN GUARDAR Y ACCIONES -->
-                        <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-end align-items-center">
-                            <button id="btn-guardar-cambios-mesas" class="btn btn-success fw-bold px-3 py-2 shadow-sm" onclick="guardarCambiosEnBBDD()">
-                                <i class="bi bi-cloud-check-fill me-1 fs-6 align-middle"></i> <span id="btn-guardar-texto">Guardar Cambios</span>
+                        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
+                            <button id="btn-guardar-cambios-mesas" class="btn btn-success btn-sm fw-bold px-3 py-2 shadow-sm" onclick="guardarCambiosEnBBDD()">
+                                <i class="bi bi-cloud-check-fill me-1"></i> <span id="btn-guardar-texto">Guardar Cambios</span>
                             </button>
-                            <button class="btn btn-outline-dark btn-sm px-3 py-2" onclick="abrirModalCrearMesa()"><i class="bi bi-plus-lg me-1"></i>+ Nueva Mesa</button>
-                            <button class="btn btn-outline-dark btn-sm px-3 py-2" title="Reordena números consecutivos del 2 en adelante sin huecos" onclick="renumerarMesasContiguas()"><i class="bi bi-sort-numeric-down me-1"></i>Renumerar Mesas</button>
-                            <button class="btn btn-outline-secondary btn-sm px-3 py-2" onclick="exportarExcelMesas()"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+                            
+                            <div class="d-inline-flex gap-1 align-items-center">
+                                <select id="nueva-mesa-cap" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="10">10 sillas</option>
+                                    <option value="8">8 sillas</option>
+                                    <option value="12">12 sillas</option>
+                                </select>
+                                <button class="btn btn-gold btn-sm py-2 px-3 fw-bold text-nowrap" onclick="crearMesaNormal()">+ Agregar Mesa</button>
+                            </div>
+
+                            <button class="btn btn-outline-dark btn-sm py-2 px-2 text-nowrap" title="Renumerar consecutivamente del 2 en adelante sin huecos" onclick="renumerarMesasContiguas()">
+                                <i class="bi bi-sort-numeric-down me-1"></i>Renumerar
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm py-2 px-2" onclick="exportarExcelMesas()"><i class="bi bi-file-earmark-excel"></i></button>
                         </div>
                     </div>
 
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2 bg-white p-2 rounded-3 border shadow-sm">
+                    <!-- FILTROS RÁPIDOS Y BUSCADOR AMPLIADO (COMENSAL, ALIAS O NÚMERO) -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-2 bg-white p-2 rounded border shadow-sm">
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-outline-secondary active" id="filtro-mesa-todas" onclick="filtrarMesasVista('todas')">Todas</button>
                             <button type="button" class="btn btn-outline-secondary" id="filtro-mesa-disponibles" onclick="filtrarMesasVista('disponibles')">Con asientos libres</button>
                             <button type="button" class="btn btn-outline-secondary" id="filtro-mesa-llenas" onclick="filtrarMesasVista('llenas')">Llenas</button>
-                            <button type="button" class="btn btn-outline-secondary" id="filtro-mesa-novios" onclick="filtrarMesasVista('novios')">Mesa 1: Novios</button>
+                            <button type="button" class="btn btn-outline-secondary" id="filtro-mesa-novios" onclick="filtrarMesasVista('novios')">👑 Mesa 1: Novios</button>
                         </div>
 
-                        <!-- BUSCADOR POR COMENSAL, ALIAS O NÚMERO DE MESA -->
-                        <div class="position-relative" style="min-width: 300px;">
-                            <input type="text" id="buscador-global-mesas" class="form-control form-control-sm" placeholder="🔍 Buscar comensal o alias de mesa..." autocomplete="off" oninput="buscarComensalEnMesas(this.value)">
+                        <div class="position-relative" style="min-width: 280px;">
+                            <input type="text" id="buscador-global-mesas" class="form-control form-control-sm" placeholder="🔍 Buscar comensal, alias o número de mesa..." autocomplete="off" oninput="buscarComensalEnMesas(this.value)">
                         </div>
                     </div>
                 </div>
 
-                <div class="row mt-3">
-                    <!-- BANDEJA POR ASIGNAR -->
+                <div class="row">
+                    <!-- PANEL IZQUIERDO: POR ASIGNAR -->
                     <div class="col-12 col-lg-4 col-xl-3 mb-4">
-                        <div class="bg-white p-3 rounded-3 shadow-sm sticky-unassigned border">
+                        <div class="bg-white p-3 rounded shadow-sm sticky-panel border">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="m-0 fw-bold" style="color:var(--oscuro);">Por Asignar (<span id="count-sin-asignar">0</span>)</h6>
+                                <h6 class="m-0 fw-bold">Por Asignar (<span id="count-sin-asignar">0</span>)</h6>
                                 <span class="badge bg-light text-muted border">Arrastra o "Sentar"</span>
                             </div>
-                            <input type="text" id="buscador-por-asignar" class="form-control form-control-sm mb-2" placeholder="Filtrar nombres..." autocomplete="off" oninput="filtrarPorAsignar()">
-                            <div id="lista-sin-asignar" class="drop-zone-pro flex-grow-1" style="max-height: calc(100vh - 280px); overflow-y: auto;" ondragover="allowDropGuest(event)" ondragleave="leaveDropGuest(event)" ondrop="dropGuest(event, null, 999, 0)">
+                            <input type="text" id="buscador-por-asignar" class="form-control form-control-sm mb-2" placeholder="🔍 Filtrar nombres..." autocomplete="off" oninput="filtrarPorAsignar()">
+                            <div id="lista-sin-asignar" class="drop-zone" style="max-height: calc(100vh - 280px); overflow-y: auto;" ondragover="allowDropGuest(event)" ondragleave="leaveDropGuest(event)" ondrop="dropGuest(event, null, 999, 0)">
                                 Cargando...
                             </div>
                         </div>
                     </div>
 
-                    <!-- SALÓN DE MESAS (MESA 1 FIJA + MESAS 2..N) -->
+                    <!-- SALÓN DE MESAS: MESA 1 (NOVIOS) + MESAS 2..N -->
                     <div class="col-12 col-lg-8 col-xl-9">
-                        <div class="row g-3" id="contenedor-mesas"></div>
+                        <div class="row" id="contenedor-mesas"></div>
                     </div>
                 </div>
             </div>
@@ -431,24 +441,9 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modalSentarEnMesa" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h6 class="modal-title fw-bold" id="modalSentarMesaTitulo">Sentar comensal</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" class="form-control form-control-sm mb-3" id="modal-buscar-sin-asignar" placeholder="🔍 Buscar comensal sin mesa..." oninput="filtrarModalSinAsignar(this.value)">
-                    <div class="list-group list-group-flush" id="modal-lista-candidatos" style="max-height: 250px; overflow-y: auto;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- DESBLOQUEO INLINE Y RECUPERACIÓN DE SESIÓN -->
+    <!-- DESBLOQUEO INLINE Y SESIÓN -->
     <script>
         function verificarPIN() {
             const input = document.getElementById('input-pin');
@@ -490,6 +485,6 @@
             });
         }
     </script>
-    <script src="gestion.js?v=7"></script>
+    <script src="gestion.js?v=9"></script>
 </body>
 </html>
