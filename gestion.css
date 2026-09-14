@@ -1,10 +1,11 @@
 :root {
     --oro: #b59a7a;
     --oro-dark: #8c775e;
-    --oro-light: #f9f6f0;
-    --oro-glow: rgba(181, 154, 122, 0.25);
-    --oscuro: #232323;
-    --crema-bg: #f5f2eb;
+    --oro-light: #faf7f2;
+    --oro-glow: rgba(181, 154, 122, 0.35);
+    --champagne: #f4ece1;
+    --oscuro: #222222;
+    --crema-bg: #f4f0e8;
     --fiesta-color: #6f42c1;
     --color-novio: #2b5b84;
     --color-novia: #c75b7a;
@@ -31,7 +32,7 @@ body {
     max-width: 90%; width: 380px; border-top: 5px solid var(--oro); 
 }
 
-/* Botones y Navegación */
+/* Botones y Navegación Principal */
 .btn-gold { 
     background: var(--oro); color: white; border: none; font-weight: 600; 
     border-radius: 8px; transition: all 0.2s; 
@@ -44,7 +45,6 @@ body {
 .nav-pills .nav-link:hover { background-color: rgba(181, 154, 122, 0.12); color: var(--oro-dark); }
 .nav-pills .nav-link.active { background-color: var(--oro); color: white; box-shadow: 0 4px 12px var(--oro-glow); }
 
-/* Barra KPI Superior */
 .stat-card { 
     background: white; border-radius: 12px; padding: 18px; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.03); text-align: center; 
@@ -58,108 +58,142 @@ body {
 .stat-card.active-filter h6, .stat-card.active-filter .stat-val { color: white !important; }
 .stat-val { font-size: 1.85rem; font-weight: 700; color: var(--oscuro); }
 
-.table-container { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+.table-container { background: white; padding: 24px; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
 
-/* ================== ESTUDIO DE MESAS (WORLD-CLASS UI) ================== */
-.seating-bar {
-    background: white; border-radius: 12px; padding: 14px 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 20px;
+/* ========================================================================= */
+/*                      MESASTUDIO PRO: SALÓN Y MESAS                       */
+/* ========================================================================= */
+
+/* Barra de control superior de mesas */
+.mesa-studio-bar {
+    background: white; border-radius: 14px; padding: 14px 22px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 22px;
     display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 15px;
 }
-.seating-metric {
-    display: inline-flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600;
+.metric-chip {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 600;
 }
 
-.sticky-tray {
+/* Bandeja flotante de comensales sin mesa */
+.tray-container {
     position: sticky; top: 15px; z-index: 100;
     max-height: calc(100vh - 40px); display: flex; flex-direction: column;
-    background: white; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-    border: 1px solid #e8e2d8;
+    background: white; border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+    border: 1px solid #e7e0d3;
 }
 @media (max-width: 991px) {
-    .sticky-tray { position: static; max-height: none; margin-bottom: 25px; }
-    #bandeja-sin-asignar { max-height: 280px !important; }
+    .tray-container { position: static; max-height: none; margin-bottom: 25px; }
+    #lista-bandeja-comensales { max-height: 280px !important; }
 }
 
-/* Tarjeta de Mesa Profesional */
-.mesa-box {
-    background: white; border-radius: 16px; border: 1px solid #e6e0d5;
+/* Fila de comensal en bandeja */
+.tray-guest-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 10px; border-radius: 8px; margin-bottom: 5px;
+    font-size: 0.83rem; background: white; border: 1px solid #eee7dc;
+    transition: all 0.15s; cursor: grab;
+}
+.tray-guest-item:hover { background: var(--oro-light); border-color: #d8cdbe; transform: translateX(2px); }
+.tray-guest-item.is-selected {
+    background: #eaf5ec !important; border-color: #28a745 !important; box-shadow: 0 0 0 2px rgba(40,167,69,0.3);
+}
+
+/* ================== MESA 1: MESA DE HONOR (VIP) ================== */
+.mesa-vip-novios {
+    background: linear-gradient(135deg, #fffdf8 0%, #faf3e6 100%);
+    border: 2px solid #d4af37; border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.18);
+    margin-bottom: 24px; position: relative; overflow: hidden;
+}
+.mesa-vip-novios::before {
+    content: "MESA DE HONOR"; position: absolute; top: 10px; right: -35px;
+    background: #d4af37; color: white; font-size: 0.65rem; font-weight: 800;
+    letter-spacing: 2px; padding: 4px 40px; transform: rotate(45deg);
+}
+
+/* ================== PODS DE MESA (MESAS 2..N) ================== */
+.mesa-pod {
+    background: white; border-radius: 18px; border: 1px solid #e2dad0;
     box-shadow: 0 4px 14px rgba(0,0,0,0.03); margin-bottom: 22px;
-    transition: all 0.25s cubic-bezier(0.2, 0, 0, 1); position: relative; overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.2, 0, 0, 1); position: relative;
 }
-.mesa-box:hover { box-shadow: 0 10px 25px rgba(0,0,0,0.07); transform: translateY(-2px); }
-
-/* Mesa de Novios VIP */
-.mesa-box.is-novios {
-    border: 2px solid #d4af37;
-    background: linear-gradient(180deg, #fffef9 0%, #ffffff 100%);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.12);
-}
-.mesa-box.highlight-search {
+.mesa-pod:hover { box-shadow: 0 10px 25px rgba(0,0,0,0.07); transform: translateY(-2px); }
+.mesa-pod.highlight-pulse {
     border-color: #d4af37 !important;
-    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.35) !important;
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.4) !important;
     transform: scale(1.02);
 }
-
-/* Modo Asignación Rápida Activo */
-.mesa-box.ready-to-seat {
-    border: 2px dashed var(--oro) !important;
-    background: #fdfbf7 !important;
-    box-shadow: 0 0 0 4px var(--oro-glow) !important;
+.mesa-pod.ready-to-seat {
+    border: 2px dashed #28a745 !important; background: #f9fdfa !important;
+    box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.2) !important;
 }
 
-.mesa-top {
-    padding: 14px 16px 10px 16px;
-    border-bottom: 1px solid #f2ece3;
-    display: flex; justify-content: space-between; align-items: flex-start;
-}
-.mesa-title-wrap { display: flex; align-items: center; gap: 8px; }
-.mesa-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; margin: 0; }
-.mesa-alias-text { font-size: 0.76rem; color: #888; cursor: pointer; transition: 0.2s; }
-.mesa-alias-text:hover { color: var(--oro-dark); text-decoration: underline; }
-
-/* Visualizador de Sillas (Dots) */
-.chair-dots-bar {
-    display: flex; gap: 5px; flex-wrap: wrap; padding: 10px 16px;
-    background: #faf8f5; border-bottom: 1px solid #f0eae1; align-items: center;
-}
-.chair-dot {
-    width: 10px; height: 10px; border-radius: 50%; background: #e0d8cc; transition: 0.2s;
-}
-.chair-dot.occupied { background: var(--oro); }
-.chair-dot.novios { background: #d4af37; }
-
-/* Lista de Comensales en Mesa */
-.mesa-seats-list {
-    min-height: 110px; max-height: 290px; overflow-y: auto; padding: 12px;
-}
-.mesa-seats-list.dragover {
-    background: rgba(181, 154, 122, 0.12); border-radius: 8px;
-}
-
-/* Fila de Comensal */
-.guest-row {
+/* Cabecera de la mesa */
+.pod-header {
+    padding: 14px 16px 10px 16px; border-bottom: 1px solid #f2ece3;
     display: flex; justify-content: space-between; align-items: center;
-    padding: 7px 10px; border-radius: 8px; margin-bottom: 5px;
-    font-size: 0.83rem; background: white; border: 1px solid #efeae1;
-    transition: 0.15s;
 }
-.guest-row:hover { background: var(--oro-light); border-color: #dfd5c4; }
-.guest-row.selected-for-seat {
-    background: #e9f5ed !important; border-color: #28a745 !important;
+.pod-title-area { display: flex; align-items: baseline; gap: 8px; }
+.pod-num { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; margin: 0; }
+.pod-alias { font-size: 0.78rem; color: #888; font-style: italic; cursor: pointer; transition: 0.2s; }
+.pod-alias:hover { color: var(--oro-dark); text-decoration: underline; }
+
+/* Controles de ordenamiento (Flechas) */
+.order-btn {
+    background: transparent; border: 1px solid #ded6ca; border-radius: 6px;
+    padding: 1px 7px; font-size: 0.75rem; color: #777; transition: 0.2s;
+}
+.order-btn:hover { background: #ded6ca; color: var(--oscuro); }
+
+/* Indicador de capacidad y balance */
+.pod-capacity-badge {
+    font-size: 0.74rem; font-weight: 700; padding: 4px 9px; border-radius: 20px;
 }
 
-/* Torpedos Lado Novios */
-.torpedo {
-    width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 6px; font-size: 0.8rem; flex-shrink: 0;
+/* Cuadrícula de Asientos (Chairs) */
+.seats-grid {
+    padding: 12px; min-height: 120px; max-height: 290px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 6px;
+}
+.seats-grid.dragover { background: rgba(181, 154, 122, 0.12); border-radius: 12px; }
+
+/* Ranura de asiento ocupado */
+.seat-slot-occupied {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 10px; border-radius: 8px; background: white; border: 1px solid #ece4d8;
+    font-size: 0.82rem; transition: 0.15s;
+}
+.seat-slot-occupied:hover { background: var(--oro-light); border-color: #dcd0bf; }
+
+/* Ranura de asiento libre */
+.seat-slot-empty {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 6px 10px; border-radius: 8px; background: #faf8f5;
+    border: 1px dashed #dcd3c5; font-size: 0.75rem; color: #999;
+    cursor: pointer; transition: all 0.2s;
+}
+.seat-slot-empty:hover {
+    background: white; border-color: var(--oro); color: var(--oro-dark); font-weight: 600;
 }
 
-/* Barra inferior de balance en la mesa */
-.mesa-footer {
+/* Pie de mesa: Balance y acciones rápidas */
+.pod-footer {
     padding: 8px 14px; background: #faf8f5; border-top: 1px solid #f0eae1;
-    display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: #888;
+    display: flex; justify-content: space-between; align-items: center;
+    border-radius: 0 0 18px 18px; font-size: 0.74rem;
 }
+.balance-pill {
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 600;
+}
+
+/* Torpedos Lado Novios (Azul / Rosado / Verde) */
+.torpedo-icon {
+    width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 5px; font-size: 0.76rem; flex-shrink: 0; color: white;
+}
+.torpedo-novio { background-color: var(--color-novio); }
+.torpedo-novia { background-color: var(--color-novia); }
+.torpedo-ambos { background-color: var(--color-ambos); }
 
 /* Badges Auxiliares */
 .badge-nino { background-color: #8c775e; color: white; font-size: 0.7rem; }
@@ -167,10 +201,13 @@ body {
 .badge-novia { background-color: var(--color-novia); color: white; }
 .badge-ambos { background-color: var(--color-ambos); color: white; }
 
+.lado-selector { cursor: pointer; transition: 0.2s; }
+.lado-selector:hover { opacity: 0.85; transform: scale(1.05); }
+
 .dieta-editable { cursor: pointer; border-bottom: 1px dashed var(--oro); transition: 0.2s; }
 .dieta-editable:hover { color: var(--oro); font-weight: bold; }
 
-/* Estado Red Flotante */
+/* Indicador flotante de red */
 #network-status { 
     position: fixed; bottom: 15px; right: 15px; background: rgba(35,35,35,0.92); 
     color: white; padding: 9px 18px; border-radius: 30px; font-size: 0.85rem; 
