@@ -276,7 +276,46 @@ function exportarExcelFiesta() {
     XLSX.writeFile(wb, "Matrimonio_Fiesta.xlsx");
 }
 
-// ======================= CARGA INICIAL ROBUSTA =======================
+// ======================= RECONCILIACIÓN / AUTO-HEALING DE MESAS =======================
+function reconciliarMesasHuerfanas() {
+    // 1. Asegurar siempre Mesa 1 (Novios)
+    if (!dataMesas.some(m => parseInt(m.numero) === 1)) {
+        dataMesas.unshift({ numero: 1, capacidad: 10, alias: 'Mesa de los Novios' });
+    }
+
+    // 2. Detectar TODOS los números de mesa asignados a comensales (incluso saltos como 23, 101, etc.)
+    const numerosDetectados = new Set();
+    listaComensalesGenerales.forEach(c => {
+        if (c.mesa !== null && c.mesa !== undefined && c.mesa !== "") {
+            const n = parseInt(c.mesa);
+            if (!isNaN(n) && n > 0) numerosDetectados.add(n);
+        }
+    });
+
+    // 3. Si algún comensal tiene asignada una mesa que no existe en dataMesas, crearla de inmediato
+    let huboRescate = false;
+    numerosDetectados.forEach(numMesa => {
+        if (!dataMesas.some(m => parseInt(m.numero) === numMesa)) {
+            console.warn(`[Auto-Healing] Recuperando mesa ${numMesa} con comensales asignados`);
+            dataMesas.push({ numero: numMesa, capacidad: 10, alias: '' });
+            huboRescate = true;
+        }
+    });
+
+    // 4. Asegurar capacidades válidas y ordenar
+    dataMesas.forEach(m => {
+        if (!m.capacidad || isNaN(parseInt(m.capacidad))) m.capacidad = 10;
+        if (parseInt(m.numero) === 1 && !m.alias) m.alias = 'Mesa de los Novios';
+    });
+
+    dataMesas.sort((a, b) => parseInt(a.numero) - parseInt(b.numero));
+
+    if (huboRescate) {
+        marcarCambioPendienteMesas();
+    }
+}
+
+// ======================= CARGA INICIAL =======================
 async function init() {
     const relojEl = document.getElementById('reloj-guardado');
     if (relojEl) relojEl.innerHTML = `<span class="text-muted"><i class="bi bi-arrow-repeat spin me-1"></i>Conectando al sistema...</span>`;
@@ -334,33 +373,10 @@ async function cargarDatos() {
             dataMesas = dataMesas.filter(m => parseInt(m.numero) !== 0);
         }
 
-        // Asegurar que Mesa 1 siempre exista
-        if (!dataMesas.some(m => parseInt(m.numero) === 1)) {
-            dataMesas.unshift({ numero: 1, capacidad: 10, alias: 'Mesa de los Novios' });
-        }
-
         procesarDatosGenerales(); 
 
-        // =========================================================================
-        //  AUTO-HEALING: Reconciliación automática para no perder NINGUNA mesa
-        // =========================================================================
-        const numerosDetectadosEnComensales = new Set();
-        listaComensalesGenerales.forEach(c => {
-            if (c.mesa !== null && c.mesa !== undefined && c.mesa !== "") {
-                numerosDetectadosEnComensales.add(parseInt(c.mesa));
-            }
-        });
-
-        // Si hay comensales asignados a mesas que no tenían tarjeta en dataMesas, crearlas de inmediato
-        numerosDetectadosEnComensales.forEach(numMesa => {
-            if (!dataMesas.some(m => parseInt(m.numero) === numMesa)) {
-                console.info(`Recuperando automáticamente tarjeta de mesa faltante: Mesa ${numMesa}`);
-                dataMesas.push({ numero: numMesa, capacidad: 10, alias: '' });
-            }
-        });
-
-        // Ordenar estrictamente: Mesa 1 primero, luego 2, 3, 4...
-        dataMesas.sort((a, b) => parseInt(a.numero) - parseInt(b.numero));
+        // Recuperar automáticamente cualquier mesa con saltos (como 23 o 101)
+        reconciliarMesasHuerfanas();
 
         dibujarPanelBanqueteria(); 
         dibujarPanelConfirmaciones(); 
@@ -517,6 +533,7 @@ async function guardarCambiosEnBBDD() {
     if (btnTexto) btnTexto.innerText = "Guardando...";
 
     try {
+        reconciliarMesasHuerfanas();
         const payload = prepararPayloadMesas();
         const res = await fetch(SCRIPT_URL, {
             method: 'POST',
@@ -538,13 +555,11 @@ async function guardarCambiosEnBBDD() {
 }
 
 function prepararPayloadMesas() {
-    if (!dataMesas.some(m => parseInt(m.numero) === 1)) {
-        dataMesas.unshift({ numero: 1, capacidad: 10, alias: 'Mesa de los Novios' });
-    }
+    reconciliarMesasHuerfanas();
 
     const mesasPayload = dataMesas.map(m => ({
         numero: parseInt(m.numero),
-        capacidad: parseInt(m.capacidad),
+        capacidad: parseInt(m.capacidad) || 10,
         alias: m.alias || ''
     }));
 
@@ -565,6 +580,7 @@ function prepararPayloadMesas() {
 //    MESAS (MESA 1 FIJA + DESPLAZAMIENTO CON IDENTIDAD 2..N)
 // =========================================================================
 function obtenerProximoNumeroDisponible() {
+    reconciliarMesasHuerfanas();
     const ocupados = dataMesas.map(m => parseInt(m.numero)).filter(n => n >= 2);
     let proximo = 2;
     while (ocupados.includes(proximo)) proximo++;
@@ -581,6 +597,8 @@ function ejecutarCambioNumeroMesa(viejoNum, nuevoNumDeseado) {
         alert("La Mesa 1 es la Mesa de los Novios y no se puede mover.");
         return;
     }
+
+    reconciliarMesasHuerfanas();
 
     const mesa1 = dataMesas.find(m => parseInt(m.numero) === 1);
     let mesasNormales = dataMesas.filter(m => parseInt(m.numero) >= 2);
@@ -619,8 +637,10 @@ function ejecutarCambioNumeroMesa(viejoNum, nuevoNumDeseado) {
     marcarCambioPendienteMesas();
 }
 
-// BOTÓN: RENUMERAR MESAS CONSECUTIVAMENTE (2..N)
+// BOTÓN: RENUMERAR MESAS CONSECUTIVAMENTE (CIERRA SALTOS COMO 23 O 101)
 function renumerarMesasContiguas() {
+    reconciliarMesasHuerfanas();
+
     const mesa1 = dataMesas.find(m => parseInt(m.numero) === 1);
     let mesasNormales = dataMesas.filter(m => parseInt(m.numero) >= 2);
 
@@ -644,13 +664,15 @@ function renumerarMesasContiguas() {
     dibujarPanelMesas();
     dibujarPanelBanqueteria();
     marcarCambioPendienteMesas();
-    alert(`✅ Mesas renumeradas consecutivamente del 2 al ${dataMesas.length}.`);
+    alert(`✅ Mesas renumeradas consecutivamente del 2 al ${dataMesas.length}. Cualquier salto de números fue corregido.`);
 }
 
 function eliminarMesa(num) { 
     num = parseInt(num);
     if (num === 1) return alert("La Mesa 1 de los Novios no se puede eliminar.");
     if(!confirm(`¿Eliminar la Mesa ${num}? Sus comensales volverán a 'Por Asignar' y las mesas siguientes se compactarán.`)) return; 
+
+    reconciliarMesasHuerfanas();
 
     listaComensalesGenerales.forEach(c => { 
         if(parseInt(c.mesa) === num) c.mesa = null; 
@@ -682,6 +704,7 @@ function eliminarMesa(num) {
 }
 
 function dibujarPanelMesas() {
+    reconciliarMesasHuerfanas();
     actualizarKPIMesas();
     dibujarListaSinAsignar();
     dibujarGridMesas();
@@ -695,7 +718,7 @@ function actualizarKPIMesas() {
     dataMesas.forEach(m => {
         const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === parseInt(m.numero)).length;
         sillasOcupadas += ocupantes;
-        sillasTotales += parseInt(m.capacidad);
+        sillasTotales += (parseInt(m.capacidad) || 10);
     });
 
     const pct = sillasTotales > 0 ? Math.round((sillasOcupadas / sillasTotales) * 100) : 0;
@@ -742,14 +765,13 @@ function dibujarGridMesas() {
         const esMesaNovios = (num === 1);
         const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === num);
         const cant = ocupantes.length;
-        const cap = parseInt(mesa.capacidad);
+        const cap = parseInt(mesa.capacidad) || 10;
         const estaLlena = (cant >= cap);
 
         if (filtroMesasEstado === 'disponibles' && estaLlena) return;
         if (filtroMesasEstado === 'llenas' && !estaLlena) return;
         if (filtroMesasEstado === 'novios' && !esMesaNovios) return;
 
-        // FILAS LIMPIAS: TORPEDO + NOMBRE + BOTÓN QUITAR
         let htmlOcupantes = "";
         ocupantes.forEach(c => {
             const torpedoClass = c.lado === 'Novia' ? 'torpedo-novia' : (c.lado === 'Ambos' ? 'torpedo-ambos' : 'torpedo-novio');
@@ -897,7 +919,7 @@ function cambiarNumero(viejoNum) {
 function crearMesaNormal() {
     const cap = document.getElementById('nueva-mesa-cap').value;
     const num = obtenerProximoNumeroDisponible();
-    dataMesas.push({ numero: num, capacidad: parseInt(cap), alias: '' });
+    dataMesas.push({ numero: num, capacidad: parseInt(cap) || 10, alias: '' });
     dataMesas.sort((a, b) => parseInt(a.numero) - parseInt(b.numero));
     dibujarPanelMesas();
     marcarCambioPendienteMesas();
@@ -930,9 +952,11 @@ function buscarComensalEnMesas(val) {
     document.querySelectorAll('.mesa-card').forEach(card => card.classList.remove('highlight-mesa'));
     if(term.length < 2) return;
 
+    // 1. Buscar por nombre de comensal
     const comensal = listaComensalesGenerales.find(c => c.mesa !== null && quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term));
     let mesaObjetivo = comensal ? parseInt(comensal.mesa) : null;
 
+    // 2. Buscar por alias o número de mesa si no coincide con comensal
     if (!mesaObjetivo) {
         const mesa = dataMesas.find(m => {
             const aliasMatch = m.alias && quitarTildes(m.alias.toLowerCase()).includes(term);
@@ -985,7 +1009,7 @@ function abrirModalAsignarDirecto(idDrag, mesaActual = null) {
         const num = parseInt(m.numero);
         const esNovios = (num === 1);
         const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === num).length;
-        const cap = parseInt(m.capacidad);
+        const cap = parseInt(m.capacidad) || 10;
         const alias = m.alias ? ` (${m.alias})` : '';
 
         const opt = document.createElement('option');
@@ -1013,7 +1037,7 @@ function ejecutarMoverDesdeModal() {
     } else {
         const mesaNum = parseInt(selectVal);
         const mesaObj = dataMesas.find(m => parseInt(m.numero) === mesaNum);
-        const cap = mesaObj ? parseInt(mesaObj.capacidad) : 10;
+        const cap = mesaObj ? (parseInt(mesaObj.capacidad) || 10) : 10;
         const ocupados = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === mesaNum).length;
         intentarAsignar(comensalModalActivo.id_drag, mesaNum, cap, ocupados);
     }
