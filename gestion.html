@@ -4,16 +4,160 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Gestión - Matrimonio</title>
+    
+    <!-- Fuentes elegantes originales -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="gestion.css">
     
     <script src="https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --oro: #b59a7a;
+            --oro-novios: #d4af37;
+            --oscuro: #2d2d2d;
+            --crema-bg: #f4f1ea;
+            --fiesta-color: #6f42c1;
+            --color-novio: #2b5b84;
+            --color-novia: #c75b7a;
+            --color-ambos: #28a745;
+        }
+
+        body { 
+            background: var(--crema-bg); 
+            font-family: 'Montserrat', sans-serif; 
+            overflow-x: hidden; 
+            padding-bottom: 50px; 
+            color: var(--oscuro);
+        }
+
+        /* Pantalla de Bloqueo */
+        #pantalla-bloqueo { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: var(--crema-bg); z-index: 9999; 
+            display: flex; align-items: center; justify-content: center; flex-direction: column; 
+        }
+        .login-box { 
+            background: white; padding: 40px; border-radius: 8px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; 
+            max-width: 90%; width: 400px; border-top: 4px solid var(--oro); 
+        }
+
+        /* Botones y Navegación Original */
+        .btn-gold { background: var(--oro); color: white; border: none; font-weight: 500; }
+        .btn-gold:hover { background: var(--oscuro); color: white; }
+
+        .nav-pills .nav-link { 
+            color: #888; font-weight: 500; border-radius: 4px; margin: 0 5px; transition: 0.3s;
+        }
+        .nav-pills .nav-link:hover { background-color: rgba(181, 154, 122, 0.1); color: var(--oro); }
+        .nav-pills .nav-link.active { background-color: var(--oro); color: white; box-shadow: 0 4px 10px rgba(181, 154, 122, 0.3); }
+
+        /* Tarjetas de Estadísticas Originales */
+        .stat-card { 
+            background: white; border-radius: 8px; padding: 20px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; 
+            border-top: 4px solid var(--oro); height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; transition: 0.3s;
+        }
+        .stat-card.static { border-top-color: var(--oscuro); cursor: default; }
+        .stat-card.filtrable { cursor: pointer; }
+        .stat-card.filtrable:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .stat-card.active-filter { background: var(--oro); color: white; border-top: 4px solid var(--oscuro); }
+        .stat-card.active-filter h6, .stat-card.active-filter .stat-val { color: white !important; }
+        .stat-val { font-size: 1.8rem; font-weight: bold; color: var(--oscuro); }
+
+        .table-container { 
+            background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+        }
+
+        /* Panel Izquierdo Fijo (Por Asignar) */
+        .sticky-panel { 
+            position: sticky; top: 15px; z-index: 90; transition: 0.3s; 
+        }
+        @media (max-width: 991px) {
+            .sticky-panel { top: 10px; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.15); border-bottom: 3px solid var(--oro); }
+            #lista-sin-asignar { max-height: 25vh !important; }
+        }
+
+        /* Barra de Control de Mesas Fija Arriba al hacer Scroll */
+        .sticky-mesas-menu {
+            position: sticky; top: 10px; z-index: 95;
+            background: rgba(244, 241, 234, 0.97); backdrop-filter: blur(6px);
+            padding: 4px 0; margin-bottom: 15px;
+        }
+
+        /* Tarjeta Original de Mesa */
+        .mesa-card { 
+            background: white; border-radius: 8px; border-top: 4px solid var(--oro); 
+            padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; transition: 0.2s;
+        }
+        .mesa-card.mesa-novios { 
+            border-top: 4px solid var(--oro-novios) !important; 
+            background: #fffcf5; 
+        }
+        .mesa-card.highlight-mesa {
+            border: 2px solid var(--oro-novios) !important;
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.45) !important;
+        }
+        .mesa-alias { font-size: 0.78rem; color: #888; font-style: italic; cursor: pointer; }
+        .mesa-alias:hover { color: var(--oro); text-decoration: underline; }
+
+        /* Fila Original de Comensal */
+        .guest-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; background: white;
+        }
+        .guest-item:last-child { border-bottom: none; }
+        .draggable-guest { cursor: grab; transition: background 0.2s; border-radius: 4px; }
+        .draggable-guest:hover { background: #fdfbf7; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* Dropzone */
+        .drop-zone { 
+            min-height: 100px; padding: 10px; margin: -10px; border-radius: 8px; border: 2px dashed transparent; transition: 0.2s; 
+        }
+        .drop-zone.dragover { border-color: var(--oro); background: rgba(181, 154, 122, 0.05); }
+
+        /* Torpedo Emoji (Novio / Novia) */
+        .torpedo-badge {
+            width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 4px; font-size: 0.75rem; flex-shrink: 0; color: white; margin-right: 6px;
+        }
+        .torpedo-novio { background-color: var(--color-novio); }
+        .torpedo-novia { background-color: var(--color-novia); }
+        .torpedo-ambos { background-color: var(--color-ambos); }
+
+        .action-icon { cursor: pointer; color: #888; transition: 0.2s; font-size: 1.1rem; }
+        .action-icon:hover { color: var(--oscuro); }
+        .trash-icon:hover { color: #dc3545; }
+        .cursor-move { cursor: grab; font-size: 1.1rem; }
+
+        .badge-nino { background-color: #8c775e; color: white; font-size: 0.7rem; }
+        .badge-novio { background-color: var(--color-novio); color: white; }
+        .badge-novia { background-color: var(--color-novia); color: white; }
+        .badge-ambos { background-color: var(--color-ambos); color: white; }
+
+        .lado-selector { cursor: pointer; transition: 0.2s; }
+        .lado-selector:hover { opacity: 0.85; transform: scale(1.05); }
+
+        .dieta-editable { cursor: pointer; border-bottom: 1px dashed var(--oro); transition: 0.2s; }
+        .dieta-editable:hover { color: var(--oro); font-weight: bold; }
+
+        /* Notificación de Sincronización */
+        #network-status { 
+            position: fixed; bottom: 15px; right: 15px; background: rgba(0,0,0,0.85); 
+            color: white; padding: 8px 18px; border-radius: 30px; font-size: 0.85rem; 
+            display: none; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .spin { display: inline-block; animation: spin 1s linear infinite; }
+    </style>
 </head>
 <body class="p-2 p-md-4 p-xl-5">
 
-    <div id="network-status"><i class="bi bi-arrow-repeat spin me-2"></i>Sincronizando...</div>
+    <div id="network-status"><i class="bi bi-arrow-repeat spin me-2"></i>Guardando...</div>
 
     <!-- PANTALLA DE BLOQUEO -->
     <div id="pantalla-bloqueo">
@@ -83,7 +227,7 @@
                         </div>
                     </div>
 
-                    <!-- FILTROS RÁPIDOS Y BUSCADOR AMPLIADO (COMENSAL, ALIAS O NÚMERO) -->
+                    <!-- FILTROS RÁPIDOS Y BUSCADOR AMPLIADO -->
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-2 bg-white p-2 rounded border shadow-sm">
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-outline-secondary active" id="filtro-mesa-todas" onclick="filtrarMesasVista('todas')">Todas</button>
@@ -93,13 +237,13 @@
                         </div>
 
                         <div class="position-relative" style="min-width: 280px;">
-                            <input type="text" id="buscador-global-mesas" class="form-control form-control-sm" placeholder="🔍 Buscar comensal, alias o número de mesa..." autocomplete="off" oninput="buscarComensalEnMesas(this.value)">
+                            <input type="text" id="buscador-global-mesas" class="form-control form-control-sm" placeholder="🔍 Buscar comensal, alias o número..." autocomplete="off" oninput="buscarComensalEnMesas(this.value)">
                         </div>
                     </div>
                 </div>
 
-                <div class="row">
-                    <!-- PANEL IZQUIERDO: POR ASIGNAR -->
+                <div class="row mt-2">
+                    <!-- BANDEJA POR ASIGNAR -->
                     <div class="col-12 col-lg-4 col-xl-3 mb-4">
                         <div class="bg-white p-3 rounded shadow-sm sticky-panel border">
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -113,7 +257,7 @@
                         </div>
                     </div>
 
-                    <!-- SALÓN DE MESAS: MESA 1 (NOVIOS) + MESAS 2..N -->
+                    <!-- SALÓN DE MESAS -->
                     <div class="col-12 col-lg-8 col-xl-9">
                         <div class="row" id="contenedor-mesas"></div>
                     </div>
@@ -175,7 +319,7 @@
                                     <div class="small text-muted" id="status-sheet-sync">Listo para conectar</div>
                                     <div>
                                         <input type="file" id="input-csv-fiesta" accept=".csv" style="display:none;" onchange="cargarCSVLocalFiesta(event)">
-                                        <button class="btn btn-outline-secondary btn-sm py-0 px-2 me-2" onclick="document.getElementById('input-csv-fiesta').click()"><i class="bi bi-upload me-1"></i>Subir CSV Manual</button>
+                                        <button class="btn btn-outline-secondary btn-sm py-0 px-2 me-2" onclick="document.getElementById('input-csv-fiesta').click()"><i class="bi bi-upload me-1"></i>Subir CSV</button>
                                         <button class="btn btn-sm text-white py-0 px-2" style="background:var(--fiesta-color);" onclick="exportarExcelFiesta()"><i class="bi bi-file-earmark-excel me-1"></i>Excel Fiesta</button>
                                     </div>
                                 </div>
@@ -381,7 +525,7 @@
         </div>
     </div>
 
-    <!-- MODALES -->
+    <!-- MODAL AGREGAR INVITADO MAESTRA -->
     <div class="modal fade" id="modalAgregarInvitado" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -421,6 +565,7 @@
         </div>
     </div>
 
+    <!-- MODAL ASIGNAR MESA 1-CLIC -->
     <div class="modal fade" id="modalMoverMesa" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -441,9 +586,25 @@
         </div>
     </div>
 
+    <!-- MODAL SENTAR EN ESTA MESA -->
+    <div class="modal fade" id="modalSentarEnMesa" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title fw-bold" id="modalSentarMesaTitulo">Sentar comensal</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control form-control-sm mb-3" id="modal-buscar-sin-asignar" placeholder="🔍 Buscar comensal sin mesa..." oninput="filtrarModalSinAsignar(this.value)">
+                    <div class="list-group list-group-flush" id="modal-lista-candidatos" style="max-height: 250px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- DESBLOQUEO INLINE Y SESIÓN -->
+    <!-- SCRIPT DE DESBLOQUEO INLINE Y SESIÓN -->
     <script>
         function verificarPIN() {
             const input = document.getElementById('input-pin');
@@ -485,6 +646,6 @@
             });
         }
     </script>
-    <script src="gestion.js?v=9"></script>
+    <script src="gestion.js?v=10"></script>
 </body>
 </html>

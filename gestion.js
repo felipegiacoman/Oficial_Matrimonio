@@ -1,4 +1,4 @@
-// Conexión directa a tu servidor
+// URL directa a tu servidor
 const WORKER_URL_DEFAULT = "https://rsvp-api.felipegiacoman.workers.dev";
 let SCRIPT_URL = WORKER_URL_DEFAULT;
 let CSV_FIESTA_URL = localStorage.getItem('urlGoogleSheetFiesta') || "fiesta.csv";
@@ -30,7 +30,6 @@ function marcarCambioPendienteMesas() {
     if (btn) btn.className = "btn btn-warning btn-sm fw-bold px-3 py-2 shadow-sm";
     if (btnTexto) btnTexto.innerHTML = `Guardar Cambios <span class="badge bg-danger ms-1">●</span>`;
 
-    // Auto-guardado en segundo plano tras 2 segundos de inactividad
     clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => {
         ejecutarGuardadoSilencioso();
@@ -116,7 +115,7 @@ async function processQueue() {
             syncQueue.shift(); 
             saveQueue();
         } catch (error) {
-            console.warn("Sin conexión. Reintentando...", error);
+            console.warn("Reintentando acción...", error);
             isSyncing = false;
             setTimeout(processQueue, 3000); 
             return;
@@ -487,7 +486,7 @@ async function ejecutarGuardadoSilencioso() {
         });
         marcarCambiosGuardadosMesas();
     } catch(e) {
-        console.warn("Auto-guardado pendiente de reintento...", e);
+        console.warn("Auto-guardado pendiente...", e);
     }
 }
 
@@ -563,17 +562,14 @@ function ejecutarCambioNumeroMesa(viejoNum, nuevoNumDeseado) {
         return;
     }
 
-    // Separar Mesa 1 de las mesas normales
     const mesa1 = dataMesas.find(m => parseInt(m.numero) === 1);
     let mesasNormales = dataMesas.filter(m => parseInt(m.numero) >= 2);
 
     const indexOrigen = mesasNormales.findIndex(m => parseInt(m.numero) === viejoNum);
     if (indexOrigen === -1) return;
 
-    // Remover la mesa que se mueve
     const [mesaMovida] = mesasNormales.splice(indexOrigen, 1);
 
-    // Encontrar dónde insertarla
     let indexDestino = mesasNormales.findIndex(m => parseInt(m.numero) === nuevoNumDeseado);
     if (indexDestino === -1) {
         mesasNormales.push(mesaMovida);
@@ -581,7 +577,6 @@ function ejecutarCambioNumeroMesa(viejoNum, nuevoNumDeseado) {
         mesasNormales.splice(indexDestino, 0, mesaMovida);
     }
 
-    // Renumerar contiguamente del 2 en adelante
     const mapaCambios = {};
     mesasNormales.forEach((m, idx) => {
         const numAnterior = parseInt(m.numero);
@@ -592,7 +587,6 @@ function ejecutarCambioNumeroMesa(viejoNum, nuevoNumDeseado) {
         }
     });
 
-    // Actualizar comensales que estaban en esas mesas
     listaComensalesGenerales.forEach(c => {
         if (c.mesa !== null && mapaCambios[parseInt(c.mesa)]) {
             c.mesa = mapaCambios[parseInt(c.mesa)];
@@ -638,12 +632,10 @@ function eliminarMesa(num) {
     if (num === 1) return alert("La Mesa 1 de los Novios no se puede eliminar.");
     if(!confirm(`¿Eliminar la Mesa ${num}? Sus comensales volverán a 'Por Asignar' y las mesas siguientes se compactarán.`)) return; 
 
-    // 1. Quitar comensales de la mesa eliminada
     listaComensalesGenerales.forEach(c => { 
         if(parseInt(c.mesa) === num) c.mesa = null; 
     });
 
-    // 2. Compactar mesas siguientes (no dejar huecos)
     const mesa1 = dataMesas.find(m => parseInt(m.numero) === 1);
     let mesasNormales = dataMesas.filter(m => parseInt(m.numero) >= 2 && parseInt(m.numero) !== num);
 
@@ -912,7 +904,7 @@ function editarAliasMesa(num) {
     marcarCambioPendienteMesas();
 }
 
-// ======================= BUSCADOR AMPLIADO (COMENSAL, ALIAS O NÚMERO) =======================
+// ======================= BUSCADOR AMPLIADO =======================
 function buscarComensalEnMesas(val) {
     const term = quitarTildes(val.toLowerCase().trim());
     document.querySelectorAll('.mesa-card').forEach(card => card.classList.remove('highlight-mesa'));
@@ -1618,7 +1610,7 @@ function exportarExcelConfirmaciones() {
     XLSX.writeFile(wb, "Matrimonio_Confirmaciones.xlsx");
 }
 
-// Auto-arranque si ya estás dentro de la sesión
+// Auto-arranque de sesión
 if (sessionStorage.getItem('matri_unlocked')) {
     init();
 }
