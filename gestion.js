@@ -1,4 +1,4 @@
-// URL directa a tu servidor
+// Conexión directa al servidor
 const WORKER_URL_DEFAULT = "https://rsvp-api.felipegiacoman.workers.dev";
 let SCRIPT_URL = WORKER_URL_DEFAULT;
 let CSV_FIESTA_URL = localStorage.getItem('urlGoogleSheetFiesta') || "fiesta.csv";
@@ -30,6 +30,7 @@ function marcarCambioPendienteMesas() {
     if (btn) btn.className = "btn btn-warning btn-sm fw-bold px-3 py-2 shadow-sm";
     if (btnTexto) btnTexto.innerHTML = `Guardar Cambios <span class="badge bg-danger ms-1">●</span>`;
 
+    // Auto-guardado en segundo plano tras 2 segundos de inactividad
     clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => {
         ejecutarGuardadoSilencioso();
@@ -275,7 +276,7 @@ function exportarExcelFiesta() {
     XLSX.writeFile(wb, "Matrimonio_Fiesta.xlsx");
 }
 
-// ======================= CARGA INICIAL =======================
+// ======================= CARGA INICIAL ROBUSTA =======================
 async function init() {
     const relojEl = document.getElementById('reloj-guardado');
     if (relojEl) relojEl.innerHTML = `<span class="text-muted"><i class="bi bi-arrow-repeat spin me-1"></i>Conectando al sistema...</span>`;
@@ -333,15 +334,34 @@ async function cargarDatos() {
             dataMesas = dataMesas.filter(m => parseInt(m.numero) !== 0);
         }
 
-        // Asegurar que Mesa 1 siempre exista como la Mesa de los Novios
+        // Asegurar que Mesa 1 siempre exista
         if (!dataMesas.some(m => parseInt(m.numero) === 1)) {
             dataMesas.unshift({ numero: 1, capacidad: 10, alias: 'Mesa de los Novios' });
         }
 
+        procesarDatosGenerales(); 
+
+        // =========================================================================
+        //  AUTO-HEALING: Reconciliación automática para no perder NINGUNA mesa
+        // =========================================================================
+        const numerosDetectadosEnComensales = new Set();
+        listaComensalesGenerales.forEach(c => {
+            if (c.mesa !== null && c.mesa !== undefined && c.mesa !== "") {
+                numerosDetectadosEnComensales.add(parseInt(c.mesa));
+            }
+        });
+
+        // Si hay comensales asignados a mesas que no tenían tarjeta en dataMesas, crearlas de inmediato
+        numerosDetectadosEnComensales.forEach(numMesa => {
+            if (!dataMesas.some(m => parseInt(m.numero) === numMesa)) {
+                console.info(`Recuperando automáticamente tarjeta de mesa faltante: Mesa ${numMesa}`);
+                dataMesas.push({ numero: numMesa, capacidad: 10, alias: '' });
+            }
+        });
+
         // Ordenar estrictamente: Mesa 1 primero, luego 2, 3, 4...
         dataMesas.sort((a, b) => parseInt(a.numero) - parseInt(b.numero));
 
-        procesarDatosGenerales(); 
         dibujarPanelBanqueteria(); 
         dibujarPanelConfirmaciones(); 
         dibujarPanelMesas();
@@ -602,7 +622,7 @@ function ejecutarCambioNumeroMesa(viejoNum, nuevoNumDeseado) {
 // BOTÓN: RENUMERAR MESAS CONSECUTIVAMENTE (2..N)
 function renumerarMesasContiguas() {
     const mesa1 = dataMesas.find(m => parseInt(m.numero) === 1);
-    const mesasNormales = dataMesas.filter(m => parseInt(m.numero) >= 2);
+    let mesasNormales = dataMesas.filter(m => parseInt(m.numero) >= 2);
 
     const mapaCambios = {};
     mesasNormales.forEach((m, idx) => {
@@ -910,11 +930,9 @@ function buscarComensalEnMesas(val) {
     document.querySelectorAll('.mesa-card').forEach(card => card.classList.remove('highlight-mesa'));
     if(term.length < 2) return;
 
-    // 1. Buscar por nombre de comensal
     const comensal = listaComensalesGenerales.find(c => c.mesa !== null && quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term));
     let mesaObjetivo = comensal ? parseInt(comensal.mesa) : null;
 
-    // 2. Buscar por alias o número de mesa si no coincide con comensal
     if (!mesaObjetivo) {
         const mesa = dataMesas.find(m => {
             const aliasMatch = m.alias && quitarTildes(m.alias.toLowerCase()).includes(term);
@@ -1610,7 +1628,7 @@ function exportarExcelConfirmaciones() {
     XLSX.writeFile(wb, "Matrimonio_Confirmaciones.xlsx");
 }
 
-// Auto-arranque de sesión
+// Auto-arranque si ya estás dentro de la sesión
 if (sessionStorage.getItem('matri_unlocked')) {
     init();
 }
