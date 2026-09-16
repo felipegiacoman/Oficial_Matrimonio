@@ -17,7 +17,7 @@ body {
     color: var(--oscuro);
 }
 
-/* Pantalla de Bloqueo */
+/* Pantalla de Bloqueo / Acceso */
 #pantalla-bloqueo { 
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
     background: var(--crema-bg); z-index: 9999; 
@@ -89,7 +89,7 @@ body {
 .mesa-alias { font-size: 0.78rem; color: #888; font-style: italic; cursor: pointer; }
 .mesa-alias:hover { color: var(--oro); text-decoration: underline; }
 
-/* Fila de Comensal */
+/* Fila de Comensal en Mesa */
 .guest-item { 
     display: flex; justify-content: space-between; align-items: center; 
     padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; background: white;
@@ -98,7 +98,7 @@ body {
 .draggable-guest { cursor: grab; transition: background 0.2s; border-radius: 4px; }
 .draggable-guest:hover { background: #fdfbf7; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-/* Dropzone */
+/* Dropzones */
 .drop-zone { 
     min-height: 100px; padding: 10px; margin: -10px; border-radius: 8px; border: 2px dashed transparent; transition: 0.2s; 
 }
@@ -129,7 +129,7 @@ body {
 .dieta-editable { cursor: pointer; border-bottom: 1px dashed var(--oro); transition: 0.2s; }
 .dieta-editable:hover { color: var(--oro); font-weight: bold; }
 
-/* Visualizador Gráfico de Mesa Redonda (Modal de Asientos) */
+/* Visualizador Gráfico de Asientos en Círculo (Modal Abrir Mesa) */
 .circle-table-wrapper {
     position: relative; width: 340px; height: 340px; margin: 0 auto;
     display: flex; align-items: center; justify-content: center;
@@ -149,7 +149,7 @@ body {
 .chair-pod-node:hover { transform: scale(1.1); border-color: var(--oro); }
 .chair-pod-node.is-empty { border: 1.5px dashed #ccc; background: #fafafa; color: #999; }
 
-/* Notificación Flotante */
+/* Notificación Flotante de Red */
 #network-status { 
     position: fixed; bottom: 15px; right: 15px; background: rgba(0,0,0,0.85); 
     color: white; padding: 8px 18px; border-radius: 30px; font-size: 0.85rem; 

@@ -69,9 +69,9 @@
                                 <i class="bi bi-cloud-check-fill me-1"></i> <span id="btn-guardar-texto">Guardar Cambios</span>
                             </button>
 
-                            <!-- BOTÓN DESHACER (CTRL+Z) -->
-                            <button id="btn-undo-mesas" class="btn btn-outline-secondary btn-sm py-2 px-3 fw-bold" title="Deshacer último cambio (Ctrl + Z)" onclick="deshacerUltimoCambio()" disabled>
-                                <i class="bi bi-arrow-counterclockwise me-1"></i>Deshacer
+                            <!-- BOTÓN DESHACER (CTRL + Z) -->
+                            <button id="btn-undo-mesas" class="btn btn-outline-secondary btn-sm py-2 px-3 fw-bold" title="Deshacer último cambio (Ctrl + Z)" onclick="deshacerUltimoCambio()">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Deshacer <span id="undo-badge" class="badge bg-secondary ms-1" style="display:none;">0</span>
                             </button>
                             
                             <div class="d-inline-flex gap-1 align-items-center">
@@ -84,7 +84,7 @@
                             </div>
 
                             <button class="btn btn-outline-dark btn-sm py-2 px-2 text-nowrap" title="Renumerar consecutivamente del 2 en adelante sin huecos" onclick="renumerarMesasContiguas()">
-                                <i class="bi bi-sort-numeric-down me-1"></i>Renumerar
+                                <i class="bi bi-sort-numeric-down me-1"></i>Renumerar Mesas
                             </button>
                             <button class="btn btn-outline-secondary btn-sm py-2 px-2" onclick="exportarExcelMesas()"><i class="bi bi-file-earmark-excel"></i></button>
                         </div>
@@ -99,8 +99,8 @@
                             <button type="button" class="btn btn-outline-secondary" id="filtro-mesa-novios" onclick="filtrarMesasVista('novios')">👑 Mesa 1: Novios</button>
                         </div>
 
-                        <div class="position-relative" style="min-width: 300px;">
-                            <input type="text" id="buscador-global-mesas" class="form-control form-control-sm" placeholder="🔍 Buscar comensal, alias o número de mesa..." autocomplete="off" oninput="buscarComensalEnMesas(this.value)">
+                        <div class="position-relative" style="min-width: 320px;">
+                            <input type="text" id="buscador-global-mesas" class="form-control form-control-sm" placeholder="🔍 Buscar comensal, alias (ej: Colegio) o número..." autocomplete="off" oninput="buscarComensalEnMesas(this.value)">
                         </div>
                     </div>
                 </div>
@@ -114,7 +114,7 @@
                                 <span class="badge bg-light text-muted border">Arrastra o "Sentar"</span>
                             </div>
 
-                            <!-- FILTRO RÁPIDO DE INVITADOS POR ASIGNAR -->
+                            <!-- FILTRO RÁPIDO EN POR ASIGNAR -->
                             <div class="btn-group btn-group-sm w-100 mb-2" role="group">
                                 <button type="button" class="btn btn-outline-secondary active py-0" id="btn-sin-filtro-todos" onclick="filtrarSinAsignarLado('todos')">Todos</button>
                                 <button type="button" class="btn btn-outline-secondary py-0" id="btn-sin-filtro-novio" onclick="filtrarSinAsignarLado('Novio')">🤵 Novio</button>
@@ -187,11 +187,11 @@
                             </div>
                         </div>
 
-                        <!-- Invitados Fiesta (Enlace en Duro y Sincronizado) -->
+                        <!-- Invitados Fiesta (Enlace en Duro Automático) -->
                         <div class="tab-pane fade" id="subtab-fiesta">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="small text-muted"><i class="bi bi-cloud-check-fill text-success me-1"></i>Sincronizado automáticamente con Google Sheets</span>
-                                <button class="btn btn-sm text-white py-0 px-3" style="background:var(--fiesta-color);" onclick="exportarExcelFiesta()"><i class="bi bi-file-earmark-excel me-1"></i>Excel Fiesta</button>
+                                <span class="small text-muted"><i class="bi bi-cloud-check-fill text-success me-1"></i>Sincronizado automáticamente con Google Sheets de la Fiesta</span>
+                                <button class="btn btn-sm text-white py-1 px-3" style="background:var(--fiesta-color);" onclick="exportarExcelFiesta()"><i class="bi bi-file-earmark-excel me-1"></i>Excel Fiesta</button>
                             </div>
 
                             <input type="text" id="buscador-fiesta" class="form-control form-control-sm mb-3" placeholder="🔍 Buscar invitado de fiesta..." autocomplete="off" oninput="dibujarTablaFiesta()">
@@ -434,7 +434,7 @@
         </div>
     </div>
 
-    <!-- MODAL SENTAR EN MESA (CON FOCO AUTOMÁTICO EN EL BUSCADOR) -->
+    <!-- MODAL SENTAR EN MESA (AUTO-FOCUS EN EL BUSCADOR) -->
     <div class="modal fade" id="modalSentarEnMesa" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -450,7 +450,7 @@
         </div>
     </div>
 
-    <!-- MODAL PLANO VISUAL DE ASIENTOS DE LA MESA -->
+    <!-- MODAL PLANO VISUAL DE ASIENTOS DE LA MESA (ABRIR MESA) -->
     <div class="modal fade" id="modalPlanoMesa" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -483,7 +483,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalConfirmarCuerpo">
-                    <!-- Dinámico -->
+                    <!-- Contenido dinámico -->
                 </div>
             </div>
         </div>
@@ -512,7 +512,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- SCRIPT DE DESBLOQUEO INLINE Y RECUPERACIÓN DE SESIÓN -->
+    <!-- SCRIPT DE DESBLOQUEO INLINE Y SESIÓN -->
     <script>
         function verificarPIN() {
             const input = document.getElementById('input-pin');
@@ -554,6 +554,6 @@
             });
         }
     </script>
-    <script src="gestion.js?v=11"></script>
+    <script src="gestion.js?v=12"></script>
 </body>
 </html>
