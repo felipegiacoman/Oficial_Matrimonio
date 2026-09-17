@@ -17,7 +17,7 @@ body {
     color: var(--oscuro);
 }
 
-/* Pantalla de Bloqueo / Acceso */
+/* Pantalla de Bloqueo */
 #pantalla-bloqueo { 
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
     background: var(--crema-bg); z-index: 9999; 
@@ -39,7 +39,7 @@ body {
 .nav-pills .nav-link:hover { background-color: rgba(181, 154, 122, 0.1); color: var(--oro); }
 .nav-pills .nav-link.active { background-color: var(--oro); color: white; box-shadow: 0 4px 10px rgba(181, 154, 122, 0.3); }
 
-/* Estadísticas Superiores */
+/* Estadísticas */
 .stat-card { 
     background: white; border-radius: 8px; padding: 20px; 
     box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; 
@@ -66,14 +66,14 @@ body {
     #lista-sin-asignar { max-height: 25vh !important; }
 }
 
-/* Barra de Mesas Fija Arriba al hacer Scroll */
+/* Barra de Mesas Fija Arriba al Scrollear */
 .sticky-mesas-menu {
     position: sticky; top: 10px; z-index: 95;
-    background: rgba(244, 241, 234, 0.98); backdrop-filter: blur(6px);
+    background: rgba(244, 241, 234, 0.97); backdrop-filter: blur(6px);
     padding: 4px 0; margin-bottom: 15px;
 }
 
-/* Tarjeta Original de Mesa */
+/* Tarjeta de Mesa */
 .mesa-card { 
     background: white; border-radius: 8px; border-top: 4px solid var(--oro); 
     padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; transition: 0.2s;
@@ -89,7 +89,7 @@ body {
 .mesa-alias { font-size: 0.78rem; color: #888; font-style: italic; cursor: pointer; }
 .mesa-alias:hover { color: var(--oro); text-decoration: underline; }
 
-/* Fila de Comensal en Mesa */
+/* Fila de Comensal */
 .guest-item { 
     display: flex; justify-content: space-between; align-items: center; 
     padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; background: white;
@@ -98,7 +98,7 @@ body {
 .draggable-guest { cursor: grab; transition: background 0.2s; border-radius: 4px; }
 .draggable-guest:hover { background: #fdfbf7; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-/* Dropzones */
+/* Dropzone */
 .drop-zone { 
     min-height: 100px; padding: 10px; margin: -10px; border-radius: 8px; border: 2px dashed transparent; transition: 0.2s; 
 }
@@ -113,7 +113,7 @@ body {
 .torpedo-novia { background-color: var(--color-novia); }
 .torpedo-ambos { background-color: var(--color-ambos); }
 
-.action-icon { cursor: pointer; color: #888; transition: 0.2s; font-size: 1.05rem; }
+.action-icon { cursor: pointer; color: #888; transition: 0.2s; font-size: 1.1rem; }
 .action-icon:hover { color: var(--oscuro); }
 .trash-icon:hover { color: #dc3545; }
 .cursor-move { cursor: grab; font-size: 1.1rem; }
@@ -129,27 +129,80 @@ body {
 .dieta-editable { cursor: pointer; border-bottom: 1px dashed var(--oro); transition: 0.2s; }
 .dieta-editable:hover { color: var(--oro); font-weight: bold; }
 
-/* Visualizador Gráfico de Asientos en Círculo (Modal Abrir Mesa) */
-.circle-table-wrapper {
-    position: relative; width: 340px; height: 340px; margin: 0 auto;
-    display: flex; align-items: center; justify-content: center;
+/* ========================================================================= */
+/*               PLANO VISUAL INTERACTIVO DE MESA CIRCULAR                   */
+/* ========================================================================= */
+.table-stage {
+    position: relative;
+    width: 320px;
+    height: 320px;
+    margin: 20px auto;
 }
-.circle-table-center {
-    width: 140px; height: 140px; border-radius: 50%;
-    background: #faf6f0; border: 3px solid var(--oro);
-    display: flex; align-items: center; justify-content: center; flex-direction: column;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.06); text-align: center; padding: 10px;
-}
-.chair-pod-node {
-    position: absolute; width: 68px; height: 68px; border-radius: 50%;
-    background: white; border: 1.5px solid #ded6c9; box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    display: flex; align-items: center; justify-content: center; flex-direction: column;
-    font-size: 0.65rem; text-align: center; padding: 4px; transition: all 0.2s; cursor: pointer;
-}
-.chair-pod-node:hover { transform: scale(1.1); border-color: var(--oro); }
-.chair-pod-node.is-empty { border: 1.5px dashed #ccc; background: #fafafa; color: #999; }
 
-/* Notificación Flotante de Red */
+.table-center-disc {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: #fffdf8;
+    border: 3px solid var(--oro);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(181, 154, 122, 0.2);
+    padding: 10px;
+}
+
+.table-center-disc.novios {
+    border-color: var(--oro-novios);
+    background: linear-gradient(135deg, #fffdf8 0%, #faf3e6 100%);
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+}
+
+.chair-node {
+    position: absolute;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.chair-node.empty {
+    background: white;
+    border: 2px dashed #ccc;
+    color: #999;
+}
+.chair-node.empty:hover {
+    border-color: var(--oro);
+    color: var(--oro);
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.chair-node.occupied {
+    background: white;
+    border: 2px solid var(--oro);
+    color: var(--oscuro);
+}
+.chair-node.occupied:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+/* Indicador Flotante */
 #network-status { 
     position: fixed; bottom: 15px; right: 15px; background: rgba(0,0,0,0.85); 
     color: white; padding: 8px 18px; border-radius: 30px; font-size: 0.85rem; 
