@@ -28,7 +28,7 @@ let filtroConfirmacionesLadoActual = 'todos';
 let hayCambiosMesas = false;
 let autoSaveTimer = null;
 
-// PILA DE DESHACER (CTRL + Z)
+// PILA DE HISTORIAL PARA DESHACER (CTRL + Z)
 let historialUndo = [];
 
 function guardarSnapshotUndo() {
@@ -157,36 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ======================= COLA DE SINCRONIZACIÓN =======================
-let syncQueue = JSON.parse(localStorage.getItem('matriSyncQueue') || '[]');
-let isSyncing = false;
-
-function saveQueue() { localStorage.setItem('matriSyncQueue', JSON.stringify(syncQueue)); }
-function addToQueue(action) { syncQueue.push(action); saveQueue(); processQueue(); }
-
-async function processQueue() {
-    if (isSyncing || syncQueue.length === 0) return;
-    isSyncing = true;
-    while (syncQueue.length > 0) {
-        const action = syncQueue[0];
-        try {
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(action)
-            });
-            syncQueue.shift(); 
-            saveQueue();
-        } catch (error) {
-            console.warn("Reintentando acción...", error);
-            isSyncing = false;
-            setTimeout(processQueue, 3000); 
-            return;
-        }
-    }
-    isSyncing = false;
-}
-
 function quitarTildes(str) { return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""; }
 function escapeHTML(str) { return str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])) : ""; }
 
@@ -311,6 +281,7 @@ function reconciliarMesasHuerfanas() {
         dataMesas.unshift({ numero: 1, capacidad: 10, alias: 'Mesa de los Novios' });
     }
 
+    // Detectar números de mesas asignados a comensales (incluso saltos como 23 o 101)
     const numerosDetectados = new Set();
     listaComensalesGenerales.forEach(c => {
         if (c.mesa !== null && c.mesa !== undefined && c.mesa !== "") {
@@ -319,9 +290,11 @@ function reconciliarMesasHuerfanas() {
         }
     });
 
+    // Crear tarjetas para cualquier mesa que tenga comensales y falte en dataMesas
     let huboRescate = false;
     numerosDetectados.forEach(numMesa => {
         if (!dataMesas.some(m => parseInt(m.numero) === numMesa)) {
+            console.warn(`[Auto-Healing] Recuperando mesa ${numMesa} con comensales asignados`);
             dataMesas.push({ numero: numMesa, capacidad: 10, alias: '' });
             huboRescate = true;
         }
@@ -355,7 +328,6 @@ async function init() {
     try {
         await cargarDatos();
         cargarDatosFiesta().catch(e => console.warn(e));
-        processQueue();
         actualizarBotonUndo();
     } catch(e) {
         console.error("Error inicial:", e);
@@ -378,7 +350,7 @@ async function cargarDatos() {
         dataCancelados = Array.isArray(resCanc) ? resCanc : [];
         dataMesas = Array.isArray(resMesas) ? resMesas : [];
 
-        // Migrar mesa 0 histórica a Mesa 1
+        // Migrar cualquier mesa 0 histórica a Mesa 1
         const mesaCero = dataMesas.find(m => parseInt(m.numero) === 0);
         if (mesaCero) {
             dataConfirmados.forEach(c => {
@@ -1044,9 +1016,11 @@ function buscarComensalEnMesas(val) {
     document.querySelectorAll('.mesa-card').forEach(card => card.classList.remove('highlight-mesa'));
     if(term.length < 2) return;
 
+    // 1. Buscar por nombre de comensal
     const comensal = listaComensalesGenerales.find(c => c.mesa !== null && quitarTildes(c.nombre_mostrar.toLowerCase()).includes(term));
     let mesaObjetivo = comensal ? parseInt(comensal.mesa) : null;
 
+    // 2. Buscar por alias o número de mesa si no coincide con comensal
     if (!mesaObjetivo) {
         const mesa = dataMesas.find(m => {
             const aliasMatch = m.alias && quitarTildes(m.alias.toLowerCase()).includes(term);
@@ -1193,6 +1167,7 @@ function abrirModalPlanoMesa(numMesa) {
     document.getElementById('modalPlanoMesaTitulo').innerText = esNovios ? `👑 Mesa 1 (Los Novios) - Plano de Asientos` : `Mesa ${numMesa} (${mesaObj.alias || 'Sin alias'}) - Plano de Asientos`;
     document.getElementById('modal-plano-count').innerText = `${ocupantes.length}/${cap}`;
 
+    // Lista izquierda de comensales en la mesa
     let htmlLista = "";
     ocupantes.forEach((c) => {
         const torpedoClass = c.lado === 'Novia' ? 'torpedo-novia' : (c.lado === 'Ambos' ? 'torpedo-ambos' : 'torpedo-novio');
@@ -1208,6 +1183,7 @@ function abrirModalPlanoMesa(numMesa) {
     });
     document.getElementById('modal-plano-lista-comensales').innerHTML = htmlLista || `<div class="p-3 text-muted small text-center">Mesa sin comensales.</div>`;
 
+    // Círculo gráfico derecho (Mesa Redonda)
     const wrapper = document.getElementById('modal-plano-circulo-grafico');
     wrapper.innerHTML = "";
 
@@ -1368,24 +1344,6 @@ function ejecutarConfirmacionAccion(nombrePrincipal, esPareja, opcion) {
     dibujarTablaListaMaestra();
 }
 
-function cancelarDesdePendientes(nombrePrincipal, esPareja) {
-    let msg = esPareja ? `¿Bajar a la pareja de ${nombrePrincipal}?` : `¿Bajar al titular ${nombrePrincipal}?`;
-    if(!confirm(msg)) return;
-    
-    if(!esPareja) {
-        dataCancelados.push({ nombre: nombrePrincipal, mensaje: "Dado de baja" });
-        const ms = dataMaestra.find(m => m.nombre === nombrePrincipal);
-        if(ms && parseInt(ms.pareja) === 1) dataCancelados.push({ nombre: `Pareja de ${nombrePrincipal}`, mensaje: "Titular dado de baja" });
-    } else {
-        dataCancelados.push({ nombre: `Pareja de ${nombrePrincipal}`, mensaje: "Dado de baja" });
-    }
-    
-    procesarDatosGenerales(); 
-    dibujarPanelConfirmaciones(); 
-    dibujarTablaListaMaestra();
-    addToQueue({ tipo: "admin_cancelar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
-}
-
 // ======================= CONFIRMACIONES CON FILTRO GLOBAL NOVIO/NOVIA =======================
 function filtrarConfirmacionesLado(lado) {
     filtroConfirmacionesLadoActual = lado;
@@ -1412,8 +1370,8 @@ function dibujarPanelConfirmaciones() {
 
     const canceladosFiltrados = dataCancelados.filter(c => {
         if (filtroConfirmacionesLadoActual === 'todos') return true;
-        const titularNombre = c.nombre.replace('Pareja de ', '');
-        const m = dataMaestra.find(item => item.nombre === titularNombre);
+        const titularNombre = c.nombre.replace('Pareja de ', '').trim();
+        const m = dataMaestra.find(item => quitarTildes(item.nombre.toLowerCase().trim()) === quitarTildes(titularNombre.toLowerCase()));
         return m ? (m.lado === filtroConfirmacionesLadoActual || m.lado === 'Ambos') : true;
     });
 
@@ -1802,7 +1760,7 @@ function exportarExcelConfirmaciones() {
     XLSX.writeFile(wb, "Matrimonio_Confirmaciones.xlsx");
 }
 
-// Auto-arranque si ya estás dentro de la sesión
+// Auto-arranque de sesión
 if (sessionStorage.getItem('matri_unlocked')) {
     init();
 }
