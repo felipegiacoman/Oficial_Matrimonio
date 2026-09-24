@@ -80,6 +80,7 @@ function deshacerUltimoCambio() {
     listaComensalesGenerales = snap.listaComensales;
     dibujarPanelMesas();
     dibujarPanelBanqueteria();
+    if (mesaPlanoActiva) renderContenidoPlanoMesa(mesaPlanoActiva);
     marcarCambioPendienteMesas();
     actualizarBotonUndo();
 }
@@ -177,6 +178,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.focus(); 
                 input.select(); 
             }
+        });
+    }
+
+    const modalPlano = document.getElementById('modalPlanoMesa');
+    if (modalPlano) {
+        modalPlano.addEventListener('hidden.bs.modal', function () {
+            mesaPlanoActiva = null;
         });
     }
 });
@@ -433,7 +441,7 @@ async function cargarDatos() {
         setupBuscadorBajas();
 
         if (relojEl) {
-            relojEl.innerHTML = `<span class="text-success"><i class="bi bi-shield-check me-1"></i>Sistema conectado (${dataConfirmados.length} confirmados · ${dataMesas.length} mesas)</span>`;
+            relojEl.innerHTML = `<span class="text-success"><i class="bi bi-shield-check me-1"></i>Sistema conectado</span>`;
         }
     } catch(e) { 
         console.error("Error en cargarDatos:", e); 
@@ -984,6 +992,7 @@ function intentarAsignar(idDrag, mesaNum, capMax, capActual, autoPareja = true) 
         comensal.asiento_numero = null;
         dibujarPanelMesas();
         dibujarPanelBanqueteria();
+        if (mesaPlanoActiva) renderContenidoPlanoMesa(mesaPlanoActiva);
         marcarCambioPendienteMesas();
         return;
     }
@@ -1027,6 +1036,7 @@ function intentarAsignar(idDrag, mesaNum, capMax, capActual, autoPareja = true) 
 
     dibujarPanelMesas(); 
     dibujarPanelBanqueteria(); 
+    if (mesaPlanoActiva) renderContenidoPlanoMesa(mesaPlanoActiva);
     marcarCambioPendienteMesas();
 }
 
@@ -1055,6 +1065,7 @@ function cambiarCapacidad(numero, capActual) {
     const mesa = dataMesas.find(m => parseInt(m.numero) === parseInt(numero)); 
     if(mesa) mesa.capacidad = parseInt(nuevaCap); 
     dibujarPanelMesas(); 
+    if (mesaPlanoActiva === parseInt(numero)) renderContenidoPlanoMesa(mesaPlanoActiva);
     marcarCambioPendienteMesas();
 }
 
@@ -1068,6 +1079,7 @@ function editarAliasMesa(num) {
     if(mesaObj) mesaObj.alias = nuevo.trim();
     dibujarGridMesas();
     dibujarResumenMesasBanqueteria();
+    if (mesaPlanoActiva === parseInt(num)) renderContenidoPlanoMesa(mesaPlanoActiva);
     marcarCambioPendienteMesas();
 }
 
@@ -1146,7 +1158,8 @@ function abrirModalAsignarDirecto(idDrag, mesaActual = null) {
         select.appendChild(opt);
     });
 
-    new bootstrap.Modal(document.getElementById('modalMoverMesa')).show();
+    const modalEl = document.getElementById('modalMoverMesa');
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
 function ejecutarMoverDesdeModal() {
@@ -1154,7 +1167,7 @@ function ejecutarMoverDesdeModal() {
     const select = document.getElementById('select-destino-mesa');
     const selectVal = select ? select.value : "";
     const modalEl = document.getElementById('modalMoverMesa');
-    if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
 
     if (selectVal === "desasignar") {
         intentarAsignar(comensalModalActivo.id_drag, null, null, null);
@@ -1174,7 +1187,8 @@ function abrirModalSentarEnMesa(numMesa, capMax, capActual) {
     
     setText('modalSentarMesaTitulo', (numMesa === 1) ? `Sentar en Mesa 1 (Los Novios)` : `Sentar en Mesa ${numMesa}`);
     renderListaModalSinAsignar(candidatosSinMesaGlobal);
-    new bootstrap.Modal(document.getElementById('modalSentarEnMesa')).show();
+    const modalEl = document.getElementById('modalSentarEnMesa');
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
 function renderListaModalSinAsignar(lista) {
@@ -1212,12 +1226,19 @@ function filtrarModalSinAsignar(val) {
 function ejecutarSentarDesdeModal(idDrag) {
     if(!mesaModalActiva) return;
     const modalEl = document.getElementById('modalSentarEnMesa');
-    if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
     intentarAsignar(idDrag, mesaModalActiva.num, mesaModalActiva.capMax, mesaModalActiva.capActual);
 }
 
+// ======================= PLANO GRÁFICO DE MESA =======================
 function abrirModalPlanoMesa(numMesa) {
     mesaPlanoActiva = parseInt(numMesa);
+    renderContenidoPlanoMesa(mesaPlanoActiva);
+    const modalEl = document.getElementById('modalPlanoMesa');
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+function renderContenidoPlanoMesa(numMesa) {
     const mesaObj = dataMesas.find(m => parseInt(m.numero) === parseInt(numMesa));
     if (!mesaObj) return;
 
@@ -1246,7 +1267,7 @@ function abrirModalPlanoMesa(numMesa) {
             </div>
             <div class="d-flex align-items-center gap-1">
                 ${tieneAsiento ? `<button class="btn btn-sm btn-light border py-0 px-1 text-muted" title="Quitar asiento" onclick="desasignarSilla('${c.id_drag}')"><i class="bi bi-person-x"></i></button>` : ''}
-                <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Quitar de la mesa" onclick="intentarAsignar('${c.id_drag}', null, null, null); abrirModalPlanoMesa(${numMesa});"><i class="bi bi-x-lg"></i></button>
+                <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Quitar de la mesa" onclick="intentarAsignar('${c.id_drag}', null, null, null)"><i class="bi bi-x-lg"></i></button>
             </div>
         </div>`;
     });
@@ -1263,8 +1284,6 @@ function abrirModalPlanoMesa(numMesa) {
     } else {
         dibujarMesaRedondaNormal(canvas, cap, ocupantes);
     }
-
-    new bootstrap.Modal(document.getElementById('modalPlanoMesa')).show();
 }
 
 function abrirSentarDesdePlano() {
@@ -1405,7 +1424,7 @@ function asignarSillaEspecificaConPareja(idDrag, numSilla, capTotal) {
         }
     }
 
-    abrirModalPlanoMesa(mesaPlanoActiva);
+    renderContenidoPlanoMesa(mesaPlanoActiva);
     dibujarGridMesas();
     marcarCambioPendienteMesas();
 }
@@ -1416,7 +1435,7 @@ function desasignarSilla(idDrag) {
 
     guardarSnapshotUndo();
     comensal.asiento_numero = null;
-    abrirModalPlanoMesa(mesaPlanoActiva);
+    renderContenidoPlanoMesa(mesaPlanoActiva);
     dibujarGridMesas();
     marcarCambioPendienteMesas();
 }
@@ -1451,7 +1470,8 @@ function confirmarDesdePendientes(nombrePrincipal, esPareja, nombreMostrar) {
         </button>
     </div>`;
 
-    new bootstrap.Modal(document.getElementById('modalConfirmarPendientePareja')).show();
+    const modalEl = document.getElementById('modalConfirmarPendientePareja');
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
 function mostrarPasoDosParejaPendiente(nombrePrincipal) {
@@ -1469,8 +1489,8 @@ function mostrarPasoDosParejaPendiente(nombrePrincipal) {
 }
 
 function ejecutarConfirmacionAccion(nombrePrincipal, esPareja, opcion) {
-    const modalInstance = bootstrap.Modal.getInstance(document.getElementById('modalConfirmarPendientePareja'));
-    if (modalInstance) modalInstance.hide();
+    const modalEl = document.getElementById('modalConfirmarPendientePareja');
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
 
     let conf = dataConfirmados.find(c => (c.nombre_invitado || c.nombre) === nombrePrincipal);
 
@@ -1875,7 +1895,7 @@ function dibujarTablaListaMaestra() {
     setText('maestra-total-parejas', totalParejas);
     setText('maestra-total-sillas', totalSillas);
     setText('maestra-count-novio', countNovio);
-    setText('maestra-count-novia', countNovia);
+    setText('maestra-count-novia', countNovio);
     setText('maestra-count-ambos', countAmbos);
 
     let html = "";
@@ -2000,7 +2020,8 @@ function abrirModalAgregarInvitado() {
     if (checkPareja) checkPareja.checked = false;
     const checkNino = document.getElementById('modal-nuevo-nino');
     if (checkNino) checkNino.checked = false;
-    new bootstrap.Modal(document.getElementById('modalAgregarInvitado')).show();
+    const modalEl = document.getElementById('modalAgregarInvitado');
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
 function guardarInvitadoModalMaestra(e) {
@@ -2019,7 +2040,8 @@ function guardarInvitadoModalMaestra(e) {
     const nuevoObj = { id: proximoId, nombre: nombre, pareja: pareja, nino: nino, lado: lado };
     
     dataMaestra.push(nuevoObj);
-    bootstrap.Modal.getInstance(document.getElementById('modalAgregarInvitado')).hide();
+    const modalEl = document.getElementById('modalAgregarInvitado');
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
 
     procesarDatosGenerales();
     dibujarTablaListaMaestra();
