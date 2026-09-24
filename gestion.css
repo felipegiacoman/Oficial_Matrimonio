@@ -59,7 +59,7 @@ body {
 
 /* Panel Izquierdo Fijo (Por Asignar) */
 .sticky-panel { 
-    position: sticky; top: 15px; z-index: 100; transition: 0.3s; 
+    position: sticky; top: 15px; z-index: 90; transition: 0.3s; 
 }
 @media (max-width: 991px) {
     .sticky-panel { top: 10px; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.15); border-bottom: 3px solid var(--oro); }
@@ -69,8 +69,8 @@ body {
 /* Controles de Mesas Fijos Arriba al hacer Scroll */
 .sticky-mesas-menu {
     position: sticky; top: 10px; z-index: 95;
-    background: rgba(244, 241, 234, 0.96); backdrop-filter: blur(6px);
-    padding: 6px 0; margin-bottom: 15px;
+    background: rgba(244, 241, 234, 0.98); backdrop-filter: blur(6px);
+    padding: 4px 0; margin-bottom: 15px;
 }
 
 /* Tarjeta Original de Mesa */
@@ -80,12 +80,14 @@ body {
 }
 .mesa-card.mesa-novios { 
     border-top: 4px solid var(--oro-novios) !important; 
-    background: #fffdf8; 
+    background: #fffcf5; 
 }
 .mesa-card.highlight-mesa {
     border: 2px solid var(--oro-novios) !important;
-    box-shadow: 0 0 12px rgba(212, 175, 55, 0.4) !important;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.45) !important;
 }
+.mesa-alias { font-size: 0.78rem; color: #888; font-style: italic; cursor: pointer; }
+.mesa-alias:hover { color: var(--oro); text-decoration: underline; }
 
 /* Fila Original de Comensal */
 .guest-item { 
@@ -121,8 +123,128 @@ body {
 .badge-novia { background-color: var(--color-novia); color: white; }
 .badge-ambos { background-color: var(--color-ambos); color: white; }
 
+.lado-selector { cursor: pointer; transition: 0.2s; }
+.lado-selector:hover { opacity: 0.85; transform: scale(1.05); }
+
 .dieta-editable { cursor: pointer; border-bottom: 1px dashed var(--oro); transition: 0.2s; }
 .dieta-editable:hover { color: var(--oro); font-weight: bold; }
+
+/* ========================================================================= */
+/*      PLANO VISUAL GRÁFICO DE MESA ("ABRIR MESA") - VISTA DE PLANTA       */
+/* ========================================================================= */
+
+.seating-map-container {
+    position: relative;
+    width: 440px;
+    height: 440px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Mesa Redonda Central */
+.table-center-circle {
+    position: absolute;
+    width: 190px;
+    height: 190px;
+    border-radius: 50%;
+    background: #fffcf5;
+    border: 3.5px solid var(--oro);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 5;
+}
+
+/* Mesa Rectangular de los Novios */
+.table-center-rect {
+    position: absolute;
+    width: 270px;
+    height: 140px;
+    border-radius: 12px;
+    background: #fffdf8;
+    border: 3.5px solid var(--oro-novios);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 5;
+}
+
+/* Sillas en Vista de Planta (Con respaldo curvo como la imagen) */
+.seat-chair-node {
+    position: absolute;
+    width: 66px;
+    height: 66px;
+    border-radius: 14px;
+    background: white;
+    border: 2px solid #d4cbbe;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    font-size: 0.68rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    z-index: 10;
+}
+.seat-chair-node:hover {
+    transform: scale(1.1);
+    border-color: var(--oro);
+    box-shadow: 0 4px 12px rgba(181, 154, 122, 0.3);
+}
+
+/* Silla Ocupada */
+.seat-chair-node.is-occupied {
+    background: #fffcf8;
+    border-color: var(--oro);
+}
+.seat-chair-node.is-occupied.lado-novio {
+    border-color: var(--color-novio);
+    background: #f3f7fa;
+}
+.seat-chair-node.is-occupied.lado-novia {
+    border-color: var(--color-novia);
+    background: #fdf5f8;
+}
+
+/* Silla Vacía */
+.seat-chair-node.is-empty {
+    border: 2px dashed #cfc7ba;
+    background: #faf8f5;
+    color: #999;
+}
+.seat-chair-node.dragover-seat {
+    background: #eaf5ec !important;
+    border: 2px dashed #28a745 !important;
+    transform: scale(1.18);
+}
+
+/* Estados en la lista izquierda del modal */
+.member-row-item {
+    transition: all 0.15s;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    padding: 8px 10px;
+    border: 1px solid #eee7dc;
+    background: white;
+}
+.member-row-item.is-seated {
+    border-left: 4px solid #28a745 !important;
+    background: #f4faf5;
+}
+.member-row-item.is-unseated {
+    border-left: 4px solid #e0d8cc;
+}
 
 /* Notificación Flotante */
 #network-status { 
