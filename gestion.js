@@ -17,6 +17,7 @@ let listaDesglosadaMaestra = [];
 let comensalModalActivo = null;
 let mesaPlanoActiva = null;
 let mesaModalActiva = null;
+let planoModalModoReadOnly = false;
 let invitadoSeleccionadoParaCancelar = null;
 
 // Filtros de navegación
@@ -167,7 +168,7 @@ window.addEventListener('dragover', manejarAutoScroll);
 window.addEventListener('dragend', detenerAutoScroll);
 window.addEventListener('drop', detenerAutoScroll);
 
-// FOCO AUTOMÁTICO EN EL BUSCADOR DE "+ SENTAR COMENSAL"
+// EVENTOS DOM / FOCO AUTOMÁTICO / AUTO-GUARDADO ENTRE PESTAÑAS
 document.addEventListener('DOMContentLoaded', () => {
     const modalSentar = document.getElementById('modalSentarEnMesa');
     if (modalSentar) {
@@ -185,8 +186,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modalPlano) {
         modalPlano.addEventListener('hidden.bs.modal', function () {
             mesaPlanoActiva = null;
+            planoModalModoReadOnly = false;
         });
     }
+
+    // AUTO-GUARDAR AL CAMBIAR DE PESTAÑA SI HAY CAMBIOS
+    document.querySelectorAll('#pills-tab button[data-bs-toggle="pill"]').forEach(tabBtn => {
+        tabBtn.addEventListener('show.bs.tab', () => {
+            if (hayCambiosMesas) {
+                ejecutarGuardadoSilencioso();
+            }
+        });
+    });
 });
 
 // ======================= COLA DE ACCIONES =======================
@@ -1232,6 +1243,15 @@ function ejecutarSentarDesdeModal(idDrag) {
 
 // ======================= PLANO GRÁFICO DE MESA =======================
 function abrirModalPlanoMesa(numMesa) {
+    planoModalModoReadOnly = false;
+    mesaPlanoActiva = parseInt(numMesa);
+    renderContenidoPlanoMesa(mesaPlanoActiva);
+    const modalEl = document.getElementById('modalPlanoMesa');
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+function abrirModalPlanoMesaReadOnly(numMesa) {
+    planoModalModoReadOnly = true;
     mesaPlanoActiva = parseInt(numMesa);
     renderContenidoPlanoMesa(mesaPlanoActiva);
     const modalEl = document.getElementById('modalPlanoMesa');
@@ -1246,9 +1266,19 @@ function renderContenidoPlanoMesa(numMesa) {
     const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === parseInt(numMesa));
     const esNovios = (parseInt(numMesa) === 1);
 
-    setText('modalPlanoMesaTitulo', esNovios ? `👑 Mesa 1 (Los Novios) - Plano de Asientos` : `Mesa ${numMesa} (${mesaObj.alias || 'Sin alias'}) - Plano de Asientos`);
+    const tituloReadOnly = planoModalModoReadOnly ? ' <span class="badge bg-secondary ms-2">Solo Lectura</span>' : '';
+    setText('modalPlanoMesaTitulo', (esNovios ? `👑 Mesa 1 (Los Novios) - Plano de Asientos` : `Mesa ${numMesa} (${mesaObj.alias || 'Sin alias'}) - Plano de Asientos`));
+    const tituloEl = document.getElementById('modalPlanoMesaTitulo');
+    if (tituloEl && planoModalModoReadOnly) tituloEl.innerHTML += tituloReadOnly;
+
     setText('modalPlanoMesaSubtitulo', esNovios ? 'Mesa rectangular de honor con cabeceras' : 'Mesa redonda con sillas alrededor');
     setText('modal-plano-count', `${ocupantes.length}/${cap}`);
+
+    // OCULTAR O MOSTRAR BOTÓN AGREGAR EN EL MODAL SEGÚN CORRESPONDA
+    const btnAgregarModal = document.getElementById('btn-modal-plano-agregar');
+    if (btnAgregarModal) {
+        btnAgregarModal.style.display = 'none'; // Siempre oculto para no confundir con gestión general de mesa
+    }
 
     let htmlLista = "";
     ocupantes.forEach((c) => {
@@ -1256,18 +1286,25 @@ function renderContenidoPlanoMesa(numMesa) {
         const torpedoEmoji = c.lado === 'Novia' ? '👰' : (c.lado === 'Ambos' ? '💍' : '🤵');
         const tieneAsiento = (c.asiento_numero !== null && c.asiento_numero !== undefined);
 
+        let dietaTag = (c.dieta && c.dieta !== "Ninguna" && c.dieta !== "-") 
+            ? `<span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;">${escapeHTML(c.dieta)}</span>` 
+            : '';
+        let ninoTag = c.esNino ? `<span class="badge badge-nino ms-1">Niño</span>` : '';
+
+        // ARRASTRE PERMITIDO EN TODO EL RECTÁNGULO (SI NO ES SOLO LECTURA)
+        const draggableAttr = !planoModalModoReadOnly ? `draggable="true" ondragstart="dragGuestPlano(event, '${c.id_drag}')" style="cursor: grab;"` : '';
+
         htmlLista += `
-        <div class="member-row-item ${tieneAsiento ? 'is-seated' : 'is-unseated'} d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center text-truncate me-2" draggable="true" ondragstart="dragGuestPlano(event, '${c.id_drag}')" style="cursor:grab;">
+        <div class="member-row-item ${tieneAsiento ? 'is-seated' : 'is-unseated'} d-flex justify-content-between align-items-center" ${draggableAttr}>
+            <div class="d-flex align-items-center text-truncate me-2">
                 <span class="torpedo-badge ${torpedoClass}">${torpedoEmoji}</span>
                 <div class="text-truncate">
-                    <span class="small fw-semibold text-truncate d-block">${escapeHTML(c.nombre_mostrar)}</span>
+                    <span class="small fw-semibold text-truncate d-block">${escapeHTML(c.nombre_mostrar)} ${dietaTag}${ninoTag}</span>
                     <small class="text-muted" style="font-size:0.68rem;">${tieneAsiento ? `<span class="text-success fw-bold">Asiento ${c.asiento_numero}</span>` : 'Sin asiento asignado'}</small>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-1">
-                ${tieneAsiento ? `<button class="btn btn-sm btn-light border py-0 px-1 text-muted" title="Quitar asiento" onclick="desasignarSilla('${c.id_drag}')"><i class="bi bi-person-x"></i></button>` : ''}
-                <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Quitar de la mesa" onclick="intentarAsignar('${c.id_drag}', null, null, null)"><i class="bi bi-x-lg"></i></button>
+                ${(tieneAsiento && !planoModalModoReadOnly) ? `<button class="btn btn-sm btn-outline-secondary py-0 px-2 text-muted" style="font-size:0.7rem;" title="Liberar asiento asignado" onclick="desasignarSilla('${c.id_drag}')"><i class="bi bi-x-circle me-1"></i>Liberar</button>` : ''}
             </div>
         </div>`;
     });
@@ -1284,14 +1321,6 @@ function renderContenidoPlanoMesa(numMesa) {
     } else {
         dibujarMesaRedondaNormal(canvas, cap, ocupantes);
     }
-}
-
-function abrirSentarDesdePlano() {
-    if (!mesaPlanoActiva) return;
-    const mesaObj = dataMesas.find(m => parseInt(m.numero) === mesaPlanoActiva);
-    const cap = mesaObj ? (parseInt(mesaObj.capacidad) || 10) : 10;
-    const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === mesaPlanoActiva);
-    abrirModalSentarEnMesa(mesaPlanoActiva, cap, ocupantes.length);
 }
 
 function dibujarMesaRedondaNormal(canvas, cap, ocupantes) {
@@ -1360,49 +1389,64 @@ function crearNodoSilla(canvas, numSilla, x, y, comensal, capTotal, etiquetaCust
         const torpedoEmoji = comensal.lado === 'Novia' ? '👰' : (comensal.lado === 'Ambos' ? '💍' : '🤵');
         
         chair.innerHTML = `<span>${torpedoEmoji}</span><strong class="text-truncate w-100 d-block" style="font-size:0.62rem;" title="${escapeHTML(comensal.nombre_mostrar)}">${escapeHTML(comensal.nombre_mostrar.split(' ')[0])}</strong>`;
-        chair.title = `${comensal.nombre_mostrar} (Asiento ${numSilla}) - Clic para quitar asiento`;
-        chair.onclick = () => {
-            if (confirm(`¿Quitar de la Silla ${numSilla} a ${comensal.nombre_mostrar}?`)) {
-                desasignarSilla(comensal.id_drag);
-            }
-        };
+        chair.title = `${comensal.nombre_mostrar} (Asiento ${numSilla})${planoModalModoReadOnly ? '' : ' - Clic para liberar asiento'}`;
+        
+        if (!planoModalModoReadOnly) {
+            chair.onclick = () => {
+                if (confirm(`¿Liberar la Silla ${numSilla} de ${comensal.nombre_mostrar}?`)) {
+                    desasignarSilla(comensal.id_drag);
+                }
+            };
+        } else {
+            chair.style.cursor = 'default';
+        }
     } else {
         chair.innerHTML = `<i class="bi bi-plus text-muted fs-6"></i><span style="font-size:0.65rem;">${etiquetaCustom || `Silla ${numSilla}`}</span>`;
-        chair.title = `${etiquetaCustom || `Silla ${numSilla}`} Libre - Arrastra un comensal aquí o haz clic`;
+        chair.title = `${etiquetaCustom || `Silla ${numSilla}`} Libre`;
         
-        chair.ondragover = (ev) => { ev.preventDefault(); chair.classList.add('dragover-seat'); };
-        chair.ondragleave = () => { chair.classList.remove('dragover-seat'); };
-        chair.ondrop = (ev) => {
-            ev.preventDefault();
-            chair.classList.remove('dragover-seat');
-            const idDrag = ev.dataTransfer.getData("text/plain");
-            if (idDrag) asignarSillaEspecificaConPareja(idDrag, numSilla, capTotal);
-        };
+        if (!planoModalModoReadOnly) {
+            chair.title += " - Arrastra un comensal aquí o haz clic";
+            chair.ondragover = (ev) => { ev.preventDefault(); chair.classList.add('dragover-seat'); };
+            chair.ondragleave = () => { chair.classList.remove('dragover-seat'); };
+            chair.ondrop = (ev) => {
+                ev.preventDefault();
+                chair.classList.remove('dragover-seat');
+                const idDrag = ev.dataTransfer.getData("text/plain");
+                if (idDrag) asignarSillaEspecificaConPareja(idDrag, numSilla, capTotal);
+            };
 
-        chair.onclick = () => {
-            const disponiblesEnMesa = listaComensalesGenerales.filter(c => c.mesa === mesaPlanoActiva && !c.asiento_numero);
-            if (disponiblesEnMesa.length > 0) {
-                const nombres = disponiblesEnMesa.map((c, idx) => `${idx + 1}. ${c.nombre_mostrar}`).join("\n");
-                const resp = prompt(`Selecciona el número del comensal para sentar en la Silla ${numSilla}:\n\n${nombres}`);
-                const idxElegido = parseInt(resp) - 1;
-                if (!isNaN(idxElegido) && disponiblesEnMesa[idxElegido]) {
-                    asignarSillaEspecificaConPareja(disponiblesEnMesa[idxElegido].id_drag, numSilla, capTotal);
+            chair.onclick = () => {
+                const disponiblesEnMesa = listaComensalesGenerales.filter(c => c.mesa === mesaPlanoActiva && !c.asiento_numero);
+                if (disponiblesEnMesa.length > 0) {
+                    const nombres = disponiblesEnMesa.map((c, idx) => `${idx + 1}. ${c.nombre_mostrar}`).join("\n");
+                    const resp = prompt(`Selecciona el número del comensal para sentar en la Silla ${numSilla}:\n\n${nombres}`);
+                    const idxElegido = parseInt(resp) - 1;
+                    if (!isNaN(idxElegido) && disponiblesEnMesa[idxElegido]) {
+                        asignarSillaEspecificaConPareja(disponiblesEnMesa[idxElegido].id_drag, numSilla, capTotal);
+                    }
+                } else {
+                    alert("Todos los comensales de esta mesa ya tienen asiento.");
                 }
-            } else {
-                alert("Todos los comensales de esta mesa ya tienen asiento. Agrega comensales a la mesa primero.");
-            }
-        };
+            };
+        } else {
+            chair.style.cursor = 'default';
+        }
     }
 
     canvas.appendChild(chair);
 }
 
 function dragGuestPlano(ev, idDrag) {
+    if (planoModalModoReadOnly) {
+        ev.preventDefault();
+        return;
+    }
     ev.stopPropagation();
     ev.dataTransfer.setData("text/plain", idDrag);
 }
 
 function asignarSillaEspecificaConPareja(idDrag, numSilla, capTotal) {
+    if (planoModalModoReadOnly) return;
     const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
     if (!comensal) return;
 
@@ -1430,6 +1474,7 @@ function asignarSillaEspecificaConPareja(idDrag, numSilla, capTotal) {
 }
 
 function desasignarSilla(idDrag) {
+    if (planoModalModoReadOnly) return;
     const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
     if (!comensal) return;
 
@@ -1576,6 +1621,24 @@ function cancelarDesdePendientes(nombrePrincipal, esPareja) {
     addToQueue({ tipo: "admin_cancelar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
 }
 
+// ======================= RESTAURAR CANCELADOS (A PENDIENTE O A CONFIRMADO) =======================
+function restaurarCanceladoAPendiente(nombreCompleto) {
+    if (!confirm(`¿Mover a "${nombreCompleto}" de vuelta a la lista de PENDIENTES?`)) return;
+
+    dataCancelados = dataCancelados.filter(c => quitarTildes(c.nombre) !== quitarTildes(nombreCompleto));
+    procesarDatosGenerales();
+    dibujarPanelConfirmaciones();
+    dibujarTablaListaMaestra();
+    addToQueue({ tipo: "admin_reactivar_pendiente", nombre: nombreCompleto });
+}
+
+function restaurarCanceladoAConfirmado(nombreCompleto) {
+    const esPareja = nombreCompleto.startsWith("Pareja de ");
+    let nombrePrincipal = esPareja ? nombreCompleto.replace("Pareja de ", "").trim() : nombreCompleto;
+
+    confirmarDesdePendientes(nombrePrincipal, esPareja, nombreCompleto);
+}
+
 // ======================= CONFIRMACIONES CON FILTRO GLOBAL =======================
 function filtrarConfirmacionesLado(lado) {
     filtroConfirmacionesLadoActual = lado;
@@ -1659,11 +1722,18 @@ function dibujarPanelConfirmaciones() {
 
     let htmlCanc = "";
     canceladosFiltrados.forEach(c => {
-        htmlCanc += `<tr><td><strong>${escapeHTML(c.nombre)}</strong></td><td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td></tr>`;
+        const btnReactivar = `<button class="btn btn-sm btn-outline-warning py-0 px-2 me-1 text-dark" title="Mover a Pendientes" onclick="restaurarCanceladoAPendiente('${escapeHTML(c.nombre)}')"><i class="bi bi-clock-history me-1"></i>A Pendientes</button>`;
+        const btnConfirmarDirecto = `<button class="btn btn-sm btn-outline-success py-0 px-2" title="Confirmar comensal" onclick="restaurarCanceladoAConfirmado('${escapeHTML(c.nombre)}')"><i class="bi bi-check2-circle me-1"></i>Confirmar</button>`;
+
+        htmlCanc += `<tr>
+            <td style="white-space: nowrap; width: 220px;">${btnReactivar}${btnConfirmarDirecto}</td>
+            <td><strong>${escapeHTML(c.nombre)}</strong></td>
+            <td><span class="text-muted small">${escapeHTML(c.mensaje || '-')}</span></td>
+        </tr>`;
     });
 
     const tablaCancEl = document.getElementById('tabla-cancelados');
-    if (tablaCancEl) tablaCancEl.innerHTML = htmlCanc || `<tr><td colspan="2" class="text-center text-muted">No hay resultados.</td></tr>`;
+    if (tablaCancEl) tablaCancEl.innerHTML = htmlCanc || `<tr><td colspan="3" class="text-center text-muted">No hay resultados.</td></tr>`;
 }
 
 function bajarDesdeConfirmados(idDrag) {
@@ -1803,20 +1873,27 @@ function dibujarResumenMesasBanqueteria() {
 
         html += `
         <div class="col-12 col-md-6 col-lg-4">
-            <div class="bg-white p-3 rounded shadow-sm border h-100" style="border-top: 4px solid ${esNovios ? '#d4af37' : 'var(--oro)'} !important;">
-                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                    <h6 class="m-0 fw-bold" style="font-family:'Playfair Display', serif;">${tituloMesa}</h6>
-                    <span class="badge bg-dark">${ocupantes.length} sentados</span>
+            <div class="bg-white p-3 rounded shadow-sm border h-100 d-flex flex-column justify-content-between" style="border-top: 4px solid ${esNovios ? '#d4af37' : 'var(--oro)'} !important;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <h6 class="m-0 fw-bold" style="font-family:'Playfair Display', serif;">${tituloMesa}</h6>
+                        <span class="badge bg-dark">${ocupantes.length} sentados</span>
+                    </div>
+                    <div class="small text-muted mb-2">
+                        <span>Adultos: <strong>${adultosMesa}</strong></span> · 
+                        <span>Niños: <strong>${ninosMesa}</strong></span>
+                    </div>
+                    ${htmlEspeciales}
+                    <div class="small text-muted border-top pt-2 mb-2" style="font-size:0.75rem;">
+                        <span class="fw-bold d-block mb-1">Comensales:</span>
+                        ${ocupantes.length ? ocupantes.map(o => `<span class="badge bg-light text-dark border me-1 mb-1">${escapeHTML(o.nombre_mostrar)}</span>`).join('') : '<span class="text-muted">Mesa vacía</span>'}
+                    </div>
                 </div>
-                <div class="small text-muted mb-2">
-                    <span>Adultos: <strong>${adultosMesa}</strong></span> · 
-                    <span>Niños: <strong>${ninosMesa}</strong></span>
-                </div>
-                ${htmlEspeciales}
-                <div class="small text-muted border-top pt-2" style="font-size:0.75rem;">
-                    <span class="fw-bold d-block mb-1">Comensales:</span>
-                    ${ocupantes.length ? ocupantes.map(o => `<span class="badge bg-light text-dark border me-1 mb-1">${escapeHTML(o.nombre_mostrar)}</span>`).join('') : '<span class="text-muted">Mesa vacía</span>'}
-                </div>
+
+                <!-- BOTÓN PLANO EN BANQUETERÍA (SOLO LECTURA) -->
+                <button class="btn btn-outline-secondary btn-sm w-100 py-1 mt-2 fw-semibold" style="font-size:0.75rem;" onclick="abrirModalPlanoMesaReadOnly(${num})">
+                    <i class="bi bi-diagram-3 me-1"></i>🪑 Ver Asientos (Solo Lectura)
+                </button>
             </div>
         </div>`;
     });
@@ -1895,7 +1972,7 @@ function dibujarTablaListaMaestra() {
     setText('maestra-total-parejas', totalParejas);
     setText('maestra-total-sillas', totalSillas);
     setText('maestra-count-novio', countNovio);
-    setText('maestra-count-novia', countNovio);
+    setText('maestra-count-novia', countNovia);
     setText('maestra-count-ambos', countAmbos);
 
     let html = "";
