@@ -16,6 +16,7 @@ let listaInvitadosFiesta = [];
 let listaDesglosadaMaestra = [];
 let comensalModalActivo = null;
 let mesaPlanoActiva = null;
+let mesaModalActiva = null;
 let invitadoSeleccionadoParaCancelar = null;
 
 // Filtros de navegación
@@ -381,22 +382,31 @@ async function init() {
     }
 }
 
+async function fetchEndpointSeguro(action) {
+    const res = await fetch(`${SCRIPT_URL}?action=${action}`);
+    const json = await res.json();
+    if (json && json.error) {
+        throw new Error(`[D1 ${action}] ${json.error}`);
+    }
+    return Array.isArray(json) ? json : [];
+}
+
 async function cargarDatos() {
     const relojEl = document.getElementById('reloj-guardado');
     try {
         const [resM, resConf, resCanc, resMesas] = await Promise.all([
-            fetch(`${SCRIPT_URL}?action=lista`).then(r => r.json()).catch(() => []),
-            fetch(`${SCRIPT_URL}?action=confirmados`).then(r => r.json()).catch(() => []),
-            fetch(`${SCRIPT_URL}?action=cancelados`).then(r => r.json()).catch(() => []),
-            fetch(`${SCRIPT_URL}?action=mesas`).then(r => r.json()).catch(() => [])
+            fetchEndpointSeguro('lista'),
+            fetchEndpointSeguro('confirmados'),
+            fetchEndpointSeguro('cancelados'),
+            fetchEndpointSeguro('mesas')
         ]);
 
-        dataMaestra = Array.isArray(resM) ? resM : [];
-        dataConfirmados = Array.isArray(resConf) ? resConf : [];
-        dataCancelados = Array.isArray(resCanc) ? resCanc : [];
-        dataMesas = Array.isArray(resMesas) ? resMesas : [];
+        dataMaestra = resM;
+        dataConfirmados = resConf;
+        dataCancelados = resCanc;
+        dataMesas = resMesas;
 
-        // Migrar mesa 0 histórica a Mesa 1
+        // Migrar mesa 0 histórica a Mesa 1 si existiera
         const mesaCero = dataMesas.find(m => parseInt(m.numero) === 0);
         if (mesaCero) {
             dataConfirmados.forEach(c => {
@@ -427,7 +437,7 @@ async function cargarDatos() {
         }
     } catch(e) { 
         console.error("Error en cargarDatos:", e); 
-        if (relojEl) relojEl.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Error: ${escapeHTML(e.message)}</span>`;
+        if (relojEl) relojEl.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>${escapeHTML(e.message)}</span>`;
     }
 }
 
@@ -441,7 +451,7 @@ function procesarDatosGenerales() {
         listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false });
 
         const mNomNorm = quitarTildes(m.nombre);
-        const conf = dataConfirmados.find(c => quitarTildes(c.nombre_invitado) === mNomNorm);
+        const conf = dataConfirmados.find(c => quitarTildes(c.nombre_invitado || c.nombre) === mNomNorm);
         const estaConfirmado = !!conf;
         const titularCancelado = dataCancelados.some(c => quitarTildes(c.nombre) === mNomNorm);
 
@@ -514,15 +524,16 @@ function procesarDatosGenerales() {
     });
 
     dataConfirmados.forEach(c => {
-        const cNomNorm = quitarTildes(c.nombre_invitado);
+        const nomPrincipal = c.nombre_invitado || c.nombre || '';
+        const cNomNorm = quitarTildes(nomPrincipal);
         const infoMaestra = dataMaestra.find(m => quitarTildes(m.nombre) === cNomNorm);
-        const esNinoTitular = infoMaestra ? (infoMaestra.nino === 1) : false;
+        const esNinoTitular = infoMaestra ? (parseInt(infoMaestra.nino) === 1) : false;
         const ladoTitular = infoMaestra ? (infoMaestra.lado || 'Novio') : 'Novio';
         
         listaComensalesGenerales.push({
-            id_drag: `prin_${c.nombre_invitado}`,
-            nombre_mostrar: c.nombre_invitado,
-            nombre_principal: c.nombre_invitado,
+            id_drag: `prin_${nomPrincipal}`,
+            nombre_mostrar: nomPrincipal,
+            nombre_principal: nomPrincipal,
             es_pareja: false,
             mesa: (c.mesa_numero !== null && c.mesa_numero !== undefined && c.mesa_numero !== "") ? parseInt(c.mesa_numero) : null,
             asiento_numero: (c.asiento_numero !== null && c.asiento_numero !== undefined && c.asiento_numero !== "") ? parseInt(c.asiento_numero) : null,
@@ -536,12 +547,12 @@ function procesarDatosGenerales() {
         if (c.lleva_pareja === "Sí") {
             let nombreP = (c.nombre_pareja && c.nombre_pareja !== "-" && c.nombre_pareja.toLowerCase() !== "pendiente") 
                 ? `${c.nombre_pareja}` 
-                : `Pareja de ${c.nombre_invitado}`;
+                : `Pareja de ${nomPrincipal}`;
                 
             listaComensalesGenerales.push({
-                id_drag: `par_${c.nombre_invitado}`,
+                id_drag: `par_${nomPrincipal}`,
                 nombre_mostrar: nombreP,
-                nombre_principal: c.nombre_invitado,
+                nombre_principal: nomPrincipal,
                 es_pareja: true,
                 mesa: (c.mesa_pareja !== null && c.mesa_pareja !== undefined && c.mesa_pareja !== "") ? parseInt(c.mesa_pareja) : null,
                 asiento_numero: (c.asiento_pareja !== null && c.asiento_pareja !== undefined && c.asiento_pareja !== "") ? parseInt(c.asiento_pareja) : null,
@@ -550,7 +561,7 @@ function procesarDatosGenerales() {
                 lado: ladoTitular,
                 telefono: "-"
             });
-            listaCancelables.push({ nombre_mostrar: nombreP, nombre_principal: c.nombre_invitado, es_pareja: true });
+            listaCancelables.push({ nombre_mostrar: nombreP, nombre_principal: nomPrincipal, es_pareja: true });
         }
     });
 }
@@ -778,7 +789,6 @@ function actualizarKPIMesas() {
     setText('count-sin-asignar', sinAsignar.length);
 }
 
-// FILTRO EN LA BANDEJA IZQUIERDA POR NOVIO O NOVIA
 function filtrarSinAsignarLado(lado) {
     filtroSinAsignarLado = lado;
     document.querySelectorAll('[id^="btn-sin-filtro-"]').forEach(b => b.classList.remove('active'));
@@ -820,7 +830,6 @@ function dibujarListaSinAsignar() {
 
 function filtrarPorAsignar() { dibujarListaSinAsignar(); }
 
-// RENDER DE MESAS: LIMPIO, CON IDENTIDAD Y MESA 1 NOVIOS
 function dibujarGridMesas() {
     let htmlGrid = "";
     dataMesas.forEach(mesa => {
@@ -881,7 +890,6 @@ function dibujarGridMesas() {
                     ${htmlOcupantes || '<div class="text-muted small mt-2 text-center">Mesa vacía</div>'}
                 </div>
 
-                <!-- BOTÓN PRINCIPAL: ABRIR PLANO VISUAL DE SILLAS -->
                 <button class="btn btn-outline-primary btn-sm w-100 py-1 mb-1 fw-semibold" style="font-size:0.75rem;" onclick="abrirModalPlanoMesa(${num})">
                     <i class="bi bi-diagram-3 me-1"></i>🪑 Ver / Organizar Asientos
                 </button>
@@ -897,7 +905,6 @@ function dibujarGridMesas() {
     if (contenedorMesasEl) contenedorMesasEl.innerHTML = htmlGrid || `<div class="col-12 text-center text-muted py-4">No hay mesas en esta categoría.</div>`;
 }
 
-// ======================= DRAG & DROP =======================
 function dragGuest(ev, idDrag) {
     ev.stopPropagation();
     ev.dataTransfer.setData("drag-type", "guest");
@@ -963,7 +970,6 @@ function dropMesa(ev, targetMesaNum) {
     }
 }
 
-// ASIGNACIÓN INTELIGENTE CON SUBIDA AUTOMÁTICA DE PAREJAS
 function intentarAsignar(idDrag, mesaNum, capMax, capActual, autoPareja = true) {
     if(!idDrag) return; 
     const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag); 
@@ -1065,7 +1071,6 @@ function editarAliasMesa(num) {
     marcarCambioPendienteMesas();
 }
 
-// ======================= BUSCADOR 3 EN 1 =======================
 function buscarComensalEnMesas(val) {
     const term = quitarTildes(val);
     document.querySelectorAll('.mesa-card').forEach(card => card.classList.remove('highlight-mesa'));
@@ -1103,7 +1108,6 @@ function filtrarMesasVista(tipo) {
     dibujarGridMesas();
 }
 
-// ======================= MODAL SENTAR 1-CLIC =======================
 function abrirModalAsignarDirecto(idDrag, mesaActual = null) {
     const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
     if(!comensal) return;
@@ -1212,7 +1216,6 @@ function ejecutarSentarDesdeModal(idDrag) {
     intentarAsignar(idDrag, mesaModalActiva.num, mesaModalActiva.capMax, mesaModalActiva.capActual);
 }
 
-// ======================= PLANO GRÁFICO DE MESA (VER ASIENTOS EN CÍRCULO) =======================
 function abrirModalPlanoMesa(numMesa) {
     mesaPlanoActiva = parseInt(numMesa);
     const mesaObj = dataMesas.find(m => parseInt(m.numero) === parseInt(numMesa));
@@ -1272,7 +1275,6 @@ function abrirSentarDesdePlano() {
     abrirModalSentarEnMesa(mesaPlanoActiva, cap, ocupantes.length);
 }
 
-// DIBUJO DE MESA REDONDA
 function dibujarMesaRedondaNormal(canvas, cap, ocupantes) {
     const centerTable = document.createElement('div');
     centerTable.className = 'table-center-circle';
@@ -1290,18 +1292,15 @@ function dibujarMesaRedondaNormal(canvas, cap, ocupantes) {
     }
 }
 
-// DIBUJO DE MESA RECTANGULAR DE LOS NOVIOS (CON CABECERAS)
 function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
     const centerTable = document.createElement('div');
     centerTable.className = 'table-center-rect';
     centerTable.innerHTML = `<strong style="font-family:'Playfair Display', serif; font-size:1.15rem; color:#d4af37;">👑 Mesa 1: Novios</strong><small class="text-muted" style="font-size:0.75rem;">Mesa de Honor</small>`;
     canvas.appendChild(centerTable);
 
-    // Cabecera Izquierda (Silla 1)
     const comensalSilla1 = ocupantes.find(c => parseInt(c.asiento_numero) === 1);
     crearNodoSilla(canvas, 1, 20, 187, comensalSilla1, cap, "Cabecera 1");
 
-    // Cabecera Derecha (Silla 2)
     const comensalSilla2 = ocupantes.find(c => parseInt(c.asiento_numero) === 2);
     crearNodoSilla(canvas, 2, 354, 187, comensalSilla2, cap, "Cabecera 2");
 
@@ -1313,7 +1312,6 @@ function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
     const pasoX = (xFin - xInicio) / Math.max(1, sillasPorLado - 1);
 
     let sillaNum = 3;
-    // Lado Superior
     for (let s = 0; s < sillasPorLado && sillaNum <= cap; s++) {
         const x = xInicio + (s * pasoX);
         const y = 60;
@@ -1322,7 +1320,6 @@ function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
         sillaNum++;
     }
 
-    // Lado Inferior
     for (let s = 0; s < sillasPorLado && sillaNum <= cap; s++) {
         const x = xInicio + (s * pasoX);
         const y = 314;
@@ -1393,7 +1390,6 @@ function asignarSillaEspecificaConPareja(idDrag, numSilla, capTotal) {
     guardarSnapshotUndo();
     comensal.asiento_numero = numSilla;
 
-    // Si tiene pareja en esta mesa sin asiento asignado:
     const pareja = listaComensalesGenerales.find(c => c.nombre_principal === comensal.nombre_principal && c.es_pareja !== comensal.es_pareja && c.mesa === mesaPlanoActiva);
     
     if (pareja && !pareja.asiento_numero) {
@@ -1476,7 +1472,7 @@ function ejecutarConfirmacionAccion(nombrePrincipal, esPareja, opcion) {
     const modalInstance = bootstrap.Modal.getInstance(document.getElementById('modalConfirmarPendientePareja'));
     if (modalInstance) modalInstance.hide();
 
-    let conf = dataConfirmados.find(c => c.nombre_invitado === nombrePrincipal);
+    let conf = dataConfirmados.find(c => (c.nombre_invitado || c.nombre) === nombrePrincipal);
 
     if (opcion === 'ambos') {
         if (!conf) {
@@ -1624,7 +1620,7 @@ function dibujarPanelConfirmaciones() {
             const btnBajar = `<button class="btn btn-sm btn-outline-danger py-0 px-2 me-1" title="Bajar a Cancelados" onclick="cancelarDesdePendientes('${escapeHTML(p.nombre_principal)}', ${p.es_pareja})"><i class="bi bi-x-circle"></i></button>`;
             
             const titularTieneParejaActiva = listaPendientes.some(x => x.nombre_principal === p.nombre_principal && x.es_pareja) || 
-                                             dataConfirmados.some(c => c.nombre_invitado === p.nombre_principal && c.lleva_pareja === 'Sí');
+                                             dataConfirmados.some(c => (c.nombre_invitado || c.nombre) === p.nombre_principal && c.lleva_pareja === 'Sí');
             
             const btnHabilitarPareja = (!p.es_pareja && !titularTieneParejaActiva) 
                 ? `<button class="btn btn-sm btn-outline-primary py-0 px-2" title="Habilitar Pareja (+1)" onclick="agregarParejaAPendiente('${escapeHTML(p.nombre_principal)}')"><i class="bi bi-person-plus"></i> + Pareja</button>` 
@@ -1656,18 +1652,18 @@ function bajarDesdeConfirmados(idDrag) {
 
     if (comensal.es_pareja) {
         if (!confirm(`¿Dar de baja a la pareja ${comensal.nombre_mostrar}?`)) return;
-        const conf = dataConfirmados.find(c => c.nombre_invitado === comensal.nombre_principal);
+        const conf = dataConfirmados.find(c => (c.nombre_invitado || c.nombre) === comensal.nombre_principal);
         if (conf) { conf.lleva_pareja = 'No'; conf.nombre_pareja = '-'; conf.dieta_pareja = '-'; conf.mesa_pareja = null; }
         dataCancelados.push({ nombre: comensal.nombre_mostrar, mensaje: 'Cancelada manualmente' });
         addToQueue({ tipo: "admin_cancelar", nombre_principal: comensal.nombre_principal, es_pareja: true });
     } else {
-        const conf = dataConfirmados.find(c => c.nombre_invitado === comensal.nombre_principal);
+        const conf = dataConfirmados.find(c => (c.nombre_invitado || c.nombre) === comensal.nombre_principal);
         const tienePareja = conf && conf.lleva_pareja === 'Sí';
         let advertencia = `¿Dar de baja a ${comensal.nombre_mostrar}?`;
         if (tienePareja) advertencia += `\nSu pareja registrada (${conf.nombre_pareja || 'Pareja'}) también será dada de baja.`;
         if (!confirm(advertencia)) return;
 
-        dataConfirmados = dataConfirmados.filter(c => c.nombre_invitado !== comensal.nombre_principal);
+        dataConfirmados = dataConfirmados.filter(c => (c.nombre_invitado || c.nombre) !== comensal.nombre_principal);
         dataCancelados.push({ nombre: comensal.nombre_mostrar, mensaje: 'Cancelado manualmente' });
         if (tienePareja) {
             let nPareja = (conf.nombre_pareja && conf.nombre_pareja !== '-' && conf.nombre_pareja.toLowerCase() !== 'pendiente') ? conf.nombre_pareja : `Pareja de ${comensal.nombre_principal}`;
@@ -1680,7 +1676,7 @@ function bajarDesdeConfirmados(idDrag) {
 }
 
 function agregarParejaAConfirmado(nombrePrincipal) {
-    const conf = dataConfirmados.find(c => c.nombre_invitado === nombrePrincipal);
+    const conf = dataConfirmados.find(c => (c.nombre_invitado || c.nombre) === nombrePrincipal);
     if (!conf) return;
 
     const nombreP = prompt(`Nombre de la pareja para ${nombrePrincipal}:\n(Deja en blanco para 'Pareja de ${nombrePrincipal}')`);
@@ -1711,7 +1707,7 @@ function agregarParejaAPendiente(nombrePrincipal) {
     addToQueue({ tipo: "admin_habilitar_pareja", nombre_principal: nombrePrincipal });
 }
 
-// ======================= BANQUETERÍA (RESTAURADA COMPLETA) =======================
+// ======================= BANQUETERÍA =======================
 function dibujarPanelBanqueteria() {
     let adultos = 0, ninos = 0, dietasDinamicas = {};
     listaComensalesGenerales.forEach(c => {
@@ -1849,7 +1845,7 @@ function editarDietaUI(idDrag) {
     const dietaFinal = nuevaDieta.trim() === "" ? "Ninguna" : nuevaDieta.trim();
     comensal.dieta = dietaFinal;
     
-    const conf = dataConfirmados.find(c => c.nombre_invitado === comensal.nombre_principal);
+    const conf = dataConfirmados.find(c => (c.nombre_invitado || c.nombre) === comensal.nombre_principal);
     if(conf) {
         if(comensal.es_pareja) conf.dieta_pareja = dietaFinal;
         else conf.dieta = dietaFinal;
@@ -1980,7 +1976,7 @@ function alternarParejaMaestra(id) {
     item.pareja = nuevaPareja;
     
     if (nuevaPareja === 0) {
-        const conf = dataConfirmados.find(c => c.nombre_invitado === item.nombre);
+        const conf = dataConfirmados.find(c => (c.nombre_invitado || c.nombre) === item.nombre);
         if (conf) {
             conf.lleva_pareja = 'No'; conf.nombre_pareja = '-'; conf.dieta_pareja = '-'; conf.mesa_pareja = null;
         }
@@ -2036,7 +2032,7 @@ function eliminarInvitadoMaestra(id, nombre) {
     if (!confirm(`¿Eliminar definitivamente a "${nombre}" de la Lista Maestra?`)) return;
 
     dataMaestra = dataMaestra.filter(m => parseInt(m.id) !== parseInt(id));
-    dataConfirmados = dataConfirmados.filter(c => c.nombre_invitado !== nombre);
+    dataConfirmados = dataConfirmados.filter(c => (c.nombre_invitado || c.nombre) !== nombre);
     dataCancelados = dataCancelados.filter(c => c.nombre !== nombre && c.nombre !== `Pareja de ${nombre}`);
     listaComensalesGenerales = listaComensalesGenerales.filter(c => c.nombre_principal !== nombre);
 
