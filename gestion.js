@@ -194,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // AUTO-GUARDAR AL CAMBIAR DE PESTAÑA SI HAY CAMBIOS
     document.querySelectorAll('#pills-tab button[data-bs-toggle="pill"]').forEach(tabBtn => {
         tabBtn.addEventListener('show.bs.tab', () => {
             if (hayCambiosMesas) {
@@ -346,11 +345,32 @@ function exportarExcelFiesta() {
     XLSX.writeFile(wb, "Matrimonio_Fiesta.xlsx");
 }
 
-// ======================= AUTO-HEALING DE MESAS =======================
-function reconciliarMesasHuerfanas() {
-    if (!dataMesas.some(m => parseInt(m.numero) === 1)) {
-        dataMesas.unshift({ numero: 1, capacidad: 10, alias: 'Mesa de los Novios' });
+// ======================= AUTO-HEALING Y PARSER DE CONFIG =======================
+function deserializarMesaNoviosConfig(mesa1) {
+    if (!mesa1) return;
+    if (mesa1.alias && mesa1.alias.includes('|cfg:')) {
+        try {
+            const parts = mesa1.alias.split('|cfg:');
+            const cfg = JSON.parse(parts[1]);
+            if (cfg.cabecera) configNoviosCabecera = parseInt(cfg.cabecera);
+            if (cfg.lados) configNoviosLados = cfg.lados;
+            mesa1.alias = parts[0].trim();
+        } catch(e) {}
     }
+}
+
+function serializarMesaNoviosAlias(aliasLimpio) {
+    const cfgStr = JSON.stringify({ cabecera: configNoviosCabecera, lados: configNoviosLados });
+    return `${aliasLimpio || 'Mesa de los Novios'}|cfg:${cfgStr}`;
+}
+
+function reconciliarMesasHuerfanas() {
+    let mesa1 = dataMesas.find(m => parseInt(m.numero) === 1);
+    if (!mesa1) {
+        mesa1 = { numero: 1, capacidad: 10, alias: 'Mesa de los Novios' };
+        dataMesas.unshift(mesa1);
+    }
+    deserializarMesaNoviosConfig(mesa1);
 
     const numerosDetectados = new Set();
     listaComensalesGenerales.forEach(c => {
@@ -469,7 +489,7 @@ function procesarDatosGenerales() {
     listaPendientes = [];
     listaDesglosadaMaestra = [];
 
-    // 1. INYECTAR A LOS NOVIOS (FELIPE Y ANTONIA) EN MESA 1
+    // Inyectar a Felipe y Antonia fijos en Mesa 1
     const asientoFelipe = localStorage.getItem('asiento_novio_felipe') ? parseInt(localStorage.getItem('asiento_novio_felipe')) : 1;
     const asientoAntonia = localStorage.getItem('asiento_novia_antonia') ? parseInt(localStorage.getItem('asiento_novia_antonia')) : 2;
 
@@ -620,7 +640,7 @@ function procesarDatosGenerales() {
     });
 }
 
-// ======================= GUARDADO EN BLOQUE (BATCH) =======================
+// ======================= GUARDADO EN BLOQUE =======================
 async function ejecutarGuardadoSilencioso() {
     if (!hayCambiosMesas) return;
     try {
@@ -667,11 +687,18 @@ async function guardarCambiosEnBBDD() {
 function prepararPayloadMesas() {
     reconciliarMesasHuerfanas();
 
-    const mesasPayload = dataMesas.map(m => ({
-        numero: parseInt(m.numero),
-        capacidad: parseInt(m.capacidad) || 10,
-        alias: m.alias || ''
-    }));
+    const mesasPayload = dataMesas.map(m => {
+        const num = parseInt(m.numero);
+        let aliasVal = m.alias || '';
+        if (num === 1) {
+            aliasVal = serializarMesaNoviosAlias(aliasVal);
+        }
+        return {
+            numero: num,
+            capacidad: parseInt(m.capacidad) || 10,
+            alias: aliasVal
+        };
+    });
 
     const asignacionesPayload = listaComensalesGenerales
         .filter(c => !c.esNovioFijo)
@@ -689,7 +716,7 @@ function prepararPayloadMesas() {
     };
 }
 
-// ======================= MESAS (MESA 1 FIJA + DESPLAZAMIENTO 2..N) =======================
+// ======================= MESAS =======================
 function obtenerProximoNumeroDisponible() {
     reconciliarMesasHuerfanas();
     const ocupados = dataMesas.map(m => parseInt(m.numero)).filter(n => n >= 2);
@@ -1296,14 +1323,18 @@ function abrirModalPlanoMesaReadOnly(numMesa) {
 }
 
 function cambiarConfigNoviosCabecera(valor) {
+    if (planoModalModoReadOnly) return;
     configNoviosCabecera = parseInt(valor);
     localStorage.setItem('cfg_novios_cabecera', configNoviosCabecera.toString());
+    marcarCambioPendienteMesas();
     if (mesaPlanoActiva === 1) renderContenidoPlanoMesa(1);
 }
 
 function cambiarConfigNoviosLados(valor) {
+    if (planoModalModoReadOnly) return;
     configNoviosLados = valor;
     localStorage.setItem('cfg_novios_lados', configNoviosLados);
+    marcarCambioPendienteMesas();
     if (mesaPlanoActiva === 1) renderContenidoPlanoMesa(1);
 }
 
@@ -1315,16 +1346,51 @@ function renderContenidoPlanoMesa(numMesa) {
     const ocupantes = listaComensalesGenerales.filter(c => c.mesa !== null && parseInt(c.mesa) === parseInt(numMesa));
     const esNovios = (parseInt(numMesa) === 1);
 
-    const tituloReadOnly = planoModalModoReadOnly ? ' <span class="badge bg-secondary ms-2">Solo Lectura</span>' : '';
+    const tituloReadOnly = planoModalModoReadOnly ? ' <span class="badge bg-secondary ms-2" style="font-size:0.75rem;">Solo Lectura</span>' : '';
     setText('modalPlanoMesaTitulo', (esNovios ? `👑 Mesa 1 (Los Novios) - Plano de Asientos` : `Mesa ${numMesa} (${mesaObj.alias || 'Sin alias'}) - Plano de Asientos`));
     const tituloEl = document.getElementById('modalPlanoMesaTitulo');
     if (tituloEl && planoModalModoReadOnly) tituloEl.innerHTML += tituloReadOnly;
 
-    setText('modalPlanoMesaSubtitulo', esNovios ? 'Mesa rectangular de honor con distribución configurable' : 'Mesa redonda con sillas alrededor');
+    setText('modalPlanoMesaSubtitulo', esNovios ? 'Mesa rectangular de honor con distribución de asientos' : 'Mesa redonda con sillas alrededor');
     setText('modal-plano-count', `${ocupantes.length}/${cap}`);
 
-    const btnAgregarModal = document.getElementById('btn-modal-plano-agregar');
-    if (btnAgregarModal) btnAgregarModal.style.display = 'none';
+    // INYECTAR SWITCHES EN LA CABECERA DERECHA DEL MODAL (SOLO PARA NOVIOS, NUNCA EN BANQUETERÍA)
+    let headerSwitchesEl = document.getElementById('modal-plano-header-switches');
+    if (!headerSwitchesEl) {
+        const headerModal = document.querySelector('#modalPlanoMesa .modal-header');
+        if (headerModal) {
+            headerSwitchesEl = document.createElement('div');
+            headerSwitchesEl.id = 'modal-plano-header-switches';
+            headerSwitchesEl.className = 'ms-auto me-3 d-flex align-items-center gap-2';
+            const btnClose = headerModal.querySelector('.btn-close');
+            headerModal.insertBefore(headerSwitchesEl, btnClose);
+        }
+    }
+
+    if (headerSwitchesEl) {
+        if (esNovios && !planoModalModoReadOnly) {
+            headerSwitchesEl.innerHTML = `
+                <div class="d-flex align-items-center gap-1">
+                    <span class="text-muted fw-bold" style="font-size:0.75rem;">Cabeceras:</span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-sm ${configNoviosCabecera === 1 ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" style="font-size:0.72rem; padding: 2px 7px;" onclick="cambiarConfigNoviosCabecera(1)">1</button>
+                        <button type="button" class="btn btn-sm ${configNoviosCabecera === 2 ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" style="font-size:0.72rem; padding: 2px 7px;" onclick="cambiarConfigNoviosCabecera(2)">2</button>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-1 ms-2">
+                    <span class="text-muted fw-bold" style="font-size:0.75rem;">Lados:</span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-sm ${configNoviosLados === 'ambos' ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" style="font-size:0.72rem; padding: 2px 7px;" onclick="cambiarConfigNoviosLados('ambos')">Ambos</button>
+                        <button type="button" class="btn btn-sm ${configNoviosLados === 'un_lado' ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" style="font-size:0.72rem; padding: 2px 7px;" onclick="cambiarConfigNoviosLados('un_lado')">1 Libre</button>
+                    </div>
+                </div>
+            `;
+            headerSwitchesEl.style.display = 'flex';
+        } else {
+            headerSwitchesEl.innerHTML = '';
+            headerSwitchesEl.style.display = 'none';
+        }
+    }
 
     let htmlLista = "";
     ocupantes.forEach((c) => {
@@ -1390,38 +1456,17 @@ function dibujarMesaRedondaNormal(canvas, cap, ocupantes) {
 // ======================= MESA RECTANGULAR DE NOVIOS =======================
 function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
     const canvasWidth = 660;
-    const canvasHeight = 490;
+    const canvasHeight = 430;
     canvas.style.width = `${canvasWidth}px`;
     canvas.style.height = `${canvasHeight}px`;
 
-    // 1. TOOLBAR DE SWITCHES INDEPENDIENTE EN LA CABECERA DEL CANVAS
-    const toolbar = document.createElement('div');
-    toolbar.className = 'novios-toolbar-switches d-flex flex-wrap justify-content-center align-items-center gap-3 p-2 mb-3 bg-white rounded border shadow-sm';
-    toolbar.innerHTML = `
-        <div class="d-flex align-items-center gap-2">
-            <label class="small fw-bold text-dark mb-0"><i class="bi bi-person-lines-fill me-1"></i>Cabeceras:</label>
-            <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn ${configNoviosCabecera === 1 ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" onclick="cambiarConfigNoviosCabecera(1)">1 por lado</button>
-                <button type="button" class="btn ${configNoviosCabecera === 2 ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" onclick="cambiarConfigNoviosCabecera(2)">2 por lado</button>
-            </div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-            <label class="small fw-bold text-dark mb-0"><i class="bi bi-layout-split me-1"></i>Disposición:</label>
-            <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn ${configNoviosLados === 'ambos' ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" onclick="cambiarConfigNoviosLados('ambos')">Ambos Lados</button>
-                <button type="button" class="btn ${configNoviosLados === 'un_lado' ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" onclick="cambiarConfigNoviosLados('un_lado')">1 Lado Libre (Presidencial)</button>
-            </div>
-        </div>
-    `;
-    canvas.appendChild(toolbar);
-
-    // 2. MESA CENTRAL
+    // 1. MESA CENTRAL
     const centerTable = document.createElement('div');
     centerTable.className = 'table-center-rect';
     centerTable.style.width = '420px';
     centerTable.style.height = configNoviosLados === 'un_lado' ? '160px' : '170px';
     centerTable.style.left = '120px';
-    centerTable.style.top = configNoviosLados === 'un_lado' ? '200px' : '185px';
+    centerTable.style.top = configNoviosLados === 'un_lado' ? '165px' : '135px';
 
     const subtituloMesa = configNoviosLados === 'un_lado' 
         ? '<span class="text-success fw-semibold">Presidencial (Lado inferior libre)</span>' 
@@ -1433,7 +1478,7 @@ function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
     `;
     canvas.appendChild(centerTable);
 
-    // 3. CÁLCULO DE CABECERAS
+    // 2. CÁLCULO DE CABECERAS
     let numSilla = 1;
     const cabeceraCount = configNoviosCabecera; // 1 o 2
 
@@ -1465,7 +1510,7 @@ function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
         numSilla++;
     }
 
-    // 4. DISTRIBUCIÓN HORIZONTAL PROPORCIONAL
+    // 3. DISTRIBUCIÓN HORIZONTAL PROPORCIONAL
     const sillasRestantes = Math.max(0, cap - (numSilla - 1));
     const xStart = 120;
     const xEnd = 540;
