@@ -57,20 +57,46 @@ body {
     background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
 }
 
-/* Panel Izquierdo Fijo (Por Asignar) */
-.sticky-panel { 
-    position: sticky; top: 15px; z-index: 90; transition: 0.3s; 
-}
-@media (max-width: 991px) {
-    .sticky-panel { top: 10px; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.15); border-bottom: 3px solid var(--oro); }
-    #lista-sin-asignar { max-height: 25vh !important; }
-}
-
 /* Controles de Mesas Fijos Arriba al hacer Scroll */
 .sticky-mesas-menu {
-    position: sticky; top: 10px; z-index: 95;
-    background: rgba(244, 241, 234, 0.98); backdrop-filter: blur(6px);
-    padding: 4px 0; margin-bottom: 15px;
+    position: sticky; 
+    top: 10px; 
+    z-index: 95;
+    background: rgba(244, 241, 234, 0.98); 
+    backdrop-filter: blur(6px);
+    padding: 4px 0; 
+    margin-bottom: 15px;
+}
+
+/* Panel Izquierdo Fijo Completo (Por Asignar con Título, Filtros y Buscador) */
+.sticky-panel { 
+    position: sticky; 
+    top: 150px; 
+    z-index: 90; 
+    max-height: calc(100vh - 165px);
+    display: flex;
+    flex-direction: column;
+    transition: top 0.2s ease;
+}
+
+#lista-sin-asignar {
+    flex: 1 1 auto;
+    min-height: 120px;
+    max-height: none !important;
+    overflow-y: auto;
+}
+
+@media (max-width: 991px) {
+    .sticky-panel { 
+        top: 10px; 
+        z-index: 1000; 
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15); 
+        border-bottom: 3px solid var(--oro); 
+        max-height: 45vh;
+    }
+    #lista-sin-asignar { 
+        max-height: 25vh !important; 
+    }
 }
 
 /* Tarjeta de Mesa */
@@ -137,7 +163,7 @@ body {
     position: relative;
     width: 100%;
     max-width: 680px;
-    min-height: 440px;
+    min-height: 490px;
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -149,12 +175,9 @@ body {
 
 /* Barra de switches de configuración de Mesa 1 (Novios) */
 .novios-toolbar-switches {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 95%;
+    width: 100%;
     max-width: 620px;
+    margin: 0 auto 15px auto;
     z-index: 15;
 }
 

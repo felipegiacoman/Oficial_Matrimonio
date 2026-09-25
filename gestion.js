@@ -20,7 +20,7 @@ let mesaModalActiva = null;
 let planoModalModoReadOnly = false;
 let invitadoSeleccionadoParaCancelar = null;
 
-// Configuración visual específica para Mesa 1 (Los Novios)
+// Configuración persistente para Mesa 1 (Los Novios)
 let configNoviosCabecera = parseInt(localStorage.getItem('cfg_novios_cabecera') || '1'); // 1 o 2 personas por cabecera
 let configNoviosLados = localStorage.getItem('cfg_novios_lados') || 'ambos'; // 'ambos' o 'un_lado'
 
@@ -172,7 +172,7 @@ window.addEventListener('dragover', manejarAutoScroll);
 window.addEventListener('dragend', detenerAutoScroll);
 window.addEventListener('drop', detenerAutoScroll);
 
-// EVENTOS DOM / FOCO AUTOMÁTICO / AUTO-GUARDADO ENTRE PESTAÑAS
+// EVENTOS DOM / AUTO-GUARDADO ENTRE PESTAÑAS
 document.addEventListener('DOMContentLoaded', () => {
     const modalSentar = document.getElementById('modalSentarEnMesa');
     if (modalSentar) {
@@ -469,6 +469,38 @@ function procesarDatosGenerales() {
     listaPendientes = [];
     listaDesglosadaMaestra = [];
 
+    // 1. INYECTAR A LOS NOVIOS (FELIPE Y ANTONIA) EN MESA 1
+    const asientoFelipe = localStorage.getItem('asiento_novio_felipe') ? parseInt(localStorage.getItem('asiento_novio_felipe')) : 1;
+    const asientoAntonia = localStorage.getItem('asiento_novia_antonia') ? parseInt(localStorage.getItem('asiento_novia_antonia')) : 2;
+
+    listaComensalesGenerales.push({
+        id_drag: `novio_felipe`,
+        nombre_mostrar: "Felipe (Novio)",
+        nombre_principal: "Felipe (Novio)",
+        es_pareja: false,
+        mesa: 1,
+        asiento_numero: isNaN(asientoFelipe) ? null : asientoFelipe,
+        dieta: "Ninguna",
+        esNino: false,
+        lado: "Novio",
+        telefono: "-",
+        esNovioFijo: true
+    });
+
+    listaComensalesGenerales.push({
+        id_drag: `novia_antonia`,
+        nombre_mostrar: "Antonia (Novia)",
+        nombre_principal: "Antonia (Novia)",
+        es_pareja: false,
+        mesa: 1,
+        asiento_numero: isNaN(asientoAntonia) ? null : asientoAntonia,
+        dieta: "Ninguna",
+        esNino: false,
+        lado: "Novia",
+        telefono: "-",
+        esNovioFijo: true
+    });
+
     dataMaestra.forEach(m => {
         listaCancelables.push({ nombre_mostrar: m.nombre, nombre_principal: m.nombre, es_pareja: false });
 
@@ -641,12 +673,14 @@ function prepararPayloadMesas() {
         alias: m.alias || ''
     }));
 
-    const asignacionesPayload = listaComensalesGenerales.map(c => ({
-        nombre_principal: c.nombre_principal,
-        es_pareja: c.es_pareja,
-        mesa_numero: (c.mesa !== null && c.mesa !== undefined && c.mesa !== "") ? parseInt(c.mesa) : null,
-        asiento_numero: (c.asiento_numero !== null && c.asiento_numero !== undefined && c.asiento_numero !== "") ? parseInt(c.asiento_numero) : null
-    }));
+    const asignacionesPayload = listaComensalesGenerales
+        .filter(c => !c.esNovioFijo)
+        .map(c => ({
+            nombre_principal: c.nombre_principal,
+            es_pareja: c.es_pareja,
+            mesa_numero: (c.mesa !== null && c.mesa !== undefined && c.mesa !== "") ? parseInt(c.mesa) : null,
+            asiento_numero: (c.asiento_numero !== null && c.asiento_numero !== undefined && c.asiento_numero !== "") ? parseInt(c.asiento_numero) : null
+        }));
 
     return {
         tipo: "guardar_todo_mesas",
@@ -703,7 +737,7 @@ function ejecutarCambioNumeroMesa(viejoNum, nuevoNumDeseado) {
     });
 
     listaComensalesGenerales.forEach(c => {
-        if (c.mesa !== null && mapaCambios[parseInt(c.mesa)]) {
+        if (!c.esNovioFijo && c.mesa !== null && mapaCambios[parseInt(c.mesa)]) {
             c.mesa = mapaCambios[parseInt(c.mesa)];
         }
     });
@@ -732,7 +766,7 @@ function renumerarMesasContiguas() {
     });
 
     listaComensalesGenerales.forEach(c => {
-        if (c.mesa !== null && mapaCambios[parseInt(c.mesa)]) {
+        if (!c.esNovioFijo && c.mesa !== null && mapaCambios[parseInt(c.mesa)]) {
             c.mesa = mapaCambios[parseInt(c.mesa)];
         }
     });
@@ -753,7 +787,7 @@ function eliminarMesa(num) {
     reconciliarMesasHuerfanas();
 
     listaComensalesGenerales.forEach(c => { 
-        if(parseInt(c.mesa) === num) {
+        if(!c.esNovioFijo && parseInt(c.mesa) === num) {
             c.mesa = null;
             c.asiento_numero = null;
         }
@@ -773,7 +807,7 @@ function eliminarMesa(num) {
     });
 
     listaComensalesGenerales.forEach(c => {
-        if (c.mesa !== null && mapaCambios[parseInt(c.mesa)]) {
+        if (!c.esNovioFijo && c.mesa !== null && mapaCambios[parseInt(c.mesa)]) {
             c.mesa = mapaCambios[parseInt(c.mesa)];
         }
     });
@@ -793,7 +827,7 @@ function dibujarPanelMesas() {
 }
 
 function actualizarKPIMesas() {
-    const sinAsignar = listaComensalesGenerales.filter(c => c.mesa === null || c.mesa === "");
+    const sinAsignar = listaComensalesGenerales.filter(c => !c.esNovioFijo && (c.mesa === null || c.mesa === ""));
     let sillasTotales = 0, sillasOcupadas = 0;
     
     dataMesas.forEach(m => {
@@ -820,7 +854,7 @@ function filtrarSinAsignarLado(lado) {
 }
 
 function dibujarListaSinAsignar() {
-    const sinAsignar = listaComensalesGenerales.filter(c => c.mesa === null || c.mesa === "");
+    const sinAsignar = listaComensalesGenerales.filter(c => !c.esNovioFijo && (c.mesa === null || c.mesa === ""));
     const inputBuscador = document.getElementById('buscador-por-asignar');
     const term = inputBuscador ? quitarTildes(inputBuscador.value) : "";
     
@@ -880,8 +914,8 @@ function dibujarGridMesas() {
                     <span class="text-truncate fw-semibold" style="font-size:0.82rem;" title="${escapeHTML(c.nombre_mostrar)}">${escapeHTML(c.nombre_mostrar)}</span>
                 </div>
                 <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                    <button class="btn btn-sm btn-light border py-0 px-1 text-muted" title="Mover a otra mesa" onclick="abrirModalAsignarDirecto('${c.id_drag}', ${num})"><i class="bi bi-arrow-left-right" style="font-size:0.75rem;"></i></button>
-                    <button class="btn btn-sm text-danger p-0 m-0" title="Quitar de la mesa" onclick="intentarAsignar('${c.id_drag}', null, null, null)"><i class="bi bi-x-circle"></i></button>
+                    ${!c.esNovioFijo ? `<button class="btn btn-sm btn-light border py-0 px-1 text-muted" title="Mover a otra mesa" onclick="abrirModalAsignarDirecto('${c.id_drag}', ${num})"><i class="bi bi-arrow-left-right" style="font-size:0.75rem;"></i></button>` : ''}
+                    ${!c.esNovioFijo ? `<button class="btn btn-sm text-danger p-0 m-0" title="Quitar de la mesa" onclick="intentarAsignar('${c.id_drag}', null, null, null)"><i class="bi bi-x-circle"></i></button>` : ''}
                 </div>
             </div>`;
         });
@@ -995,7 +1029,7 @@ function dropMesa(ev, targetMesaNum) {
 function intentarAsignar(idDrag, mesaNum, capMax, capActual, autoPareja = true) {
     if(!idDrag) return; 
     const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag); 
-    if (!comensal) return;
+    if (!comensal || comensal.esNovioFijo) return;
     
     if (mesaNum !== null && comensal.mesa !== null && parseInt(comensal.mesa) === parseInt(mesaNum)) return;
 
@@ -1014,9 +1048,9 @@ function intentarAsignar(idDrag, mesaNum, capMax, capActual, autoPareja = true) 
     let companero = null;
     if (autoPareja) {
         if (comensal.es_pareja) {
-            companero = listaComensalesGenerales.find(c => c.nombre_principal === comensal.nombre_principal && !c.es_pareja && (c.mesa === null || c.mesa === ""));
+            companero = listaComensalesGenerales.find(c => !c.esNovioFijo && c.nombre_principal === comensal.nombre_principal && !c.es_pareja && (c.mesa === null || c.mesa === ""));
         } else {
-            companero = listaComensalesGenerales.find(c => c.nombre_principal === comensal.nombre_principal && c.es_pareja && (c.mesa === null || c.mesa === ""));
+            companero = listaComensalesGenerales.find(c => !c.esNovioFijo && c.nombre_principal === comensal.nombre_principal && c.es_pareja && (c.mesa === null || c.mesa === ""));
         }
     }
 
@@ -1136,7 +1170,7 @@ function filtrarMesasVista(tipo) {
 
 function abrirModalAsignarDirecto(idDrag, mesaActual = null) {
     const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
-    if(!comensal) return;
+    if(!comensal || comensal.esNovioFijo) return;
     comensalModalActivo = comensal;
 
     setText('modalMoverMesaTitulo', `Asignar a: ${comensal.nombre_mostrar}`);
@@ -1197,7 +1231,7 @@ function ejecutarMoverDesdeModal() {
 let candidatosSinMesaGlobal = [];
 function abrirModalSentarEnMesa(numMesa, capMax, capActual) {
     mesaModalActiva = { num: numMesa, capMax: capMax, capActual: capActual };
-    candidatosSinMesaGlobal = listaComensalesGenerales.filter(c => c.mesa === null || c.mesa === "");
+    candidatosSinMesaGlobal = listaComensalesGenerales.filter(c => !c.esNovioFijo && (c.mesa === null || c.mesa === ""));
     
     setText('modalSentarMesaTitulo', (numMesa === 1) ? `Sentar en Mesa 1 (Los Novios)` : `Sentar en Mesa ${numMesa}`);
     renderListaModalSinAsignar(candidatosSinMesaGlobal);
@@ -1345,22 +1379,22 @@ function dibujarMesaRedondaNormal(canvas, cap, ocupantes) {
     const radius = 175;
     for (let i = 1; i <= cap; i++) {
         const angle = (2 * Math.PI / cap) * (i - 1) - Math.PI / 2;
-        const x = 220 + radius * Math.cos(angle) - 33;
-        const y = 220 + radius * Math.sin(angle) - 33;
+        const x = 220 + radius * Math.cos(angle) - 30;
+        const y = 220 + radius * Math.sin(angle) - 30;
 
         const comensalEnSilla = ocupantes.find(c => parseInt(c.asiento_numero) === i);
         crearNodoSilla(canvas, i, x, y, comensalEnSilla, cap);
     }
 }
 
-// ======================= MESA RECTANGULAR DE NOVIOS CON SWITCHES Y CERO COLISIÓN =======================
+// ======================= MESA RECTANGULAR DE NOVIOS =======================
 function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
     const canvasWidth = 660;
-    const canvasHeight = 440;
+    const canvasHeight = 490;
     canvas.style.width = `${canvasWidth}px`;
     canvas.style.height = `${canvasHeight}px`;
 
-    // 1. INYECTAR CONTROLES (SWITCH 1 Y SWITCH 2)
+    // 1. TOOLBAR DE SWITCHES INDEPENDIENTE EN LA CABECERA DEL CANVAS
     const toolbar = document.createElement('div');
     toolbar.className = 'novios-toolbar-switches d-flex flex-wrap justify-content-center align-items-center gap-3 p-2 mb-3 bg-white rounded border shadow-sm';
     toolbar.innerHTML = `
@@ -1385,9 +1419,9 @@ function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
     const centerTable = document.createElement('div');
     centerTable.className = 'table-center-rect';
     centerTable.style.width = '420px';
-    centerTable.style.height = configNoviosLados === 'un_lado' ? '150px' : '170px';
+    centerTable.style.height = configNoviosLados === 'un_lado' ? '160px' : '170px';
     centerTable.style.left = '120px';
-    centerTable.style.top = configNoviosLados === 'un_lado' ? '170px' : '150px';
+    centerTable.style.top = configNoviosLados === 'un_lado' ? '200px' : '185px';
 
     const subtituloMesa = configNoviosLados === 'un_lado' 
         ? '<span class="text-success fw-semibold">Presidencial (Lado inferior libre)</span>' 
@@ -1406,39 +1440,38 @@ function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
     // Cabecera Izquierda
     if (cabeceraCount === 1) {
         const c1 = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
-        crearNodoSilla(canvas, numSilla, 28, centerTable.offsetTop + (centerTable.offsetHeight / 2) - 30, c1, cap, "Cabecera Izq");
+        crearNodoSilla(canvas, numSilla, 28, centerTable.offsetTop + (centerTable.offsetHeight / 2) - 30, c1, cap, "Cab. Izq");
         numSilla++;
     } else {
         const c1 = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
         crearNodoSilla(canvas, numSilla, 28, centerTable.offsetTop + 10, c1, cap, "Cab. Izq 1");
         numSilla++;
         const c2 = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
-        crearNodoSilla(canvas, numSilla, 28, centerTable.offsetTop + centerTable.offsetHeight - 65, c2, cap, "Cab. Izq 2");
+        crearNodoSilla(canvas, numSilla, 28, centerTable.offsetTop + centerTable.offsetHeight - 70, c2, cap, "Cab. Izq 2");
         numSilla++;
     }
 
     // Cabecera Derecha
     if (cabeceraCount === 1) {
         const cRight = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
-        crearNodoSilla(canvas, numSilla, 572, centerTable.offsetTop + (centerTable.offsetHeight / 2) - 30, cRight, cap, "Cabecera Der");
+        crearNodoSilla(canvas, numSilla, 572, centerTable.offsetTop + (centerTable.offsetHeight / 2) - 30, cRight, cap, "Cab. Der");
         numSilla++;
     } else {
         const cr1 = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
         crearNodoSilla(canvas, numSilla, 572, centerTable.offsetTop + 10, cr1, cap, "Cab. Der 1");
         numSilla++;
         const cr2 = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
-        crearNodoSilla(canvas, numSilla, 572, centerTable.offsetTop + centerTable.offsetHeight - 65, cr2, cap, "Cab. Der 2");
+        crearNodoSilla(canvas, numSilla, 572, centerTable.offsetTop + centerTable.offsetHeight - 70, cr2, cap, "Cab. Der 2");
         numSilla++;
     }
 
-    // 4. CÁLCULO DE LADOS CON DISTRIBUCIÓN HORIZONTAL PROPORCIONAL
+    // 4. DISTRIBUCIÓN HORIZONTAL PROPORCIONAL
     const sillasRestantes = Math.max(0, cap - (numSilla - 1));
     const xStart = 120;
     const xEnd = 540;
     const availableWidth = xEnd - xStart;
 
     if (configNoviosLados === 'un_lado') {
-        // Todas las sillas restantes van al lado SUPERIOR (El lado inferior queda 100% libre)
         const totalTop = sillasRestantes;
         const stepX = totalTop > 1 ? availableWidth / (totalTop - 1) : 0;
         const chairWidth = totalTop > 1 ? Math.min(60, Math.max(46, stepX - 8)) : 60;
@@ -1451,7 +1484,6 @@ function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
             numSilla++;
         }
     } else {
-        // Distribución en AMBOS lados
         const sillasLadoSup = Math.ceil(sillasRestantes / 2);
         const sillasLadoInf = Math.floor(sillasRestantes / 2);
 
@@ -1473,7 +1505,7 @@ function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
 
         for (let s = 0; s < sillasLadoInf && numSilla <= cap; s++) {
             const x = sillasLadoInf === 1 ? xStart + (availableWidth / 2) - (chairWidthInf / 2) : xStart + (s * stepXInf) - (chairWidthInf / 2);
-            const y = centerTable.offsetTop + centerTable.offsetHeight + 18;
+            const y = centerTable.offsetTop + centerTable.offsetHeight + 15;
             const comensal = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
             crearNodoSilla(canvas, numSilla, x, y, comensal, cap, null, chairWidthInf);
             numSilla++;
@@ -1562,7 +1594,10 @@ function asignarSillaEspecificaConPareja(idDrag, numSilla, capTotal) {
     guardarSnapshotUndo();
     comensal.asiento_numero = numSilla;
 
-    const pareja = listaComensalesGenerales.find(c => c.nombre_principal === comensal.nombre_principal && c.es_pareja !== comensal.es_pareja && c.mesa === mesaPlanoActiva);
+    if (comensal.id_drag === 'novio_felipe') localStorage.setItem('asiento_novio_felipe', numSilla.toString());
+    if (comensal.id_drag === 'novia_antonia') localStorage.setItem('asiento_novia_antonia', numSilla.toString());
+
+    const pareja = listaComensalesGenerales.find(c => !c.esNovioFijo && c.nombre_principal === comensal.nombre_principal && c.es_pareja !== comensal.es_pareja && c.mesa === mesaPlanoActiva);
     
     if (pareja && !pareja.asiento_numero) {
         const sillasOcupadas = listaComensalesGenerales.filter(c => c.mesa === mesaPlanoActiva && c.asiento_numero).map(c => parseInt(c.asiento_numero));
@@ -1589,6 +1624,10 @@ function desasignarSilla(idDrag) {
 
     guardarSnapshotUndo();
     comensal.asiento_numero = null;
+
+    if (comensal.id_drag === 'novio_felipe') localStorage.removeItem('asiento_novio_felipe');
+    if (comensal.id_drag === 'novia_antonia') localStorage.removeItem('asiento_novia_antonia');
+
     renderContenidoPlanoMesa(mesaPlanoActiva);
     dibujarGridMesas();
     marcarCambioPendienteMesas();
@@ -1730,7 +1769,7 @@ function cancelarDesdePendientes(nombrePrincipal, esPareja) {
     addToQueue({ tipo: "admin_cancelar", nombre_principal: nombrePrincipal, es_pareja: esPareja });
 }
 
-// ======================= RESTAURAR CANCELADOS (A PENDIENTE O A CONFIRMADO) =======================
+// ======================= RESTAURAR CANCELADOS =======================
 function restaurarCanceladoAPendiente(nombreCompleto) {
     if (!confirm(`¿Mover a "${nombreCompleto}" de vuelta a la lista de PENDIENTES?`)) return;
 
@@ -1763,10 +1802,12 @@ function dibujarPanelConfirmaciones() {
     const term = inputConf ? quitarTildes(inputConf.value) : "";
     const termPend = inputPend ? quitarTildes(inputPend.value) : "";
 
-    const confirmadosFiltrados = listaComensalesGenerales.filter(c => {
-        if (filtroConfirmacionesLadoActual === 'todos') return true;
-        return c.lado === filtroConfirmacionesLadoActual || c.lado === 'Ambos';
-    });
+    const confirmadosFiltrados = listaComensalesGenerales
+        .filter(c => !c.esNovioFijo)
+        .filter(c => {
+            if (filtroConfirmacionesLadoActual === 'todos') return true;
+            return c.lado === filtroConfirmacionesLadoActual || c.lado === 'Ambos';
+        });
 
     const pendientesFiltrados = listaPendientes.filter(p => {
         if (filtroConfirmacionesLadoActual === 'todos') return true;
@@ -1847,7 +1888,7 @@ function dibujarPanelConfirmaciones() {
 
 function bajarDesdeConfirmados(idDrag) {
     const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
-    if (!comensal) return;
+    if (!comensal || comensal.esNovioFijo) return;
 
     if (comensal.es_pareja) {
         if (!confirm(`¿Dar de baja a la pareja ${comensal.nombre_mostrar}?`)) return;
@@ -2043,7 +2084,7 @@ function renderTablaBanqueteria(filtro = filtroActualBanqueteria) {
 
 function editarDietaUI(idDrag) {
     const comensal = listaComensalesGenerales.find(c => c.id_drag === idDrag);
-    if(!comensal) return;
+    if(!comensal || comensal.esNovioFijo) return;
     const nuevaDieta = prompt(`Escribe la nueva restricción para ${comensal.nombre_mostrar}:`, comensal.dieta);
     if(nuevaDieta === null) return; 
     
@@ -2368,7 +2409,7 @@ function exportarExcelBanqueteria() {
 }
 
 function exportarExcelConfirmaciones() {
-    let confData = listaComensalesGenerales.map(c => ({ "Nombre": c.nombre_mostrar, "Tipo": c.es_pareja ? "Pareja" : "Titular", "Teléfono": c.telefono || "-", "Restricción Alimentaria": c.dieta }));
+    let confData = listaComensalesGenerales.filter(c => !c.esNovioFijo).map(c => ({ "Nombre": c.nombre_mostrar, "Tipo": c.es_pareja ? "Pareja" : "Titular", "Teléfono": c.telefono || "-", "Restricción Alimentaria": c.dieta }));
     let pendData = listaPendientes.map(p => ({ "Nombre": p.nombre, "Tipo": p.tipo }));
     let cancData = dataCancelados.map(c => ({ "Nombre": c.nombre, "Motivo": c.mensaje || "-" }));
     let fiestaData = listaInvitadosFiesta.map((f, i) => ({ "#": i + 1, "Nombre": f.nombre, "Tipo": f.es_pareja ? "Pareja" : "Titular" }));
