@@ -73,7 +73,7 @@ body {
     padding: 4px 0; margin-bottom: 15px;
 }
 
-/* Tarjeta Original de Mesa */
+/* Tarjeta de Mesa */
 .mesa-card { 
     background: white; border-radius: 8px; border-top: 4px solid var(--oro); 
     padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; transition: 0.2s;
@@ -89,7 +89,7 @@ body {
 .mesa-alias { font-size: 0.78rem; color: #888; font-style: italic; cursor: pointer; }
 .mesa-alias:hover { color: var(--oro); text-decoration: underline; }
 
-/* Fila Original de Comensal */
+/* Fila de Comensal */
 .guest-item { 
     display: flex; justify-content: space-between; align-items: center; 
     padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; background: white;
@@ -104,7 +104,7 @@ body {
 }
 .drop-zone.dragover { border-color: var(--oro); background: rgba(181, 154, 122, 0.05); }
 
-/* Torpedo Emoji (Novio / Novia) */
+/* Torpedo Emoji (Novio / Novia / Ambos) */
 .torpedo-badge {
     width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
     border-radius: 4px; font-size: 0.75rem; flex-shrink: 0; color: white; margin-right: 6px;
@@ -135,12 +135,27 @@ body {
 
 .seating-map-container {
     position: relative;
-    width: 440px;
-    height: 440px;
+    width: 100%;
+    max-width: 680px;
+    min-height: 440px;
     margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px 0;
+}
+
+/* Barra de switches de configuración de Mesa 1 (Novios) */
+.novios-toolbar-switches {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 95%;
+    max-width: 620px;
+    z-index: 15;
 }
 
 /* Mesa Redonda Central */
@@ -163,8 +178,6 @@ body {
 /* Mesa Rectangular de los Novios */
 .table-center-rect {
     position: absolute;
-    width: 270px;
-    height: 140px;
     border-radius: 12px;
     background: #fffdf8;
     border: 3.5px solid var(--oro-novios);
@@ -175,14 +188,15 @@ body {
     justify-content: center;
     text-align: center;
     z-index: 5;
+    transition: all 0.25s ease;
 }
 
-/* Sillas en Vista de Planta (Con respaldo curvo como la imagen) */
+/* Sillas en Vista de Planta */
 .seat-chair-node {
     position: absolute;
-    width: 66px;
-    height: 66px;
-    border-radius: 14px;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
     background: white;
     border: 2px solid #d4cbbe;
     box-shadow: 0 3px 8px rgba(0,0,0,0.07);
@@ -190,15 +204,16 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 3px;
-    font-size: 0.68rem;
+    padding: 2px;
+    font-size: 0.65rem;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
     z-index: 10;
+    user-select: none;
 }
 .seat-chair-node:hover {
-    transform: scale(1.1);
+    transform: scale(1.08);
     border-color: var(--oro);
     box-shadow: 0 4px 12px rgba(181, 154, 122, 0.3);
 }
@@ -226,17 +241,22 @@ body {
 .seat-chair-node.dragover-seat {
     background: #eaf5ec !important;
     border: 2px dashed #28a745 !important;
-    transform: scale(1.18);
+    transform: scale(1.15);
 }
 
-/* Estados en la lista izquierda del modal */
+/* Estados en la lista izquierda del modal de asientos */
 .member-row-item {
     transition: all 0.15s;
     border-radius: 6px;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     padding: 8px 10px;
     border: 1px solid #eee7dc;
     background: white;
+    user-select: none;
+}
+.member-row-item:hover {
+    background: #fdfcf9;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 .member-row-item.is-seated {
     border-left: 4px solid #28a745 !important;

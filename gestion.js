@@ -20,6 +20,10 @@ let mesaModalActiva = null;
 let planoModalModoReadOnly = false;
 let invitadoSeleccionadoParaCancelar = null;
 
+// Configuración visual específica para Mesa 1 (Los Novios)
+let configNoviosCabecera = parseInt(localStorage.getItem('cfg_novios_cabecera') || '1'); // 1 o 2 personas por cabecera
+let configNoviosLados = localStorage.getItem('cfg_novios_lados') || 'ambos'; // 'ambos' o 'un_lado'
+
 // Filtros de navegación
 let filtroActualBanqueteria = 'Todas';
 let filtroMesasEstado = 'todas';
@@ -425,7 +429,6 @@ async function cargarDatos() {
         dataCancelados = resCanc;
         dataMesas = resMesas;
 
-        // Migrar mesa 0 histórica a Mesa 1 si existiera
         const mesaCero = dataMesas.find(m => parseInt(m.numero) === 0);
         if (mesaCero) {
             dataConfirmados.forEach(c => {
@@ -1258,6 +1261,18 @@ function abrirModalPlanoMesaReadOnly(numMesa) {
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
+function cambiarConfigNoviosCabecera(valor) {
+    configNoviosCabecera = parseInt(valor);
+    localStorage.setItem('cfg_novios_cabecera', configNoviosCabecera.toString());
+    if (mesaPlanoActiva === 1) renderContenidoPlanoMesa(1);
+}
+
+function cambiarConfigNoviosLados(valor) {
+    configNoviosLados = valor;
+    localStorage.setItem('cfg_novios_lados', configNoviosLados);
+    if (mesaPlanoActiva === 1) renderContenidoPlanoMesa(1);
+}
+
 function renderContenidoPlanoMesa(numMesa) {
     const mesaObj = dataMesas.find(m => parseInt(m.numero) === parseInt(numMesa));
     if (!mesaObj) return;
@@ -1271,14 +1286,11 @@ function renderContenidoPlanoMesa(numMesa) {
     const tituloEl = document.getElementById('modalPlanoMesaTitulo');
     if (tituloEl && planoModalModoReadOnly) tituloEl.innerHTML += tituloReadOnly;
 
-    setText('modalPlanoMesaSubtitulo', esNovios ? 'Mesa rectangular de honor con cabeceras' : 'Mesa redonda con sillas alrededor');
+    setText('modalPlanoMesaSubtitulo', esNovios ? 'Mesa rectangular de honor con distribución configurable' : 'Mesa redonda con sillas alrededor');
     setText('modal-plano-count', `${ocupantes.length}/${cap}`);
 
-    // OCULTAR O MOSTRAR BOTÓN AGREGAR EN EL MODAL SEGÚN CORRESPONDA
     const btnAgregarModal = document.getElementById('btn-modal-plano-agregar');
-    if (btnAgregarModal) {
-        btnAgregarModal.style.display = 'none'; // Siempre oculto para no confundir con gestión general de mesa
-    }
+    if (btnAgregarModal) btnAgregarModal.style.display = 'none';
 
     let htmlLista = "";
     ocupantes.forEach((c) => {
@@ -1291,7 +1303,6 @@ function renderContenidoPlanoMesa(numMesa) {
             : '';
         let ninoTag = c.esNino ? `<span class="badge badge-nino ms-1">Niño</span>` : '';
 
-        // ARRASTRE PERMITIDO EN TODO EL RECTÁNGULO (SI NO ES SOLO LECTURA)
         const draggableAttr = !planoModalModoReadOnly ? `draggable="true" ondragstart="dragGuestPlano(event, '${c.id_drag}')" style="cursor: grab;"` : '';
 
         htmlLista += `
@@ -1319,6 +1330,8 @@ function renderContenidoPlanoMesa(numMesa) {
     if (esNovios) {
         dibujarMesaRectangularNovios(canvas, cap, ocupantes);
     } else {
+        canvas.style.width = '440px';
+        canvas.style.height = '440px';
         dibujarMesaRedondaNormal(canvas, cap, ocupantes);
     }
 }
@@ -1340,55 +1353,151 @@ function dibujarMesaRedondaNormal(canvas, cap, ocupantes) {
     }
 }
 
+// ======================= MESA RECTANGULAR DE NOVIOS CON SWITCHES Y CERO COLISIÓN =======================
 function dibujarMesaRectangularNovios(canvas, cap, ocupantes) {
+    const canvasWidth = 660;
+    const canvasHeight = 440;
+    canvas.style.width = `${canvasWidth}px`;
+    canvas.style.height = `${canvasHeight}px`;
+
+    // 1. INYECTAR CONTROLES (SWITCH 1 Y SWITCH 2)
+    const toolbar = document.createElement('div');
+    toolbar.className = 'novios-toolbar-switches d-flex flex-wrap justify-content-center align-items-center gap-3 p-2 mb-3 bg-white rounded border shadow-sm';
+    toolbar.innerHTML = `
+        <div class="d-flex align-items-center gap-2">
+            <label class="small fw-bold text-dark mb-0"><i class="bi bi-person-lines-fill me-1"></i>Cabeceras:</label>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn ${configNoviosCabecera === 1 ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" onclick="cambiarConfigNoviosCabecera(1)">1 por lado</button>
+                <button type="button" class="btn ${configNoviosCabecera === 2 ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" onclick="cambiarConfigNoviosCabecera(2)">2 por lado</button>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <label class="small fw-bold text-dark mb-0"><i class="bi bi-layout-split me-1"></i>Disposición:</label>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn ${configNoviosLados === 'ambos' ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" onclick="cambiarConfigNoviosLados('ambos')">Ambos Lados</button>
+                <button type="button" class="btn ${configNoviosLados === 'un_lado' ? 'btn-gold text-white fw-bold' : 'btn-outline-secondary'}" onclick="cambiarConfigNoviosLados('un_lado')">1 Lado Libre (Presidencial)</button>
+            </div>
+        </div>
+    `;
+    canvas.appendChild(toolbar);
+
+    // 2. MESA CENTRAL
     const centerTable = document.createElement('div');
     centerTable.className = 'table-center-rect';
-    centerTable.innerHTML = `<strong style="font-family:'Playfair Display', serif; font-size:1.15rem; color:#d4af37;">👑 Mesa 1: Novios</strong><small class="text-muted" style="font-size:0.75rem;">Mesa de Honor</small>`;
+    centerTable.style.width = '420px';
+    centerTable.style.height = configNoviosLados === 'un_lado' ? '150px' : '170px';
+    centerTable.style.left = '120px';
+    centerTable.style.top = configNoviosLados === 'un_lado' ? '170px' : '150px';
+
+    const subtituloMesa = configNoviosLados === 'un_lado' 
+        ? '<span class="text-success fw-semibold">Presidencial (Lado inferior libre)</span>' 
+        : '<small class="text-muted">Mesa Rectangular de Honor</small>';
+
+    centerTable.innerHTML = `
+        <strong style="font-family:'Playfair Display', serif; font-size:1.18rem; color:#d4af37;">👑 Mesa 1: Novios</strong>
+        <div style="font-size:0.75rem;">${subtituloMesa}</div>
+    `;
     canvas.appendChild(centerTable);
 
-    const comensalSilla1 = ocupantes.find(c => parseInt(c.asiento_numero) === 1);
-    crearNodoSilla(canvas, 1, 20, 187, comensalSilla1, cap, "Cabecera 1");
+    // 3. CÁLCULO DE CABECERAS
+    let numSilla = 1;
+    const cabeceraCount = configNoviosCabecera; // 1 o 2
 
-    const comensalSilla2 = ocupantes.find(c => parseInt(c.asiento_numero) === 2);
-    crearNodoSilla(canvas, 2, 354, 187, comensalSilla2, cap, "Cabecera 2");
-
-    const sillasLados = cap - 2;
-    const sillasPorLado = Math.ceil(sillasLados / 2);
-    
-    const xInicio = 90;
-    const xFin = 285;
-    const pasoX = (xFin - xInicio) / Math.max(1, sillasPorLado - 1);
-
-    let sillaNum = 3;
-    for (let s = 0; s < sillasPorLado && sillaNum <= cap; s++) {
-        const x = xInicio + (s * pasoX);
-        const y = 60;
-        const comensal = ocupantes.find(c => parseInt(c.asiento_numero) === sillaNum);
-        crearNodoSilla(canvas, sillaNum, x, y, comensal, cap);
-        sillaNum++;
+    // Cabecera Izquierda
+    if (cabeceraCount === 1) {
+        const c1 = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
+        crearNodoSilla(canvas, numSilla, 28, centerTable.offsetTop + (centerTable.offsetHeight / 2) - 30, c1, cap, "Cabecera Izq");
+        numSilla++;
+    } else {
+        const c1 = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
+        crearNodoSilla(canvas, numSilla, 28, centerTable.offsetTop + 10, c1, cap, "Cab. Izq 1");
+        numSilla++;
+        const c2 = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
+        crearNodoSilla(canvas, numSilla, 28, centerTable.offsetTop + centerTable.offsetHeight - 65, c2, cap, "Cab. Izq 2");
+        numSilla++;
     }
 
-    for (let s = 0; s < sillasPorLado && sillaNum <= cap; s++) {
-        const x = xInicio + (s * pasoX);
-        const y = 314;
-        const comensal = ocupantes.find(c => parseInt(c.asiento_numero) === sillaNum);
-        crearNodoSilla(canvas, sillaNum, x, y, comensal, cap);
-        sillaNum++;
+    // Cabecera Derecha
+    if (cabeceraCount === 1) {
+        const cRight = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
+        crearNodoSilla(canvas, numSilla, 572, centerTable.offsetTop + (centerTable.offsetHeight / 2) - 30, cRight, cap, "Cabecera Der");
+        numSilla++;
+    } else {
+        const cr1 = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
+        crearNodoSilla(canvas, numSilla, 572, centerTable.offsetTop + 10, cr1, cap, "Cab. Der 1");
+        numSilla++;
+        const cr2 = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
+        crearNodoSilla(canvas, numSilla, 572, centerTable.offsetTop + centerTable.offsetHeight - 65, cr2, cap, "Cab. Der 2");
+        numSilla++;
+    }
+
+    // 4. CÁLCULO DE LADOS CON DISTRIBUCIÓN HORIZONTAL PROPORCIONAL
+    const sillasRestantes = Math.max(0, cap - (numSilla - 1));
+    const xStart = 120;
+    const xEnd = 540;
+    const availableWidth = xEnd - xStart;
+
+    if (configNoviosLados === 'un_lado') {
+        // Todas las sillas restantes van al lado SUPERIOR (El lado inferior queda 100% libre)
+        const totalTop = sillasRestantes;
+        const stepX = totalTop > 1 ? availableWidth / (totalTop - 1) : 0;
+        const chairWidth = totalTop > 1 ? Math.min(60, Math.max(46, stepX - 8)) : 60;
+
+        for (let i = 0; i < totalTop && numSilla <= cap; i++) {
+            const x = totalTop === 1 ? xStart + (availableWidth / 2) - (chairWidth / 2) : xStart + (i * stepX) - (chairWidth / 2);
+            const y = centerTable.offsetTop - 75;
+            const comensal = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
+            crearNodoSilla(canvas, numSilla, x, y, comensal, cap, null, chairWidth);
+            numSilla++;
+        }
+    } else {
+        // Distribución en AMBOS lados
+        const sillasLadoSup = Math.ceil(sillasRestantes / 2);
+        const sillasLadoInf = Math.floor(sillasRestantes / 2);
+
+        // Lado Superior
+        const stepXSup = sillasLadoSup > 1 ? availableWidth / (sillasLadoSup - 1) : 0;
+        const chairWidthSup = sillasLadoSup > 1 ? Math.min(60, Math.max(46, stepXSup - 8)) : 60;
+
+        for (let s = 0; s < sillasLadoSup && numSilla <= cap; s++) {
+            const x = sillasLadoSup === 1 ? xStart + (availableWidth / 2) - (chairWidthSup / 2) : xStart + (s * stepXSup) - (chairWidthSup / 2);
+            const y = centerTable.offsetTop - 75;
+            const comensal = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
+            crearNodoSilla(canvas, numSilla, x, y, comensal, cap, null, chairWidthSup);
+            numSilla++;
+        }
+
+        // Lado Inferior
+        const stepXInf = sillasLadoInf > 1 ? availableWidth / (sillasLadoInf - 1) : 0;
+        const chairWidthInf = sillasLadoInf > 1 ? Math.min(60, Math.max(46, stepXInf - 8)) : 60;
+
+        for (let s = 0; s < sillasLadoInf && numSilla <= cap; s++) {
+            const x = sillasLadoInf === 1 ? xStart + (availableWidth / 2) - (chairWidthInf / 2) : xStart + (s * stepXInf) - (chairWidthInf / 2);
+            const y = centerTable.offsetTop + centerTable.offsetHeight + 18;
+            const comensal = ocupantes.find(c => parseInt(c.asiento_numero) === numSilla);
+            crearNodoSilla(canvas, numSilla, x, y, comensal, cap, null, chairWidthInf);
+            numSilla++;
+        }
     }
 }
 
-function crearNodoSilla(canvas, numSilla, x, y, comensal, capTotal, etiquetaCustom = null) {
+function crearNodoSilla(canvas, numSilla, x, y, comensal, capTotal, etiquetaCustom = null, customWidth = null) {
     const chair = document.createElement('div');
     chair.className = `seat-chair-node ${comensal ? 'is-occupied' : 'is-empty'}`;
-    chair.style.left = `${x}px`;
-    chair.style.top = `${y}px`;
+    chair.style.left = `${Math.round(x)}px`;
+    chair.style.top = `${Math.round(y)}px`;
+
+    if (customWidth) {
+        chair.style.width = `${Math.round(customWidth)}px`;
+        chair.style.height = `${Math.round(customWidth)}px`;
+    }
 
     if (comensal) {
         const ladoClass = comensal.lado === 'Novia' ? 'lado-novia' : 'lado-novio';
         chair.classList.add(ladoClass);
         const torpedoEmoji = comensal.lado === 'Novia' ? '👰' : (comensal.lado === 'Ambos' ? '💍' : '🤵');
         
-        chair.innerHTML = `<span>${torpedoEmoji}</span><strong class="text-truncate w-100 d-block" style="font-size:0.62rem;" title="${escapeHTML(comensal.nombre_mostrar)}">${escapeHTML(comensal.nombre_mostrar.split(' ')[0])}</strong>`;
+        chair.innerHTML = `<span>${torpedoEmoji}</span><strong class="text-truncate w-100 d-block" style="font-size:0.60rem;" title="${escapeHTML(comensal.nombre_mostrar)}">${escapeHTML(comensal.nombre_mostrar.split(' ')[0])}</strong>`;
         chair.title = `${comensal.nombre_mostrar} (Asiento ${numSilla})${planoModalModoReadOnly ? '' : ' - Clic para liberar asiento'}`;
         
         if (!planoModalModoReadOnly) {
@@ -1401,7 +1510,7 @@ function crearNodoSilla(canvas, numSilla, x, y, comensal, capTotal, etiquetaCust
             chair.style.cursor = 'default';
         }
     } else {
-        chair.innerHTML = `<i class="bi bi-plus text-muted fs-6"></i><span style="font-size:0.65rem;">${etiquetaCustom || `Silla ${numSilla}`}</span>`;
+        chair.innerHTML = `<i class="bi bi-plus text-muted" style="font-size:0.8rem;"></i><span style="font-size:0.62rem;">${etiquetaCustom || `Silla ${numSilla}`}</span>`;
         chair.title = `${etiquetaCustom || `Silla ${numSilla}`} Libre`;
         
         if (!planoModalModoReadOnly) {
@@ -1890,7 +1999,6 @@ function dibujarResumenMesasBanqueteria() {
                     </div>
                 </div>
 
-                <!-- BOTÓN PLANO EN BANQUETERÍA (SOLO LECTURA) -->
                 <button class="btn btn-outline-secondary btn-sm w-100 py-1 mt-2 fw-semibold" style="font-size:0.75rem;" onclick="abrirModalPlanoMesaReadOnly(${num})">
                     <i class="bi bi-diagram-3 me-1"></i>🪑 Ver Asientos (Solo Lectura)
                 </button>
