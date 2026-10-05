@@ -1354,7 +1354,7 @@ function renderContenidoPlanoMesa(numMesa) {
     setText('modalPlanoMesaSubtitulo', esNovios ? 'Mesa rectangular de honor con distribución de asientos' : 'Mesa redonda con sillas alrededor');
     setText('modal-plano-count', `${ocupantes.length}/${cap}`);
 
-    // INYECTAR SWITCHES EN LA CABECERA DERECHA DEL MODAL (SOLO PARA NOVIOS, NUNCA EN BANQUETERÍA)
+    // INYECTAR SWITCHES EN LA CABECERA DERECHA DEL MODAL
     let headerSwitchesEl = document.getElementById('modal-plano-header-switches');
     if (!headerSwitchesEl) {
         const headerModal = document.querySelector('#modalPlanoMesa .modal-header');
@@ -2405,32 +2405,41 @@ function ejecutarCancelacion() {
     setTimeout(cargarDatos, 800);
 }
 
-// ======================= EXCEL EXPORTS =======================
+// ======================= EXCEL EXPORTS (ORDENAMIENTO CORRELATIVO Y NUMÉRICO) =======================
 function exportarExcelMesas() {
-    let data = [];
     let invitadosPorMesa = [...listaComensalesGenerales].sort((a, b) => {
-        let mA = a.mesa === null ? 9999 : parseInt(a.mesa);
-        let mB = b.mesa === null ? 9999 : parseInt(b.mesa);
-        return mA - mB;
+        let mA = (a.mesa !== null && a.mesa !== "" && !isNaN(parseInt(a.mesa))) ? parseInt(a.mesa) : 9999;
+        let mB = (b.mesa !== null && b.mesa !== "" && !isNaN(parseInt(b.mesa))) ? parseInt(b.mesa) : 9999;
+        if (mA !== mB) return mA - mB;
+
+        let sA = (a.asiento_numero !== null && a.asiento_numero !== "" && !isNaN(parseInt(a.asiento_numero))) ? parseInt(a.asiento_numero) : 999;
+        let sB = (b.asiento_numero !== null && b.asiento_numero !== "" && !isNaN(parseInt(b.asiento_numero))) ? parseInt(b.asiento_numero) : 999;
+        if (sA !== sB) return sA - sB;
+
+        return (a.nombre_mostrar || '').localeCompare(b.nombre_mostrar || '');
     });
 
-    invitadosPorMesa.forEach(c => {
+    let data = invitadosPorMesa.map(c => {
+        const tieneMesa = (c.mesa !== null && c.mesa !== "" && !isNaN(parseInt(c.mesa)));
+        const numM = tieneMesa ? parseInt(c.mesa) : null;
+        const mesaObj = tieneMesa ? dataMesas.find(m => parseInt(m.numero) === numM) : null;
+        const aliasM = (mesaObj && mesaObj.alias) ? ` (${mesaObj.alias})` : '';
+
         let nombreMesa = "Sin Asignar";
-        if(c.mesa !== null && c.mesa !== "") { 
-            const numM = parseInt(c.mesa);
-            const mesaObj = dataMesas.find(m => parseInt(m.numero) === numM);
-            const aliasM = (mesaObj && mesaObj.alias) ? ` (${mesaObj.alias})` : '';
-            nombreMesa = numM === 1 ? `👑 Mesa 1 (Los Novios)${aliasM}` : `Mesa ${numM}${aliasM}`; 
+        if (tieneMesa) {
+            nombreMesa = numM === 1 ? `Mesa 1 - Novios${aliasM}` : `Mesa ${numM}${aliasM}`;
         }
-        data.push({ 
+
+        return { 
+            "N° Mesa": tieneMesa ? numM : 9999,
             "Mesa": nombreMesa, 
-            "Asiento": c.asiento_numero ? `Silla ${c.asiento_numero}` : "Sin asiento asignado",
-            "Nombre": c.nombre_mostrar, 
+            "Silla": c.asiento_numero ? parseInt(c.asiento_numero) : "-",
+            "Nombre del Comensal": c.nombre_mostrar, 
             "Tipo": c.es_pareja ? "Pareja" : "Titular", 
             "Lado": c.lado,
-            "Restricción Alimentaria": c.dieta,
-            "Menú": c.esNino ? "Niño" : "Adulto"
-        });
+            "Menú": c.esNino ? "Niño" : "Adulto",
+            "Restricción Alimentaria": c.dieta || "Ninguna"
+        };
     });
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -2440,13 +2449,40 @@ function exportarExcelMesas() {
 }
 
 function exportarExcelBanqueteria() {
-    let data = listaComensalesGenerales.map(c => ({
-        "Nombre": c.nombre_mostrar,
-        "Tipo": c.es_pareja ? "Pareja" : "Titular",
-        "Mesa": c.mesa ? (parseInt(c.mesa) === 1 ? "👑 Mesa 1 (Novios)" : `Mesa ${c.mesa}`) : "Sin asignar",
-        "Restricción Alimentaria": c.dieta,
-        "Menú": c.esNino ? "Niño" : "Adulto"
-    }));
+    let listaOrdenada = [...listaComensalesGenerales].sort((a, b) => {
+        let mA = (a.mesa !== null && a.mesa !== "" && !isNaN(parseInt(a.mesa))) ? parseInt(a.mesa) : 9999;
+        let mB = (b.mesa !== null && b.mesa !== "" && !isNaN(parseInt(b.mesa))) ? parseInt(b.mesa) : 9999;
+        if (mA !== mB) return mA - mB;
+
+        let sA = (a.asiento_numero !== null && a.asiento_numero !== "" && !isNaN(parseInt(a.asiento_numero))) ? parseInt(a.asiento_numero) : 999;
+        let sB = (b.asiento_numero !== null && b.asiento_numero !== "" && !isNaN(parseInt(b.asiento_numero))) ? parseInt(b.asiento_numero) : 999;
+        if (sA !== sB) return sA - sB;
+
+        return (a.nombre_mostrar || '').localeCompare(b.nombre_mostrar || '');
+    });
+
+    let data = listaOrdenada.map(c => {
+        const tieneMesa = (c.mesa !== null && c.mesa !== "" && !isNaN(parseInt(c.mesa)));
+        const numM = tieneMesa ? parseInt(c.mesa) : null;
+        const mesaObj = tieneMesa ? dataMesas.find(m => parseInt(m.numero) === numM) : null;
+        const aliasM = (mesaObj && mesaObj.alias) ? ` (${mesaObj.alias})` : '';
+
+        let nombreMesa = "Sin Asignar";
+        if (tieneMesa) {
+            nombreMesa = numM === 1 ? `Mesa 1 - Novios${aliasM}` : `Mesa ${numM}${aliasM}`;
+        }
+
+        return {
+            "N° Mesa": tieneMesa ? numM : 9999,
+            "Mesa": nombreMesa,
+            "Silla": c.asiento_numero ? parseInt(c.asiento_numero) : "-",
+            "Nombre del Comensal": c.nombre_mostrar,
+            "Tipo": c.es_pareja ? "Pareja" : "Titular",
+            "Menú": c.esNino ? "Niño" : "Adulto",
+            "Restricción Alimentaria": c.dieta || "Ninguna"
+        };
+    });
+
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Banquetería");
