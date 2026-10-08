@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivia de Novios — Anto & Felipe</title>
+    
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root { --oro: #b59a7a; --crema: #f2ece4; --texto: #2d2d2d; --oscuro: #1a1a1a; }
+        body { font-family: 'Montserrat', sans-serif; background-color: var(--crema); color: var(--texto); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 15px; }
+        h1, h2, h3, .serif { font-family: 'Playfair Display', serif; }
+
+        .card-wedding { background: white; padding: 2.5rem 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-radius: 6px; max-width: 500px; width: 100%; border: 1px solid rgba(181, 154, 122, 0.2); }
+        
+        .btn-gold { background: var(--oro); color: white; font-weight: bold; border: none; padding: 12px 20px; text-transform: uppercase; letter-spacing: 1px; font-size: 0.75rem; transition: 0.3s; width: 100%; border-radius: 4px; cursor: pointer; }
+        .btn-gold:hover { background: var(--oscuro); color: var(--oro); }
+        .btn-gold:disabled { background: #ccc; cursor: not-allowed; }
+
+        .btn-option { background: #fdfbf7; color: var(--texto); border: 1px solid var(--oro); padding: 14px; text-align: left; font-size: 0.9rem; border-radius: 4px; margin-bottom: 10px; width: 100%; transition: 0.2s; }
+        .btn-option:hover, .btn-option:active { background: var(--oro); color: white; }
+
+        .user-badge { display: inline-block; background: var(--crema); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; margin: 4px; border: 1px solid var(--oro); }
+        .user-badge.ready { background: var(--oro); color: white; }
+
+        .progress-bar-custom { height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; margin-bottom: 20px; }
+        .progress-fill { height: 100%; background: var(--oro); width: 0%; transition: width 0.3s; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="card-wedding text-center">
+
+    <!-- PASO 1: CHECK-IN -->
+    <div id="step-checkin">
+        <p class="text-uppercase small mb-1" style="letter-spacing:3px; color:var(--oro);">Juego de Mesas</p>
+        <h2 class="serif mb-3">Trivia de Novios 💍</h2>
+        <p class="text-muted small mb-4">Ingresa tu nombre y tu mesa para conectarte con tus compañeros.</p>
+
+        <div class="mb-3 text-start">
+            <label class="form-label small fw-bold" style="color:var(--oro);">TU NOMBRE COMPLETO</label>
+            <input type="text" id="input-nombre" class="form-control" placeholder="Ej: Juan Pérez" autocomplete="off" style="border:1px solid var(--oro);">
+        </div>
+
+        <div class="mb-4 text-start">
+            <label class="form-label small fw-bold" style="color:var(--oro);">SELECCIONA TU MESA</label>
+            <select id="select-mesa" class="form-select" style="border:1px solid var(--oro);">
+                <option value="">-- Elige tu número de mesa --</option>
+            </select>
+        </div>
+
+        <button id="btn-unirse" class="btn-gold mt-2" disabled onclick="unirseAlLobby()">Entrar a la Sala de Espera</button>
+    </div>
+
+    <!-- PASO 2: SALA DE ESPERA (LOBBY EN VIVO) -->
+    <div id="step-lobby" class="hidden">
+        <p class="text-uppercase small mb-1" style="letter-spacing:3px; color:var(--oro);" id="lobby-mesa-titulo">Mesa N°--</p>
+        <h3 class="serif mb-2">Sala de Espera</h3>
+        <p class="text-muted small mb-3">Esperando que todos los integrantes estén listos...</p>
+
+        <div id="lista-integrantes" class="my-4 text-center">
+            <!-- Badges con los nombres de la mesa -->
+        </div>
+
+        <button id="btn-listo" class="btn-gold mb-3" onclick="marcarListo()">¡Estoy List@!</button>
+
+        <!-- CONTADOR DE 10 SEGUNDOS -->
+        <div id="countdown-box" class="hidden mt-3">
+            <p class="small text-uppercase text-muted mb-0">¡Todos listos! La trivia empieza en:</p>
+            <h1 id="countdown-num" class="serif display-3 style="color:var(--oro);">10</h1>
+        </div>
+    </div>
+
+    <!-- PASO 3: PREGUNTAS DE LA TRIVIA -->
+    <div id="step-quiz" class="hidden text-start">
+        <div class="progress-bar-custom"><div id="progress-fill" class="progress-fill"></div></div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span id="question-number" class="small text-muted fw-bold">Pregunta 1 de 16</span>
+            <span id="timer" class="small fw-bold" style="color:var(--oro);">⏱️ 0.0s</span>
+        </div>
+
+        <h4 id="question-text" class="serif mb-4" style="font-size:1.15rem; line-height:1.4;">Cargando...</h4>
+        <div id="options-container"></div>
+    </div>
+
+    <!-- PASO 4: RESULTADOS -->
+    <div id="step-result" class="hidden">
+        <h2 class="serif mb-2">🎉 ¡Trivia Completada!</h2>
+        <p class="text-muted small mb-4">Tus puntos ya se sumaron al marcador de tu mesa.</p>
+
+        <div style="background: var(--crema); padding: 25px; border-radius: 6px; margin-bottom: 20px;">
+            <p class="small text-uppercase mb-1" style="letter-spacing:1px;">Puntaje Total</p>
+            <h1 id="final-score" class="serif display-4 my-2" style="color:var(--oro);">0</h1>
+            <p id="final-stats" class="small text-muted m-0"></p>
+        </div>
+
+        <p class="small text-muted">¡Quédate atento a los anuncios para conocer a la mesa ganadora!</p>
+    </div>
+
+</div>
+
+<script>
+    const WORKER_TRIVIA_URL = "https://tu-trivia-worker.tu-usuario.workers.dev";
+
+    const PREGUNTAS = [
+        { text: "1. ¿En qué ciudad se conocieron los novios?", options: ["Quebec", "Montreal", "Viña", "Santiago"], correct: 0 },
+        { text: "2. ¿Cuánto tiempo pasó desde que se conocieron hasta que se pusieron a pololear?", options: ["Fue amor a primera vista", "6 meses", "2 años", "4 años"], correct: 2 },
+        { text: "3. ¿Quién tomó la iniciativa para ponerse a pololear?", options: ["Felipe con estrategia", "Anto tras el flechazo", "Fue mutuo", "Un amigo los acorraló"], correct: 1 },
+        { text: "4. ¿Cuánto tiempo pololearon antes de dar el 'sí'?", options: ["3 años", "5 años", "7 años", "Perdieron la cuenta"], correct: 1 },
+        { text: "5. ¿Quién es el chef oficial que cocina normalmente?", options: ["Felipe", "Anto", "Cocinan 50/50", "Uber Eats"], correct: 0 },
+        { text: "6. En un karaoke en vivo, ¿quién canta mejor?", options: ["Anto", "Felipe", "Cantan igual de mal", "Depende del trago"], correct: 0 },
+        { text: "7. ¿Quién es más bueno para dormir y le cuesta levantarse?", options: ["Felipe", "Anto", "Ambos madrugadores", "Ninguno"], correct: 1 },
+        { text: "8. ¿Quién de los dos es el más desordenado?", options: ["Felipe", "Anto", "Ambos estructurados"], correct: 0 },
+        { text: "9. ¿Cómo se llama el perrito que adoptaron?", options: ["Benito", "Homero", "Apolo", "Roky"], correct: 1 },
+        { text: "10. ¿Quién es más dulcero/a y no perdona un postre?", options: ["Felipe", "Anto", "100% salados", "Ambos dulceros"], correct: 1 },
+        { text: "11. Canción favorita de Anto que no falta en su playlist:", options: ["'Opalite' – Taylor Swift", "'Shake It Off' – Taylor Swift", "'Flowers' – Miley Cyrus", "'Despechá' – Rosalía"], correct: 0 },
+        { text: "12. Canción favorita de Felipe:", options: ["'Welcome to the jungle' – Guns N' Roses", "'Una Nueva Noche Fría' – Callejeros", "'Danger Zone' – Kenny Loggins", "'Muévete nena' – Viejas Locas"], correct: 1 },
+        { text: "13. Plato favorito indiscutido de Anto:", options: ["Sushi de salmón", "Lasaña", "Pan com palta y huevo", "Pizza napolitana"], correct: 2 },
+        { text: "14. Plato favorito de Felipe:", options: ["Asado / Ahumado", "Lasaña", "Pastel de choclo", "Smash Burger"], correct: 1 },
+        { text: "15. ¿Qué es Felipe además de Ingeniero Comercial?", options: ["Programador Python", "Piloto", "Contador Auditor", "Experto en plantas"], correct: 1 },
+        { text: "16. ¿Qué es la Anto además de Ingeniera Comercial?", options: ["Diseñadora Gráfica", "Coordinadora de eventos", "Maquilladora", "Manicurista"], correct: 2 }
+    ];
+
+    let nombreUsuario = "", mesaUsuario = "";
+    let pollingInterval = null;
+    let cuentaIniciada = false;
+
+    window.onload = () => {
+        const select = document.getElementById("select-mesa");
+        for (let i = 1; i <= 39; i++) {
+            const opt = document.createElement("option");
+            opt.value = i; opt.innerText = `Mesa N°${i}`;
+            select.appendChild(opt);
+        }
+    };
+
+    const inputNombre = document.getElementById("input-nombre");
+    const selectMesa = document.getElementById("select-mesa");
+    const btnUnirse = document.getElementById("btn-unirse");
+
+    function validarCheckin() {
+        btnUnirse.disabled = !(inputNombre.value.trim().length >= 2 && selectMesa.value !== "");
+    }
+    inputNombre.addEventListener("input", validarCheckin);
+    selectMesa.addEventListener("change", validarCheckin);
+
+    async function unirseAlLobby() {
+        nombreUsuario = inputNombre.value.trim();
+        mesaUsuario = selectMesa.value;
+
+        await fetch(`${WORKER_TRIVIA_URL}/api/lobby/unirse`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nombre: nombreUsuario, mesa: mesaUsuario })
+        });
+
+        document.getElementById("step-checkin").classList.add("hidden");
+        document.getElementById("step-lobby").classList.remove("hidden");
+        document.getElementById("lobby-mesa-titulo").innerText = `Mesa N°${mesaUsuario}`;
+
+        // Iniciar actualización constante de la sala en vivo
+        pollingInterval = setInterval(consultarEstadoLobby, 1500);
+    }
+
+    async function consultarEstadoLobby() {
+        const res = await fetch(`${WORKER_TRIVIA_URL}/api/lobby/estado?mesa=${mesaUsuario}`);
+        const data = await res.json();
+
+        const cont = document.getElementById("lista-integrantes");
+        cont.innerHTML = data.integrantes.map(i => 
+            `<span class="user-badge ${i.listo ? 'ready' : ''}">${i.nombre_invitado} ${i.listo ? '✓' : '⏳'}</span>`
+        ).join("");
+
+        // Si todos apretaron "Estoy Listo", inicia la cuenta regresiva de 10s
+        if (data.todosListos && !cuentaIniciada) {
+            cuentaIniciada = true;
+            iniciarCuentaRegresiva();
+        }
+    }
+
+    async function marcarListo() {
+        document.getElementById("btn-listo").disabled = true;
+        document.getElementById("btn-listo").innerText = "Esperando a tus compañeros...";
+
+        await fetch(`${WORKER_TRIVIA_URL}/api/lobby/listo`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nombre: nombreUsuario, mesa: mesaUsuario })
+        });
+    }
+
+    function iniciarCuentaRegresiva() {
+        document.getElementById("countdown-box").classList.remove("hidden");
+        let segs = 10;
+        const numElem = document.getElementById("countdown-num");
+
+        const interval = setInterval(() => {
+            segs--;
+            numElem.innerText = segs;
+            if (segs <= 0) {
+                clearInterval(interval);
+                clearInterval(pollingInterval);
+                iniciarJuego();
+            }
+        }, 1000);
+    }
+
+    // --- LÓGICA DE PREGUNTAS Y CRONÓMETRO DE TRIVIA ---
+    let preguntaActual = 0, respuestasUsuario = [], tiempoInicioPregunta = 0, timerInterval = null;
+
+    function iniciarJuego() {
+        document.getElementById("step-lobby").classList.add("hidden");
+        document.getElementById("step-quiz").classList.remove("hidden");
+        mostrarPregunta();
+    }
+
+    function mostrarPregunta() {
+        const q = PREGUNTAS[preguntaActual];
+        document.getElementById("question-number").innerText = `Pregunta ${preguntaActual + 1} de ${PREGUNTAS.length}`;
+        document.getElementById("progress-fill").style.width = `${(preguntaActual / PREGUNTAS.length) * 100}%`;
+        document.getElementById("question-text").innerText = q.text;
+
+        const container = document.getElementById("options-container");
+        container.innerHTML = "";
+
+        q.options.forEach((opt, idx) => {
+            const btn = document.createElement("button");
+            btn.className = "btn-option";
+            btn.innerText = opt;
+            btn.onclick = () => responder(idx);
+            container.appendChild(btn);
+        });
+
+        tiempoInicioPregunta = Date.now();
+        iniciarCronometro();
+    }
+
+    function iniciarCronometro() {
+        clearInterval(timerInterval);
+        const timerElem = document.getElementById("timer");
+        timerInterval = setInterval(() => {
+            const segs = ((Date.now() - tiempoInicioPregunta) / 1000).toFixed(1);
+            timerElem.innerText = `⏱️ ${segs}s`;
+        }, 100);
+    }
+
+    function responder(indice) {
+        clearInterval(timerInterval);
+        const tiempoTomado = (Date.now() - tiempoInicioPregunta) / 1000;
+        const q = PREGUNTAS[preguntaActual];
+
+        respuestasUsuario.push({
+            pregunta_id: preguntaActual + 1,
+            es_correcta: indice === q.correct,
+            tiempo_seg: tiempoTomado
+        });
+
+        preguntaActual++;
+        if (preguntaActual < PREGUNTAS.length) {
+            mostrarPregunta();
+        } else {
+            enviarResultados();
+        }
+    }
+
+    async function enviarResultados() {
+        document.getElementById("step-quiz").classList.add("hidden");
+        document.getElementById("step-result").classList.remove("hidden");
+
+        const res = await fetch(`${WORKER_TRIVIA_URL}/api/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                nombre_invitado: nombreUsuario,
+                mesa: mesaUsuario,
+                respuestas: respuestasUsuario
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById("final-score").innerText = data.puntaje_total.toLocaleString();
+            document.getElementById("final-stats").innerText = `${data.aciertos} aciertos de 16 preguntas`;
+        }
+    }
+</script>
+</body>
+</html>
