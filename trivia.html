@@ -60,22 +60,22 @@
     <div id="step-lobby" class="hidden">
         <p class="text-uppercase small mb-1" style="letter-spacing:3px; color:var(--oro);" id="lobby-mesa-titulo">Mesa N°--</p>
         <h3 class="serif mb-2">Sala de Espera</h3>
-        <p class="text-muted small mb-3">Esperando que todos los integrantes estén listos...</p>
+        <p class="text-muted small mb-3">Esperando a los integrantes de la mesa...</p>
 
         <div id="lista-integrantes" class="my-4 text-center">
-            <!-- Badges con los nombres de la mesa -->
+            <!-- Nombres de los participantes -->
         </div>
 
-        <button id="btn-listo" class="btn-gold mb-3" onclick="marcarListo()">¡Estoy List@!</button>
+        <button id="btn-listo" class="btn-gold mb-3" onclick="intentarMarcarListo()">¡Estoy List@!</button>
 
-        <!-- CONTADOR DE 10 SEGUNDOS -->
+        <!-- CONTADOR REGRESIVO DE 25 SEGUNDOS -->
         <div id="countdown-box" class="hidden mt-3">
-            <p class="small text-uppercase text-muted mb-0">¡Todos listos! La trivia empieza en:</p>
-            <h1 id="countdown-num" class="serif display-3 style="color:var(--oro);">10</h1>
+            <p class="small text-uppercase text-muted mb-0" id="countdown-text">¡Todos listos! La trivia empieza en:</p>
+            <h1 id="countdown-num" class="serif display-3" style="color:var(--oro);">25</h1>
         </div>
     </div>
 
-    <!-- PASO 3: PREGUNTAS DE LA TRIVIA -->
+    <!-- PASO 3: TRIVIA DE PREGUNTAS -->
     <div id="step-quiz" class="hidden text-start">
         <div class="progress-bar-custom"><div id="progress-fill" class="progress-fill"></div></div>
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -119,7 +119,7 @@
         { text: "10. ¿Quién es más dulcero/a y no perdona un postre?", options: ["Felipe", "Anto", "100% salados", "Ambos dulceros"], correct: 1 },
         { text: "11. Canción favorita de Anto que no falta en su playlist:", options: ["'Opalite' – Taylor Swift", "'Shake It Off' – Taylor Swift", "'Flowers' – Miley Cyrus", "'Despechá' – Rosalía"], correct: 0 },
         { text: "12. Canción favorita de Felipe:", options: ["'Welcome to the jungle' – Guns N' Roses", "'Una Nueva Noche Fría' – Callejeros", "'Danger Zone' – Kenny Loggins", "'Muévete nena' – Viejas Locas"], correct: 1 },
-        { text: "13. Plato favorito indiscutido de Anto:", options: ["Sushi de salmón", "Lasaña", "Pan com palta y huevo", "Pizza napolitana"], correct: 2 },
+        { text: "13. Plato favorito indiscutido de Anto:", options: ["Sushi de salmón", "Lasaña", "Pan con palta y huevo", "Pizza napolitana"], correct: 2 },
         { text: "14. Plato favorito de Felipe:", options: ["Asado / Ahumado", "Lasaña", "Pastel de choclo", "Smash Burger"], correct: 1 },
         { text: "15. ¿Qué es Felipe además de Ingeniero Comercial?", options: ["Programador Python", "Piloto", "Contador Auditor", "Experto en plantas"], correct: 1 },
         { text: "16. ¿Qué es la Anto además de Ingeniera Comercial?", options: ["Diseñadora Gráfica", "Coordinadora de eventos", "Maquilladora", "Manicurista"], correct: 2 }
@@ -127,7 +127,10 @@
 
     let nombreUsuario = "", mesaUsuario = "";
     let pollingInterval = null;
-    let cuentaIniciada = false;
+    let countdownInterval = null;
+    let totalIntegrantesActual = 0;
+    let tiempoRestante = 25;
+    let cuentaCorriendo = false;
 
     window.onload = () => {
         const select = document.getElementById("select-mesa");
@@ -162,7 +165,6 @@
         document.getElementById("step-lobby").classList.remove("hidden");
         document.getElementById("lobby-mesa-titulo").innerText = `Mesa N°${mesaUsuario}`;
 
-        // Iniciar actualización constante de la sala en vivo
         pollingInterval = setInterval(consultarEstadoLobby, 1500);
     }
 
@@ -170,19 +172,32 @@
         const res = await fetch(`${WORKER_TRIVIA_URL}/api/lobby/estado?mesa=${mesaUsuario}`);
         const data = await res.json();
 
+        // REINICIO DE CONTADOR SI ALGUIEN NUEVO SE UNE MIENTRAS CORRÍA LA CUENTA
+        if (cuentaCorriendo && data.total > totalIntegrantesActual) {
+            reiniciarContadorPorNuevoIntegrante(data.total);
+        }
+        totalIntegrantesActual = data.total;
+
         const cont = document.getElementById("lista-integrantes");
         cont.innerHTML = data.integrantes.map(i => 
             `<span class="user-badge ${i.listo ? 'ready' : ''}">${i.nombre_invitado} ${i.listo ? '✓' : '⏳'}</span>`
         ).join("");
 
-        // Si todos apretaron "Estoy Listo", inicia la cuenta regresiva de 10s
-        if (data.todosListos && !cuentaIniciada) {
-            cuentaIniciada = true;
-            iniciarCuentaRegresiva();
+        // Si todos están listos y aún no se iniciaba el contador, comienza
+        if (data.todosListos && !cuentaCorriendo) {
+            iniciarCuentaRegresiva(25);
         }
     }
 
-    async function marcarListo() {
+    function intentarMarcarListo() {
+        if (totalIntegrantesActual < 5) {
+            const confirmar = confirm(`Hay solo ${totalIntegrantesActual} persona(s) conectada(s) en tu mesa. ¿Estás seguro de comenzar o prefieres esperar al resto?`);
+            if (!confirmar) return;
+        }
+        ejecutarMarcarListo();
+    }
+
+    async function ejecutarMarcarListo() {
         document.getElementById("btn-listo").disabled = true;
         document.getElementById("btn-listo").innerText = "Esperando a tus compañeros...";
 
@@ -193,20 +208,29 @@
         });
     }
 
-    function iniciarCuentaRegresiva() {
+    function iniciarCuentaRegresiva(segundos) {
+        cuentaCorriendo = true;
+        tiempoRestante = segundos;
         document.getElementById("countdown-box").classList.remove("hidden");
-        let segs = 10;
-        const numElem = document.getElementById("countdown-num");
+        document.getElementById("countdown-text").innerText = "¡Todos listos! La trivia empieza en:";
+        document.getElementById("countdown-num").innerText = tiempoRestante;
 
-        const interval = setInterval(() => {
-            segs--;
-            numElem.innerText = segs;
-            if (segs <= 0) {
-                clearInterval(interval);
+        clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+            tiempoRestante--;
+            document.getElementById("countdown-num").innerText = tiempoRestante;
+            if (tiempoRestante <= 0) {
+                clearInterval(countdownInterval);
                 clearInterval(pollingInterval);
                 iniciarJuego();
             }
         }, 1000);
+    }
+
+    function reiniciarContadorPorNuevoIntegrante(nuevoTotal) {
+        tiempoRestante = 25;
+        document.getElementById("countdown-text").innerText = "¡Se unió un nuevo integrante! Contador reiniciado:";
+        document.getElementById("countdown-num").innerText = tiempoRestante;
     }
 
     // --- LÓGICA DE PREGUNTAS Y CRONÓMETRO DE TRIVIA ---
