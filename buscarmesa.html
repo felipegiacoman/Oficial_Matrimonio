@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Encuentra tu Mesa | Antonia & Felipe</title>
     
     <!-- Fuentes y librerías -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <style>
@@ -16,8 +16,6 @@
             --oscuro: #2b2b2b;
             --crema-bg: #f7f4ee;
             --blanco: #ffffff;
-            --novia: #c75b7a;
-            --novio: #2b5b84;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -27,7 +25,7 @@
             background: var(--crema-bg);
             color: var(--oscuro);
             min-height: 100vh;
-            padding: 20px 12px 60px 12px;
+            padding: 16px 10px 40px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -35,25 +33,25 @@
 
         .container {
             width: 100%;
-            max-width: 720px;
+            max-width: 680px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 14px;
         }
 
         /* Encabezado */
         header {
             text-align: center;
-            padding: 10px 0 5px 0;
+            padding: 4px 0 2px 0;
         }
         header h1 {
             font-family: 'Playfair Display', serif;
-            font-size: 2.1rem;
+            font-size: 1.9rem;
             color: var(--oscuro);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         header p {
-            font-size: 0.92rem;
+            font-size: 0.88rem;
             color: #777;
         }
 
@@ -62,29 +60,29 @@
             position: relative;
             background: var(--blanco);
             border-radius: 14px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.06);
             border: 2px solid #e8e2d5;
             transition: all 0.25s;
         }
         .search-box:focus-within {
             border-color: var(--oro);
-            box-shadow: 0 6px 25px rgba(181, 154, 122, 0.25);
+            box-shadow: 0 4px 20px rgba(181, 154, 122, 0.25);
         }
         .search-input-wrapper {
             display: flex;
             align-items: center;
-            padding: 12px 16px;
-            gap: 12px;
+            padding: 11px 14px;
+            gap: 10px;
         }
         .search-icon {
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             color: var(--oro);
         }
         #input-buscador {
             width: 100%;
             border: none;
             outline: none;
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-family: 'Montserrat', sans-serif;
             background: transparent;
             color: var(--oscuro);
@@ -98,10 +96,10 @@
             display: none;
         }
 
-        /* Lista de resultados / Autocomplete */
+        /* Lista sugerencias */
         .suggestions-list {
             list-style: none;
-            max-height: 250px;
+            max-height: 220px;
             overflow-y: auto;
             border-top: 1px solid #eee;
             margin: 0;
@@ -109,7 +107,7 @@
             display: none;
         }
         .suggestion-item {
-            padding: 12px 18px;
+            padding: 11px 16px;
             border-bottom: 1px solid #f2ede4;
             cursor: pointer;
             display: flex;
@@ -123,66 +121,66 @@
         }
         .suggestion-name {
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
         }
         .suggestion-sub {
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             color: #888;
         }
 
         /* Tarjeta de resultado */
         .result-card {
             background: var(--blanco);
-            border-radius: 16px;
-            padding: 24px 20px;
+            border-radius: 14px;
+            padding: 18px 14px;
             text-align: center;
-            box-shadow: 0 6px 25px rgba(0,0,0,0.07);
-            border-top: 5px solid var(--oro);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            border-top: 4px solid var(--oro);
             display: none;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.25s ease;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
+            from { opacity: 0; transform: translateY(-8px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .result-greeting {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 500;
-            color: #666;
-            margin-bottom: 8px;
+            color: #777;
+            margin-bottom: 4px;
         }
         .result-name {
             font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             color: var(--oscuro);
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
         .table-badge-large {
             display: inline-block;
             background: #fff9e6;
             border: 2px solid var(--oro-brillante);
             color: var(--oscuro);
-            padding: 12px 28px;
-            border-radius: 40px;
-            margin-bottom: 16px;
+            padding: 8px 24px;
+            border-radius: 30px;
+            margin-bottom: 12px;
         }
         .table-badge-large span {
             display: block;
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 1.2px;
             color: #997a15;
             font-weight: 700;
         }
         .table-badge-large strong {
-            font-size: 2.1rem;
+            font-size: 1.85rem;
             font-family: 'Playfair Display', serif;
             line-height: 1.1;
         }
         .partner-info {
-            font-size: 0.88rem;
+            font-size: 0.84rem;
             color: #666;
-            margin-bottom: 18px;
+            margin-bottom: 14px;
         }
 
         /* Botón Cámara POV */
@@ -190,88 +188,88 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             width: 100%;
-            max-width: 420px;
+            max-width: 380px;
             background: linear-gradient(135deg, #111, #333);
             color: white;
-            padding: 14px 20px;
-            border-radius: 12px;
+            padding: 12px 18px;
+            border-radius: 10px;
             text-decoration: none;
             font-weight: 600;
-            font-size: 0.95rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 0.9rem;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
             transition: all 0.2s;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         .btn-pov:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
             background: #000;
             color: white;
         }
         .pov-subtext {
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             color: #888;
-            margin-top: 4px;
         }
 
-        /* Contenedor del Mapa */
+        /* Contenedor del Mapa optimizado para móviles */
         .map-section {
             background: var(--blanco);
-            border-radius: 16px;
-            padding: 20px 14px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border-radius: 14px;
+            padding: 14px 10px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.05);
             border: 1px solid #ebe4d8;
         }
         .map-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             padding: 0 4px;
         }
         .map-header h2 {
             font-family: 'Playfair Display', serif;
-            font-size: 1.25rem;
+            font-size: 1.15rem;
         }
         .map-legend {
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             color: #777;
             display: flex;
             align-items: center;
             gap: 6px;
         }
         .legend-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             background: var(--oro-brillante);
             display: inline-block;
         }
 
+        /* Ajuste para que se vea el plano completo sin scroll horizontal */
         .map-svg-container {
             width: 100%;
-            overflow-x: auto;
-            border-radius: 10px;
+            overflow: hidden;
+            border-radius: 8px;
             background: #fdfcf9;
             border: 1px solid #f0eae1;
-            padding: 5px;
+            padding: 2px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         svg {
             display: block;
             width: 100%;
             height: auto;
-            min-width: 580px;
+            max-width: 100%;
             user-select: none;
         }
 
-        /* Estilos de elementos SVG */
+        /* Elementos del mapa SVG */
         .svg-wall { stroke: #222; stroke-width: 3.5; fill: none; stroke-linecap: round; }
         .svg-landmark { fill: #f3efe6; stroke: #b5a995; stroke-width: 1.5; }
-        .svg-landmark-dark { fill: #1c1c1c; }
         .svg-text-landmark { font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; fill: #444; text-anchor: middle; }
-        .svg-text-landmark-light { font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 700; fill: #fff; text-anchor: middle; }
         
         .table-node {
             cursor: pointer;
@@ -281,23 +279,17 @@
             fill: #ffffff;
             stroke: #a89f91;
             stroke-width: 1.8;
-            transition: all 0.25s ease;
+            transition: r 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), fill 0.2s, stroke 0.2s, stroke-width 0.2s;
         }
         .table-node text {
             font-family: 'Montserrat', sans-serif;
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 700;
             fill: #333;
             text-anchor: middle;
             dominant-baseline: central;
             pointer-events: none;
-        }
-
-        /* Sillas dibujadas alrededor de cada mesa */
-        .chair-dot {
-            fill: #ece5d8;
-            stroke: #b5a995;
-            stroke-width: 1;
+            transition: font-size 0.25s, fill 0.2s;
         }
 
         /* Mesa de los Novios */
@@ -306,6 +298,7 @@
             stroke: var(--oro-brillante);
             stroke-width: 2.5;
             transition: all 0.25s ease;
+            cursor: pointer;
         }
         .table-novios text {
             font-family: 'Playfair Display', serif;
@@ -314,61 +307,67 @@
             fill: #997a15;
             text-anchor: middle;
             dominant-baseline: central;
+            pointer-events: none;
         }
 
-        /* Mesa Seleccionada / Destacada */
-        .table-node.highlighted circle,
-        .table-novios.highlighted rect {
+        /* MESA SELECCIONADA: DESTACADA Y AGRANDADA */
+        .table-node.highlighted circle {
             fill: var(--oro-brillante) !important;
             stroke: #222 !important;
-            stroke-width: 3.5 !important;
-            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.8));
+            stroke-width: 4 !important;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.35));
         }
         .table-node.highlighted text {
             fill: #ffffff !important;
             font-weight: 800 !important;
-            font-size: 15px !important;
+        }
+        .table-novios.highlighted rect {
+            fill: var(--oro-brillante) !important;
+            stroke: #222 !important;
+            stroke-width: 4 !important;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.35));
         }
         .table-novios.highlighted text {
             fill: #ffffff !important;
             font-weight: 800 !important;
         }
 
-        /* Pulso animado para mesa activa */
+        /* Halo animado */
         @keyframes pulseRing {
-            0% { r: 18px; opacity: 0.9; }
-            100% { r: 34px; opacity: 0; }
+            0% { r: 24px; opacity: 0.9; }
+            100% { r: 44px; opacity: 0; }
         }
         .pulse-ring {
             fill: none;
             stroke: var(--oro-brillante);
-            stroke-width: 3;
-            animation: pulseRing 1.4s infinite cubic-bezier(0.2, 0.8, 0.4, 1);
+            stroke-width: 3.5;
+            animation: pulseRing 1.3s infinite cubic-bezier(0.2, 0.8, 0.4, 1);
             pointer-events: none;
         }
 
         /* Estado cargando */
         #loading-indicator {
             text-align: center;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: #888;
-            padding: 8px;
+            padding: 6px;
         }
 
-        /* Modal flotante al tocar mesa en mapa */
+        /* Notificación flotante al tocar mesa */
         .toast-mesa {
             position: fixed;
-            bottom: 20px;
+            bottom: 18px;
             left: 50%;
             transform: translateX(-50%);
             background: #222;
             color: white;
-            padding: 10px 22px;
+            padding: 9px 20px;
             border-radius: 30px;
-            font-size: 0.88rem;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            font-size: 0.85rem;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.3);
             display: none;
             z-index: 1000;
+            white-space: nowrap;
         }
     </style>
 </head>
@@ -407,10 +406,10 @@
             <a href="#" target="_blank" class="btn-pov" id="res-btn-pov">
                 <i class="bi bi-camera-fill fs-5"></i> Abrir Cámara Desechable de tu Mesa
             </a>
-            <div class="pov-subtext">Saca fotos durante la fiesta y compártelas con nosotros ✨</div>
+            <div class="pov-subtext">Saca fotos durante la noche y compártelas con nosotros ✨</div>
         </div>
 
-        <!-- Plano interactivo del salón -->
+        <!-- Plano interactivo completo del salón -->
         <div class="map-section" id="seccion-mapa">
             <div class="map-header">
                 <h2><i class="bi bi-geo-alt me-1 text-warning"></i> Plano del Salón</h2>
@@ -420,18 +419,14 @@
             </div>
 
             <div class="map-svg-container">
-                <svg viewBox="0 0 950 820" xmlns="http://www.w3.org/2000/svg" id="svg-mapa">
+                <!-- viewBox ajustado para que el salón quepa completo en el ancho del teléfono -->
+                <svg viewBox="50 30 840 770" xmlns="http://www.w3.org/2000/svg" id="svg-mapa">
                     
-                    <!-- ================= PAREDES / LÍMITES ================= -->
-                    <!-- Baños a la izquierda arriba -->
+                    <!-- ================= LÍMITES Y PAREDES ================= -->
                     <path d="M 80,140 L 290,140" class="svg-wall" />
-                    <!-- Pared izquierda que baja hacia la entrada -->
                     <path d="M 160,140 L 160,600" class="svg-wall" />
-                    <!-- Pared de entrada inferior -->
                     <path d="M 160,700 L 160,800 L 820,800" class="svg-wall" />
-                    <!-- Pared superior central -->
                     <path d="M 320,40 L 820,40" class="svg-wall" />
-                    <!-- Pared derecha (Cocina) -->
                     <path d="M 820,40 L 820,330" class="svg-wall" />
                     <path d="M 820,380 L 820,800" class="svg-wall" />
 
@@ -450,10 +445,9 @@
                         <text x="0" y="0" class="svg-text-landmark" style="font-size:16px; font-weight:800; letter-spacing: 2px;">COCINA</text>
                     </g>
 
-                    <!-- PISTA 10 X 10 -->
+                    <!-- PISTA (Sin medidas de 10x10) -->
                     <rect x="420" y="475" width="220" height="215" class="svg-landmark" style="fill:#faf7f0; stroke:#c9bfb0; stroke-width:2;" />
-                    <text x="530" y="575" class="svg-text-landmark" style="font-size:16px; font-weight:800;">PISTA</text>
-                    <text x="530" y="598" class="svg-text-landmark" style="font-size:12px; fill:#777;">10 X 10</text>
+                    <text x="530" y="585" class="svg-text-landmark" style="font-size:17px; font-weight:800;">PISTA</text>
 
                     <!-- DJ -->
                     <rect x="480" y="700" width="100" height="55" class="svg-landmark" style="fill:#ffffff; stroke:#333; stroke-width:2;" />
@@ -470,13 +464,13 @@
                         <text x="0" y="0" class="svg-text-landmark" style="font-size:11px;">FOTOS</text>
                     </g>
 
-                    <!-- BAR (L invertida negra) -->
+                    <!-- BAR -->
                     <g>
                         <path d="M 660,715 L 780,715 L 780,670" stroke="#1c1c1c" stroke-width="15" fill="none" stroke-linejoin="miter" />
                         <text x="720" y="748" class="svg-text-landmark" style="font-size:14px; font-weight:800;">BAR</text>
                     </g>
 
-                    <!-- GRUPO PARA ANILLO DE PULSO DINÁMICO -->
+                    <!-- ANILLO DE PULSO DINÁMICO -->
                     <g id="pulse-container"></g>
 
                     <!-- ================= MESAS ================= -->
@@ -488,19 +482,18 @@
                         </g>
 
                         <!-- COLUMNA IZQUIERDA (10 mesas) -->
-                        <!-- Fila 1 -->
                         <g class="table-node" id="map-mesa-35" onclick="seleccionarMesaDesdeMapa(35)"><circle cx="215" cy="205" r="21"/><text x="215" y="205">35</text></g>
                         <g class="table-node" id="map-mesa-38" onclick="seleccionarMesaDesdeMapa(38)"><circle cx="285" cy="205" r="21"/><text x="285" y="205">38</text></g>
-                        <!-- Fila 2 -->
+                        
                         <g class="table-node" id="map-mesa-4" onclick="seleccionarMesaDesdeMapa(4)"><circle cx="215" cy="275" r="21"/><text x="215" y="275">4</text></g>
                         <g class="table-node" id="map-mesa-18" onclick="seleccionarMesaDesdeMapa(18)"><circle cx="285" cy="275" r="21"/><text x="285" y="275">18</text></g>
-                        <!-- Fila 3 -->
+                        
                         <g class="table-node" id="map-mesa-15" onclick="seleccionarMesaDesdeMapa(15)"><circle cx="215" cy="345" r="21"/><text x="215" y="345">15</text></g>
                         <g class="table-node" id="map-mesa-17" onclick="seleccionarMesaDesdeMapa(17)"><circle cx="285" cy="345" r="21"/><text x="285" y="345">17</text></g>
-                        <!-- Fila 4 -->
+                        
                         <g class="table-node" id="map-mesa-14" onclick="seleccionarMesaDesdeMapa(14)"><circle cx="215" cy="415" r="21"/><text x="215" y="415">14</text></g>
                         <g class="table-node" id="map-mesa-22" onclick="seleccionarMesaDesdeMapa(22)"><circle cx="285" cy="415" r="21"/><text x="285" y="415">22</text></g>
-                        <!-- Fila 5 -->
+                        
                         <g class="table-node" id="map-mesa-13" onclick="seleccionarMesaDesdeMapa(13)"><circle cx="215" cy="485" r="21"/><text x="215" y="485">13</text></g>
                         <g class="table-node" id="map-mesa-12" onclick="seleccionarMesaDesdeMapa(12)"><circle cx="285" cy="485" r="21"/><text x="285" y="485">12</text></g>
 
@@ -553,10 +546,8 @@
     <div class="toast-mesa" id="toast-notif"></div>
 
     <script>
-        // Endpoint con la lista de confirmados
         const API_URL = "https://rsvp-api.felipegiacoman.workers.dev?action=confirmados";
 
-        // Diccionario completo de cámaras POV de cada mesa
         const LINKS_POV = {
             1:  "https://pov.camera/qr/F1212D18-4710-497C-9433-604D50B1BD79",
             2:  "https://pov.camera/qr/6867AE71-55F5-4A66-9FA8-AF340330651A",
@@ -600,17 +591,15 @@
         };
 
         let listaInvitados = [];
-        let mesaActivaId = null;
+        let mesaActivaElemento = null;
 
         function quitarTildes(str) {
             if (!str) return "";
             return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
         }
 
-        // Cargar invitados
         async function cargarInvitados() {
             try {
-                // Intentar recuperar de caché local primero para rapidez inmediata
                 const cached = localStorage.getItem('cache_buscarmesa');
                 if (cached) {
                     procesarDatos(JSON.parse(cached));
@@ -633,7 +622,7 @@
         function procesarDatos(data) {
             listaInvitados = [];
 
-            // Añadir a los novios para que también puedan buscarse
+            // Añadir a los novios
             listaInvitados.push({
                 nombre: "Felipe Giacoman",
                 nombreMostrar: "Felipe (Novio)",
@@ -662,7 +651,6 @@
                     : null;
                 const mesaPareja = c.mesa_pareja ? parseInt(c.mesa_pareja) : mesaTitular;
 
-                // Agregar titular
                 listaInvitados.push({
                     nombre: nombreTitular,
                     nombreMostrar: nombreTitular,
@@ -671,7 +659,6 @@
                     tienePareja: tienePareja
                 });
 
-                // Si tiene pareja con nombre real, agregar también a la pareja como registro buscable
                 if (tienePareja && nombrePareja && !nombrePareja.toLowerCase().startsWith('pareja de')) {
                     listaInvitados.push({
                         nombre: nombrePareja,
@@ -685,7 +672,6 @@
             });
         }
 
-        // Buscador reactivo
         const inputBuscador = document.getElementById('input-buscador');
         const listaSugerencias = document.getElementById('lista-sugerencias');
         const btnLimpiar = document.getElementById('btn-limpiar');
@@ -701,7 +687,7 @@
 
             const coincidencias = listaInvitados.filter(inv => {
                 return quitarTildes(inv.nombre).includes(term);
-            }).slice(0, 8); // Máximo 8 sugerencias
+            }).slice(0, 7);
 
             if (coincidencias.length === 0) {
                 listaSugerencias.innerHTML = `<li class="suggestion-item text-muted" style="cursor:default;">No se encontraron resultados</li>`;
@@ -750,7 +736,6 @@
             if (inv.mesa) {
                 resMesa.innerText = inv.mesa === 1 ? "Mesa 1 (Novios)" : `Mesa ${inv.mesa}`;
                 
-                // Configurar enlace de Cámara POV
                 const linkCamara = LINKS_POV[inv.mesa];
                 if (linkCamara) {
                     btnPOV.href = linkCamara;
@@ -759,7 +744,7 @@
                     btnPOV.style.display = 'none';
                 }
 
-                // Destacar mesa en el mapa SVG
+                // Destacar y agrandar la mesa en el plano
                 destacarMesaEnMapa(inv.mesa);
             } else {
                 resMesa.innerText = "Por confirmar";
@@ -776,48 +761,100 @@
 
             card.style.display = 'block';
 
-            // Desplazar la pantalla suavemente hacia la tarjeta y mapa
             setTimeout(() => {
-                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 80);
         }
 
-        // ================= INTERACCIÓN CON EL MAPA =================
+        // ================= DESTACAR Y AGRANDAR MESA EN EL MAPA =================
         function destacarMesaEnMapa(numMesa) {
             deseleccionarMesa();
-            mesaActivaId = numMesa;
 
             const el = document.getElementById(`map-mesa-${numMesa}`);
             if (!el) return;
 
+            mesaActivaElemento = el;
             el.classList.add('highlighted');
 
-            // Crear anillo de pulso animado
+            // Llevar el elemento al frente del SVG (para que no lo tape ninguna mesa vecina)
+            const parent = el.parentNode;
+            if (parent) {
+                parent.appendChild(el);
+            }
+
             const pulseContainer = document.getElementById('pulse-container');
-            if (pulseContainer) {
-                pulseContainer.innerHTML = '';
-                if (numMesa === 1) {
-                    // Para la mesa rectangular
-                    const rect = el.querySelector('rect');
-                    const cx = parseFloat(rect.getAttribute('x')) + (parseFloat(rect.getAttribute('width')) / 2);
-                    const cy = parseFloat(rect.getAttribute('y')) + (parseFloat(rect.getAttribute('height')) / 2);
-                    pulseContainer.innerHTML = `<circle cx="${cx}" cy="${cy}" class="pulse-ring" />`;
-                } else {
-                    const circle = el.querySelector('circle');
+
+            if (numMesa === 1) {
+                // Mesa rectangular de novios
+                const rect = el.querySelector('rect');
+                const text = el.querySelector('text');
+                
+                rect.setAttribute('data-orig-w', rect.getAttribute('width'));
+                rect.setAttribute('data-orig-h', rect.getAttribute('height'));
+                rect.setAttribute('data-orig-x', rect.getAttribute('x'));
+                rect.setAttribute('data-orig-y', rect.getAttribute('y'));
+
+                // Agrandar rectángulo y letra
+                rect.setAttribute('width', '140');
+                rect.setAttribute('height', '46');
+                rect.setAttribute('x', '472');
+                rect.setAttribute('y', '320');
+                if (text) text.style.fontSize = '16px';
+
+                if (pulseContainer) {
+                    pulseContainer.innerHTML = `<circle cx="542" cy="343" class="pulse-ring" style="animation-name: none;" />`;
+                }
+            } else {
+                // Mesas redondas normales: agrandar radio r de 21 a 31
+                const circle = el.querySelector('circle');
+                const text = el.querySelector('text');
+
+                if (circle) {
+                    circle.setAttribute('data-orig-r', circle.getAttribute('r') || '21');
+                    circle.setAttribute('r', '31'); // Agrandar tamaño
+                    
                     const cx = circle.getAttribute('cx');
                     const cy = circle.getAttribute('cy');
-                    pulseContainer.innerHTML = `<circle cx="${cx}" cy="${cy}" class="pulse-ring" />`;
+
+                    if (pulseContainer) {
+                        pulseContainer.innerHTML = `<circle cx="${cx}" cy="${cy}" class="pulse-ring" />`;
+                    }
+                }
+
+                if (text) {
+                    text.setAttribute('data-orig-fs', '13px');
+                    text.style.fontSize = '18px'; // Agrandar número
                 }
             }
         }
 
         function deseleccionarMesa() {
-            document.querySelectorAll('.table-node, .table-novios').forEach(node => {
-                node.classList.remove('highlighted');
-            });
+            if (mesaActivaElemento) {
+                mesaActivaElemento.classList.remove('highlighted');
+
+                // Restaurar tamaño original del círculo y texto
+                const circle = mesaActivaElemento.querySelector('circle');
+                const text = mesaActivaElemento.querySelector('text');
+                const rect = mesaActivaElemento.querySelector('rect');
+
+                if (circle && circle.hasAttribute('data-orig-r')) {
+                    circle.setAttribute('r', circle.getAttribute('data-orig-r'));
+                }
+                if (text) {
+                    text.style.fontSize = text.getAttribute('data-orig-fs') || '13px';
+                }
+                if (rect && rect.hasAttribute('data-orig-w')) {
+                    rect.setAttribute('width', rect.getAttribute('data-orig-w'));
+                    rect.setAttribute('height', rect.getAttribute('data-orig-h'));
+                    rect.setAttribute('x', rect.getAttribute('data-orig-x'));
+                    rect.setAttribute('y', rect.getAttribute('data-orig-y'));
+                }
+
+                mesaActivaElemento = null;
+            }
+
             const pulseContainer = document.getElementById('pulse-container');
             if (pulseContainer) pulseContainer.innerHTML = '';
-            mesaActivaId = null;
         }
 
         function seleccionarMesaDesdeMapa(num) {
@@ -831,11 +868,10 @@
                     ? `<span>${textoMesa}</span> · <a href="${linkPOV}" target="_blank" style="color:#ffd700; text-decoration:underline; font-weight:700; margin-left:6px;">Abrir Cámara 📸</a>`
                     : `<span>${textoMesa}</span>`;
                 toast.style.display = 'block';
-                setTimeout(() => { toast.style.display = 'none'; }, 4000);
+                setTimeout(() => { toast.style.display = 'none'; }, 3500);
             }
         }
 
-        // Inicializar al cargar la página
         window.addEventListener('DOMContentLoaded', () => {
             cargarInvitados();
         });
