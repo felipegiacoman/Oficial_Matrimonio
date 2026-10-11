@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encuentra tu Mesa | Antonia & Felipe</title>
+    
+    <!-- Fuentes y librerías -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --oro: #b59a7a;
+            --oro-brillante: #d4af37;
+            --oscuro: #2b2b2b;
+            --crema-bg: #f7f4ee;
+            --blanco: #ffffff;
+            --novia: #c75b7a;
+            --novio: #2b5b84;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--crema-bg);
+            color: var(--oscuro);
+            min-height: 100vh;
+            padding: 20px 12px 60px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Encabezado */
+        header {
+            text-align: center;
+            padding: 10px 0 5px 0;
+        }
+        header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.1rem;
+            color: var(--oscuro);
+            margin-bottom: 4px;
+        }
+        header p {
+            font-size: 0.92rem;
+            color: #777;
+        }
+
+        /* Buscador */
+        .search-box {
+            position: relative;
+            background: var(--blanco);
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 2px solid #e8e2d5;
+            transition: all 0.25s;
+        }
+        .search-box:focus-within {
+            border-color: var(--oro);
+            box-shadow: 0 6px 25px rgba(181, 154, 122, 0.25);
+        }
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            gap: 12px;
+        }
+        .search-icon {
+            font-size: 1.25rem;
+            color: var(--oro);
+        }
+        #input-buscador {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 1.05rem;
+            font-family: 'Montserrat', sans-serif;
+            background: transparent;
+            color: var(--oscuro);
+        }
+        #btn-limpiar {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        /* Lista de resultados / Autocomplete */
+        .suggestions-list {
+            list-style: none;
+            max-height: 250px;
+            overflow-y: auto;
+            border-top: 1px solid #eee;
+            margin: 0;
+            padding: 0;
+            display: none;
+        }
+        .suggestion-item {
+            padding: 12px 18px;
+            border-bottom: 1px solid #f2ede4;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover, .suggestion-item.active {
+            background: #fdfaf3;
+        }
+        .suggestion-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .suggestion-sub {
+            font-size: 0.78rem;
+            color: #888;
+        }
+
+        /* Tarjeta de resultado */
+        .result-card {
+            background: var(--blanco);
+            border-radius: 16px;
+            padding: 24px 20px;
+            text-align: center;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.07);
+            border-top: 5px solid var(--oro);
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-greeting {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .result-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--oscuro);
+            margin-bottom: 14px;
+        }
+        .table-badge-large {
+            display: inline-block;
+            background: #fff9e6;
+            border: 2px solid var(--oro-brillante);
+            color: var(--oscuro);
+            padding: 12px 28px;
+            border-radius: 40px;
+            margin-bottom: 16px;
+        }
+        .table-badge-large span {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #997a15;
+            font-weight: 700;
+        }
+        .table-badge-large strong {
+            font-size: 2.1rem;
+            font-family: 'Playfair Display', serif;
+            line-height: 1.1;
+        }
+        .partner-info {
+            font-size: 0.88rem;
+            color: #666;
+            margin-bottom: 18px;
+        }
+
+        /* Botón Cámara POV */
+        .btn-pov {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 420px;
+            background: linear-gradient(135deg, #111, #333);
+            color: white;
+            padding: 14px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+        .btn-pov:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            background: #000;
+            color: white;
+        }
+        .pov-subtext {
+            font-size: 0.78rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* Contenedor del Mapa */
+        .map-section {
+            background: var(--blanco);
+            border-radius: 16px;
+            padding: 20px 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid #ebe4d8;
+        }
+        .map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 0 4px;
+        }
+        .map-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+        }
+        .map-legend {
+            font-size: 0.75rem;
+            color: #777;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--oro-brillante);
+            display: inline-block;
+        }
+
+        .map-svg-container {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 10px;
+            background: #fdfcf9;
+            border: 1px solid #f0eae1;
+            padding: 5px;
+        }
+        svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            min-width: 580px;
+            user-select: none;
+        }
+
+        /* Estilos de elementos SVG */
+        .svg-wall { stroke: #222; stroke-width: 3.5; fill: none; stroke-linecap: round; }
+        .svg-landmark { fill: #f3efe6; stroke: #b5a995; stroke-width: 1.5; }
+        .svg-landmark-dark { fill: #1c1c1c; }
+        .svg-text-landmark { font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; fill: #444; text-anchor: middle; }
+        .svg-text-landmark-light { font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 700; fill: #fff; text-anchor: middle; }
+        
+        .table-node {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .table-node circle {
+            fill: #ffffff;
+            stroke: #a89f91;
+            stroke-width: 1.8;
+            transition: all 0.25s ease;
+        }
+        .table-node text {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13.5px;
+            font-weight: 700;
+            fill: #333;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+        }
+
+        /* Sillas dibujadas alrededor de cada mesa */
+        .chair-dot {
+            fill: #ece5d8;
+            stroke: #b5a995;
+            stroke-width: 1;
+        }
+
+        /* Mesa de los Novios */
+        .table-novios rect {
+            fill: #fffdf5;
+            stroke: var(--oro-brillante);
+            stroke-width: 2.5;
+            transition: all 0.25s ease;
+        }
+        .table-novios text {
+            font-family: 'Playfair Display', serif;
+            font-size: 13px;
+            font-weight: 700;
+            fill: #997a15;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+
+        /* Mesa Seleccionada / Destacada */
+        .table-node.highlighted circle,
+        .table-novios.highlighted rect {
+            fill: var(--oro-brillante) !important;
+            stroke: #222 !important;
+            stroke-width: 3.5 !important;
+            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.8));
+        }
+        .table-node.highlighted text {
+            fill: #ffffff !important;
+            font-weight: 800 !important;
+            font-size: 15px !important;
+        }
+        .table-novios.highlighted text {
+            fill: #ffffff !important;
+            font-weight: 800 !important;
+        }
+
+        /* Pulso animado para mesa activa */
+        @keyframes pulseRing {
+            0% { r: 18px; opacity: 0.9; }
+            100% { r: 34px; opacity: 0; }
+        }
+        .pulse-ring {
+            fill: none;
+            stroke: var(--oro-brillante);
+            stroke-width: 3;
+            animation: pulseRing 1.4s infinite cubic-bezier(0.2, 0.8, 0.4, 1);
+            pointer-events: none;
+        }
+
+        /* Estado cargando */
+        #loading-indicator {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #888;
+            padding: 8px;
+        }
+
+        /* Modal flotante al tocar mesa en mapa */
+        .toast-mesa {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #222;
+            color: white;
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-size: 0.88rem;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Encabezado -->
+        <header>
+            <h1>Antonia & Felipe</h1>
+            <p>Encuentra tu mesa y acompáñanos a celebrar</p>
+        </header>
+
+        <!-- Buscador -->
+        <div class="search-box">
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="input-buscador" placeholder="Escribe tu nombre o apellido..." autocomplete="off">
+                <button type="button" id="btn-limpiar" onclick="limpiarBusqueda()"><i class="bi bi-x-circle-fill"></i></button>
+            </div>
+            <ul class="suggestions-list" id="lista-sugerencias"></ul>
+        </div>
+        <div id="loading-indicator"><i class="bi bi-arrow-repeat spin"></i> Cargando lista de invitados...</div>
+
+        <!-- Tarjeta con resultado -->
+        <div class="result-card" id="resultado-card">
+            <div class="result-greeting">¡Qué alegría tenerte aquí!</div>
+            <h2 class="result-name" id="res-nombre">Nombre Invitado</h2>
+            
+            <div class="table-badge-large">
+                <span>Tu Mesa Asignada</span>
+                <strong id="res-mesa">Mesa XX</strong>
+            </div>
+
+            <p class="partner-info" id="res-pareja-info"></p>
+
+            <a href="#" target="_blank" class="btn-pov" id="res-btn-pov">
+                <i class="bi bi-camera-fill fs-5"></i> Abrir Cámara Desechable de tu Mesa
+            </a>
+            <div class="pov-subtext">Saca fotos durante la fiesta y compártelas con nosotros ✨</div>
+        </div>
+
+        <!-- Plano interactivo del salón -->
+        <div class="map-section" id="seccion-mapa">
+            <div class="map-header">
+                <h2><i class="bi bi-geo-alt me-1 text-warning"></i> Plano del Salón</h2>
+                <div class="map-legend">
+                    <span class="legend-dot"></span> Tu mesa destacada
+                </div>
+            </div>
+
+            <div class="map-svg-container">
+                <svg viewBox="0 0 950 820" xmlns="http://www.w3.org/2000/svg" id="svg-mapa">
+                    
+                    <!-- ================= PAREDES / LÍMITES ================= -->
+                    <!-- Baños a la izquierda arriba -->
+                    <path d="M 80,140 L 290,140" class="svg-wall" />
+                    <!-- Pared izquierda que baja hacia la entrada -->
+                    <path d="M 160,140 L 160,600" class="svg-wall" />
+                    <!-- Pared de entrada inferior -->
+                    <path d="M 160,700 L 160,800 L 820,800" class="svg-wall" />
+                    <!-- Pared superior central -->
+                    <path d="M 320,40 L 820,40" class="svg-wall" />
+                    <!-- Pared derecha (Cocina) -->
+                    <path d="M 820,40 L 820,330" class="svg-wall" />
+                    <path d="M 820,380 L 820,800" class="svg-wall" />
+
+                    <!-- ================= PUNTOS DE REFERENCIA ================= -->
+                    <!-- BAÑOS -->
+                    <text x="140" y="80" class="svg-text-landmark" style="font-size:16px; font-weight:800;">BAÑOS</text>
+
+                    <!-- ENTRADA -->
+                    <g transform="translate(60, 645)">
+                        <text x="40" y="0" class="svg-text-landmark" style="font-size:14px; font-weight:800;">ENTRADA</text>
+                        <path d="M 10,18 L 80,18 M 65,10 L 80,18 L 65,26" stroke="#222" stroke-width="2.5" fill="none" />
+                    </g>
+
+                    <!-- COCINA -->
+                    <g transform="translate(865, 230) rotate(90)">
+                        <text x="0" y="0" class="svg-text-landmark" style="font-size:16px; font-weight:800; letter-spacing: 2px;">COCINA</text>
+                    </g>
+
+                    <!-- PISTA 10 X 10 -->
+                    <rect x="420" y="475" width="220" height="215" class="svg-landmark" style="fill:#faf7f0; stroke:#c9bfb0; stroke-width:2;" />
+                    <text x="530" y="575" class="svg-text-landmark" style="font-size:16px; font-weight:800;">PISTA</text>
+                    <text x="530" y="598" class="svg-text-landmark" style="font-size:12px; fill:#777;">10 X 10</text>
+
+                    <!-- DJ -->
+                    <rect x="480" y="700" width="100" height="55" class="svg-landmark" style="fill:#ffffff; stroke:#333; stroke-width:2;" />
+                    <text x="530" y="733" class="svg-text-landmark" style="font-size:14px;">DJ</text>
+
+                    <!-- GLITTER -->
+                    <text x="330" y="695" class="svg-text-landmark" style="font-size:13px;">GLITTER</text>
+                    <rect x="305" y="710" width="55" height="75" fill="#1c1c1c" rx="4" />
+                    <rect x="315" y="720" width="35" height="45" fill="#ffffff" rx="2" />
+
+                    <!-- FOTOS -->
+                    <rect x="380" y="708" width="45" height="78" class="svg-landmark" style="fill:#ffffff; stroke:#444;" />
+                    <g transform="translate(402, 747) rotate(90)">
+                        <text x="0" y="0" class="svg-text-landmark" style="font-size:11px;">FOTOS</text>
+                    </g>
+
+                    <!-- BAR (L invertida negra) -->
+                    <g>
+                        <path d="M 660,715 L 780,715 L 780,670" stroke="#1c1c1c" stroke-width="15" fill="none" stroke-linejoin="miter" />
+                        <text x="720" y="748" class="svg-text-landmark" style="font-size:14px; font-weight:800;">BAR</text>
+                    </g>
+
+                    <!-- GRUPO PARA ANILLO DE PULSO DINÁMICO -->
+                    <g id="pulse-container"></g>
+
+                    <!-- ================= MESAS ================= -->
+                    <g id="mesas-layer">
+                        <!-- MESA DE LOS NOVIOS (Mesa 1) -->
+                        <g class="table-novios" id="map-mesa-1" onclick="seleccionarMesaDesdeMapa(1)">
+                            <rect x="485" y="325" width="115" height="36" rx="6" />
+                            <text x="542" y="343">👑 NOVIOS</text>
+                        </g>
+
+                        <!-- COLUMNA IZQUIERDA (10 mesas) -->
+                        <!-- Fila 1 -->
+                        <g class="table-node" id="map-mesa-35" onclick="seleccionarMesaDesdeMapa(35)"><circle cx="215" cy="205" r="21"/><text x="215" y="205">35</text></g>
+                        <g class="table-node" id="map-mesa-38" onclick="seleccionarMesaDesdeMapa(38)"><circle cx="285" cy="205" r="21"/><text x="285" y="205">38</text></g>
+                        <!-- Fila 2 -->
+                        <g class="table-node" id="map-mesa-4" onclick="seleccionarMesaDesdeMapa(4)"><circle cx="215" cy="275" r="21"/><text x="215" y="275">4</text></g>
+                        <g class="table-node" id="map-mesa-18" onclick="seleccionarMesaDesdeMapa(18)"><circle cx="285" cy="275" r="21"/><text x="285" y="275">18</text></g>
+                        <!-- Fila 3 -->
+                        <g class="table-node" id="map-mesa-15" onclick="seleccionarMesaDesdeMapa(15)"><circle cx="215" cy="345" r="21"/><text x="215" y="345">15</text></g>
+                        <g class="table-node" id="map-mesa-17" onclick="seleccionarMesaDesdeMapa(17)"><circle cx="285" cy="345" r="21"/><text x="285" y="345">17</text></g>
+                        <!-- Fila 4 -->
+                        <g class="table-node" id="map-mesa-14" onclick="seleccionarMesaDesdeMapa(14)"><circle cx="215" cy="415" r="21"/><text x="215" y="415">14</text></g>
+                        <g class="table-node" id="map-mesa-22" onclick="seleccionarMesaDesdeMapa(22)"><circle cx="285" cy="415" r="21"/><text x="285" y="415">22</text></g>
+                        <!-- Fila 5 -->
+                        <g class="table-node" id="map-mesa-13" onclick="seleccionarMesaDesdeMapa(13)"><circle cx="215" cy="485" r="21"/><text x="215" y="485">13</text></g>
+                        <g class="table-node" id="map-mesa-12" onclick="seleccionarMesaDesdeMapa(12)"><circle cx="285" cy="485" r="21"/><text x="285" y="485">12</text></g>
+
+                        <!-- BLOQUE CENTRAL / SUPERIOR -->
+                        <!-- Fila Superior (6 mesas) -->
+                        <g class="table-node" id="map-mesa-5" onclick="seleccionarMesaDesdeMapa(5)"><circle cx="370" cy="90" r="21"/><text x="370" y="90">5</text></g>
+                        <g class="table-node" id="map-mesa-6" onclick="seleccionarMesaDesdeMapa(6)"><circle cx="438" cy="90" r="21"/><text x="438" y="90">6</text></g>
+                        <g class="table-node" id="map-mesa-7" onclick="seleccionarMesaDesdeMapa(7)"><circle cx="506" cy="90" r="21"/><text x="506" y="90">7</text></g>
+                        <g class="table-node" id="map-mesa-31" onclick="seleccionarMesaDesdeMapa(31)"><circle cx="574" cy="90" r="21"/><text x="574" y="90">31</text></g>
+                        <g class="table-node" id="map-mesa-21" onclick="seleccionarMesaDesdeMapa(21)"><circle cx="642" cy="90" r="21"/><text x="642" y="90">21</text></g>
+                        <g class="table-node" id="map-mesa-39" onclick="seleccionarMesaDesdeMapa(39)"><circle cx="710" cy="90" r="21"/><text x="710" y="90">39</text></g>
+
+                        <!-- Fila 2 Central (5 mesas) -->
+                        <g class="table-node" id="map-mesa-8" onclick="seleccionarMesaDesdeMapa(8)"><circle cx="438" cy="162" r="21"/><text x="438" y="162">8</text></g>
+                        <g class="table-node" id="map-mesa-9" onclick="seleccionarMesaDesdeMapa(9)"><circle cx="506" cy="162" r="21"/><text x="506" y="162">9</text></g>
+                        <g class="table-node" id="map-mesa-19" onclick="seleccionarMesaDesdeMapa(19)"><circle cx="574" cy="162" r="21"/><text x="574" y="162">19</text></g>
+                        <g class="table-node" id="map-mesa-20" onclick="seleccionarMesaDesdeMapa(20)"><circle cx="642" cy="162" r="21"/><text x="642" y="162">20</text></g>
+                        <g class="table-node" id="map-mesa-34" onclick="seleccionarMesaDesdeMapa(34)"><circle cx="710" cy="162" r="21"/><text x="710" y="162">34</text></g>
+
+                        <!-- Fila 3 Central (4 mesas) -->
+                        <g class="table-node" id="map-mesa-33" onclick="seleccionarMesaDesdeMapa(33)"><circle cx="438" cy="235" r="21"/><text x="438" y="235">33</text></g>
+                        <g class="table-node" id="map-mesa-27" onclick="seleccionarMesaDesdeMapa(27)"><circle cx="506" cy="235" r="21"/><text x="506" y="235">27</text></g>
+                        <g class="table-node" id="map-mesa-36" onclick="seleccionarMesaDesdeMapa(36)"><circle cx="574" cy="235" r="21"/><text x="574" y="235">36</text></g>
+                        <g class="table-node" id="map-mesa-37" onclick="seleccionarMesaDesdeMapa(37)"><circle cx="642" cy="235" r="21"/><text x="642" y="235">37</text></g>
+
+                        <!-- Fila 4 Flanqueando a Novios -->
+                        <g class="table-node" id="map-mesa-16" onclick="seleccionarMesaDesdeMapa(16)"><circle cx="438" cy="342" r="21"/><text x="438" y="342">16</text></g>
+                        <g class="table-node" id="map-mesa-30" onclick="seleccionarMesaDesdeMapa(30)"><circle cx="642" cy="342" r="21"/><text x="642" y="342">30</text></g>
+
+                        <!-- Fila 5 Sobre la pista (7 mesas) -->
+                        <g class="table-node" id="map-mesa-23" onclick="seleccionarMesaDesdeMapa(23)"><circle cx="370" cy="415" r="21"/><text x="370" y="415">23</text></g>
+                        <g class="table-node" id="map-mesa-32" onclick="seleccionarMesaDesdeMapa(32)"><circle cx="438" cy="415" r="21"/><text x="438" y="415">32</text></g>
+                        <g class="table-node" id="map-mesa-24" onclick="seleccionarMesaDesdeMapa(24)"><circle cx="506" cy="415" r="21"/><text x="506" y="415">24</text></g>
+                        <g class="table-node" id="map-mesa-25" onclick="seleccionarMesaDesdeMapa(25)"><circle cx="574" cy="415" r="21"/><text x="574" y="415">25</text></g>
+                        <g class="table-node" id="map-mesa-28" onclick="seleccionarMesaDesdeMapa(28)"><circle cx="642" cy="415" r="21"/><text x="642" y="415">28</text></g>
+                        <g class="table-node" id="map-mesa-11" onclick="seleccionarMesaDesdeMapa(11)"><circle cx="710" cy="415" r="21"/><text x="710" y="415">11</text></g>
+                        <g class="table-node" id="map-mesa-26" onclick="seleccionarMesaDesdeMapa(26)"><circle cx="778" cy="415" r="21"/><text x="778" y="415">26</text></g>
+
+                        <!-- COLUMNA DERECHA INFERIOR (4 mesas) -->
+                        <g class="table-node" id="map-mesa-10" onclick="seleccionarMesaDesdeMapa(10)"><circle cx="710" cy="495" r="21"/><text x="710" y="495">10</text></g>
+                        <g class="table-node" id="map-mesa-29" onclick="seleccionarMesaDesdeMapa(29)"><circle cx="778" cy="495" r="21"/><text x="778" y="495">29</text></g>
+                        <g class="table-node" id="map-mesa-2" onclick="seleccionarMesaDesdeMapa(2)"><circle cx="710" cy="575" r="21"/><text x="710" y="575">2</text></g>
+                        <g class="table-node" id="map-mesa-3" onclick="seleccionarMesaDesdeMapa(3)"><circle cx="778" cy="575" r="21"/><text x="778" y="575">3</text></g>
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-mesa" id="toast-notif"></div>
+
+    <script>
+        // Endpoint con la lista de confirmados
+        const API_URL = "https://rsvp-api.felipegiacoman.workers.dev?action=confirmados";
+
+        // Diccionario completo de cámaras POV de cada mesa
+        const LINKS_POV = {
+            1:  "https://pov.camera/qr/F1212D18-4710-497C-9433-604D50B1BD79",
+            2:  "https://pov.camera/qr/6867AE71-55F5-4A66-9FA8-AF340330651A",
+            3:  "https://pov.camera/qr/09360B31-B17C-4ADD-BDD2-4B037B858B60",
+            4:  "https://pov.camera/qr/E3D4A040-56B7-445D-8551-2F9EEF5F7A30",
+            5:  "https://pov.camera/qr/0AA1118F-68B2-4D91-9BEC-2BFFB0775C47",
+            6:  "https://pov.camera/qr/6FC889B0-191F-42FE-9A34-DFF33F2FCAB1",
+            7:  "https://pov.camera/qr/BA29A90F-224D-4A7C-AFBC-7BACF8FF6553",
+            8:  "https://pov.camera/qr/027ADFFD-C2EE-45F1-8DEA-774CD42ADF89",
+            9:  "https://pov.camera/qr/13F46F28-C3D5-4DDB-A6AB-A92A910E25CD",
+            10: "https://pov.camera/qr/42B09144-2146-4E9F-AA39-C755060B4DB9",
+            11: "https://pov.camera/qr/07394FB3-8E2D-406E-B593-BF22638A5AA3",
+            12: "https://pov.camera/qr/B6B0A18F-37DB-4962-A139-C8E0A6633E30",
+            13: "https://pov.camera/qr/9BDE1991-92B0-4E0D-BCEA-DFED303DAB66",
+            14: "https://pov.camera/qr/C8BA03A7-5165-4E10-8390-86718EB9AE18",
+            15: "https://pov.camera/qr/DA81761E-D1A4-4A83-A473-FC0BDCF39EC6",
+            16: "https://pov.camera/qr/1274EA20-65BE-4532-9D21-B6BEF37284D5",
+            17: "https://pov.camera/qr/20A890BD-466F-4F8F-9148-CE0381FC9D44",
+            18: "https://pov.camera/qr/E1F56311-08C2-4051-9F0C-C042117CF9C9",
+            19: "https://pov.camera/qr/27E46C2A-AFBB-4C9B-AA17-079AD324D5C0",
+            20: "https://pov.camera/qr/BF5A0968-4BC5-4B2B-BFC0-2124CA330F1A",
+            21: "https://pov.camera/qr/B2B6E027-1011-4A23-8163-070B43E387F9",
+            22: "https://pov.camera/qr/82931B02-D694-4788-8CA1-9F1F9B423A07",
+            23: "https://pov.camera/qr/07174105-E862-4AE3-B506-2473CCCAFA14",
+            24: "https://pov.camera/qr/454D0576-CEC6-45C4-8715-498A071F6557",
+            25: "https://pov.camera/qr/54856B17-5C24-4D96-A129-18813D5233C9",
+            26: "https://pov.camera/qr/6FAC0EE1-F08B-4B58-8A44-101504155A83",
+            27: "https://pov.camera/qr/84F25ACF-98E2-4B32-AB3D-71D86C8951D7",
+            28: "https://pov.camera/qr/FE80E343-A307-409F-91AA-37BE5E3782A9",
+            29: "https://pov.camera/qr/A03E4F26-795D-4AC2-9BEE-09724CCC2653",
+            30: "https://pov.camera/qr/5357BC49-F897-4D36-97D2-272560448046",
+            31: "https://pov.camera/qr/0BA435EA-352F-4E41-A085-47C5EA0C7E9A",
+            32: "https://pov.camera/qr/902BCD22-F489-41FC-BCE0-A08D6642B2BC",
+            33: "https://pov.camera/qr/679CC1D3-7A15-4277-BCA4-01CFA59E92F6",
+            34: "https://pov.camera/qr/D20E2A9F-05F5-43E8-A692-0D333D838C71",
+            35: "https://pov.camera/qr/7D209B45-8B75-4F8B-8279-C9D895E963FB",
+            36: "https://pov.camera/qr/5404798F-2D0B-4CA6-A70F-1AB2855DCC96",
+            37: "https://pov.camera/qr/BBD84CA8-5257-4991-8F31-1B9F060C925D",
+            38: "https://pov.camera/qr/A859CA5D-F17C-4B32-861C-E0C932C7A5E3",
+            39: "https://pov.camera/qr/9293DF56-3289-4B42-A653-0ADAF3665924"
+        };
+
+        let listaInvitados = [];
+        let mesaActivaId = null;
+
+        function quitarTildes(str) {
+            if (!str) return "";
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        }
+
+        // Cargar invitados
+        async function cargarInvitados() {
+            try {
+                // Intentar recuperar de caché local primero para rapidez inmediata
+                const cached = localStorage.getItem('cache_buscarmesa');
+                if (cached) {
+                    procesarDatos(JSON.parse(cached));
+                }
+
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    localStorage.setItem('cache_buscarmesa', JSON.stringify(data));
+                    procesarDatos(data);
+                }
+            } catch (e) {
+                console.warn("Usando datos locales o reintentando...", e);
+            } finally {
+                const el = document.getElementById('loading-indicator');
+                if (el) el.style.display = 'none';
+            }
+        }
+
+        function procesarDatos(data) {
+            listaInvitados = [];
+
+            // Añadir a los novios para que también puedan buscarse
+            listaInvitados.push({
+                nombre: "Felipe Giacoman",
+                nombreMostrar: "Felipe (Novio)",
+                mesa: 1,
+                esNovio: true,
+                parejaNombre: "Antonia",
+                tienePareja: true
+            });
+            listaInvitados.push({
+                nombre: "Antonia",
+                nombreMostrar: "Antonia (Novia)",
+                mesa: 1,
+                esNovio: true,
+                parejaNombre: "Felipe",
+                tienePareja: true
+            });
+
+            data.forEach(c => {
+                const nombreTitular = (c.nombre_invitado || c.nombre || '').trim();
+                if (!nombreTitular) return;
+
+                const mesaTitular = c.mesa_numero ? parseInt(c.mesa_numero) : null;
+                const tienePareja = (c.lleva_pareja === 'Sí');
+                const nombrePareja = (c.nombre_pareja && c.nombre_pareja !== '-' && c.nombre_pareja.toLowerCase() !== 'pendiente') 
+                    ? c.nombre_pareja.trim() 
+                    : null;
+                const mesaPareja = c.mesa_pareja ? parseInt(c.mesa_pareja) : mesaTitular;
+
+                // Agregar titular
+                listaInvitados.push({
+                    nombre: nombreTitular,
+                    nombreMostrar: nombreTitular,
+                    mesa: mesaTitular,
+                    parejaNombre: nombrePareja,
+                    tienePareja: tienePareja
+                });
+
+                // Si tiene pareja con nombre real, agregar también a la pareja como registro buscable
+                if (tienePareja && nombrePareja && !nombrePareja.toLowerCase().startsWith('pareja de')) {
+                    listaInvitados.push({
+                        nombre: nombrePareja,
+                        nombreMostrar: `${nombrePareja} (Acompañante de ${nombreTitular.split(' ')[0]})`,
+                        mesa: mesaPareja,
+                        parejaNombre: nombreTitular,
+                        tienePareja: true,
+                        esAcompanante: true
+                    });
+                }
+            });
+        }
+
+        // Buscador reactivo
+        const inputBuscador = document.getElementById('input-buscador');
+        const listaSugerencias = document.getElementById('lista-sugerencias');
+        const btnLimpiar = document.getElementById('btn-limpiar');
+
+        inputBuscador.addEventListener('input', function() {
+            const term = quitarTildes(this.value);
+            btnLimpiar.style.display = term.length > 0 ? 'inline-block' : 'none';
+
+            if (term.length < 2) {
+                listaSugerencias.style.display = 'none';
+                return;
+            }
+
+            const coincidencias = listaInvitados.filter(inv => {
+                return quitarTildes(inv.nombre).includes(term);
+            }).slice(0, 8); // Máximo 8 sugerencias
+
+            if (coincidencias.length === 0) {
+                listaSugerencias.innerHTML = `<li class="suggestion-item text-muted" style="cursor:default;">No se encontraron resultados</li>`;
+                listaSugerencias.style.display = 'block';
+                return;
+            }
+
+            listaSugerencias.innerHTML = coincidencias.map(inv => `
+                <li class="suggestion-item" onclick="seleccionarInvitado('${encodeURIComponent(JSON.stringify(inv))}')">
+                    <div>
+                        <div class="suggestion-name">${escapeHTML(inv.nombreMostrar)}</div>
+                        <div class="suggestion-sub">${inv.mesa ? (inv.mesa === 1 ? 'Mesa de los Novios' : `Mesa ${inv.mesa}`) : 'Mesa por asignar'}</div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </li>
+            `).join('');
+
+            listaSugerencias.style.display = 'block';
+        });
+
+        function escapeHTML(str) {
+            return str ? str.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t])) : '';
+        }
+
+        function limpiarBusqueda() {
+            inputBuscador.value = '';
+            btnLimpiar.style.display = 'none';
+            listaSugerencias.style.display = 'none';
+            document.getElementById('resultado-card').style.display = 'none';
+            deseleccionarMesa();
+        }
+
+        function seleccionarInvitado(invJSON) {
+            const inv = JSON.parse(decodeURIComponent(invJSON));
+            inputBuscador.value = inv.nombre;
+            listaSugerencias.style.display = 'none';
+
+            const card = document.getElementById('resultado-card');
+            const resNombre = document.getElementById('res-nombre');
+            const resMesa = document.getElementById('res-mesa');
+            const resPareja = document.getElementById('res-pareja-info');
+            const btnPOV = document.getElementById('res-btn-pov');
+
+            resNombre.innerText = inv.nombre;
+
+            if (inv.mesa) {
+                resMesa.innerText = inv.mesa === 1 ? "Mesa 1 (Novios)" : `Mesa ${inv.mesa}`;
+                
+                // Configurar enlace de Cámara POV
+                const linkCamara = LINKS_POV[inv.mesa];
+                if (linkCamara) {
+                    btnPOV.href = linkCamara;
+                    btnPOV.style.display = 'inline-flex';
+                } else {
+                    btnPOV.style.display = 'none';
+                }
+
+                // Destacar mesa en el mapa SVG
+                destacarMesaEnMapa(inv.mesa);
+            } else {
+                resMesa.innerText = "Por confirmar";
+                btnPOV.style.display = 'none';
+                deseleccionarMesa();
+            }
+
+            if (inv.tienePareja && inv.parejaNombre) {
+                resPareja.innerHTML = `<i class="bi bi-people-fill me-1 text-muted"></i> Compartes mesa con: <strong>${escapeHTML(inv.parejaNombre)}</strong>`;
+                resPareja.style.display = 'block';
+            } else {
+                resPareja.style.display = 'none';
+            }
+
+            card.style.display = 'block';
+
+            // Desplazar la pantalla suavemente hacia la tarjeta y mapa
+            setTimeout(() => {
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        // ================= INTERACCIÓN CON EL MAPA =================
+        function destacarMesaEnMapa(numMesa) {
+            deseleccionarMesa();
+            mesaActivaId = numMesa;
+
+            const el = document.getElementById(`map-mesa-${numMesa}`);
+            if (!el) return;
+
+            el.classList.add('highlighted');
+
+            // Crear anillo de pulso animado
+            const pulseContainer = document.getElementById('pulse-container');
+            if (pulseContainer) {
+                pulseContainer.innerHTML = '';
+                if (numMesa === 1) {
+                    // Para la mesa rectangular
+                    const rect = el.querySelector('rect');
+                    const cx = parseFloat(rect.getAttribute('x')) + (parseFloat(rect.getAttribute('width')) / 2);
+                    const cy = parseFloat(rect.getAttribute('y')) + (parseFloat(rect.getAttribute('height')) / 2);
+                    pulseContainer.innerHTML = `<circle cx="${cx}" cy="${cy}" class="pulse-ring" />`;
+                } else {
+                    const circle = el.querySelector('circle');
+                    const cx = circle.getAttribute('cx');
+                    const cy = circle.getAttribute('cy');
+                    pulseContainer.innerHTML = `<circle cx="${cx}" cy="${cy}" class="pulse-ring" />`;
+                }
+            }
+        }
+
+        function deseleccionarMesa() {
+            document.querySelectorAll('.table-node, .table-novios').forEach(node => {
+                node.classList.remove('highlighted');
+            });
+            const pulseContainer = document.getElementById('pulse-container');
+            if (pulseContainer) pulseContainer.innerHTML = '';
+            mesaActivaId = null;
+        }
+
+        function seleccionarMesaDesdeMapa(num) {
+            destacarMesaEnMapa(num);
+            const linkPOV = LINKS_POV[num];
+
+            const toast = document.getElementById('toast-notif');
+            if (toast) {
+                const textoMesa = num === 1 ? "Mesa 1 (Novios)" : `Mesa ${num}`;
+                toast.innerHTML = linkPOV 
+                    ? `<span>${textoMesa}</span> · <a href="${linkPOV}" target="_blank" style="color:#ffd700; text-decoration:underline; font-weight:700; margin-left:6px;">Abrir Cámara 📸</a>`
+                    : `<span>${textoMesa}</span>`;
+                toast.style.display = 'block';
+                setTimeout(() => { toast.style.display = 'none'; }, 4000);
+            }
+        }
+
+        // Inicializar al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarInvitados();
+        });
+    </script>
+</body>
+</html>
